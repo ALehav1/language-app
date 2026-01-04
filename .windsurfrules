@@ -1,0 +1,43 @@
+# Windsurf Rules - Language Learning App
+
+## Read These First (Every Chat)
+1. /agents.md - Project context and specific patterns for THIS app
+2. /docs/contract.md - Universal coding rules that apply to ALL projects
+
+## Mobile-First Development (CRITICAL)
+Test every change at these breakpoints IN THIS ORDER:
+- 375px (iPhone SE) - Must work perfectly here FIRST
+- 768px (iPad) - Layout should use space well  
+- 1024px (Desktop) - Comfortable reading width
+
+WHY: 40-60% of users will be on mobile. If it doesn't work on phone, you've failed half your users.
+
+Touch targets: 48x48px minimum (thumbs need space to tap)
+
+## TypeScript Rules (No Exceptions)
+- No 'any' types - use 'unknown' if you truly don't know the type
+- Define interfaces for all data structures
+- Props interfaces go above the component
+
+WHY: TypeScript catches bugs before users see them. 'any' defeats the purpose.
+
+## React Patterns (Follow These Always)
+- Navigation: useNavigate() from react-router-dom, NEVER window.location.href
+  WHY: window.location breaks React's routing and causes full page reloads
+  
+- Auth: onAuthStateChange listener, NOT just getUser()
+  WHY: Without the listener, user refreshes page and gets logged out
+  
+- Loading: Show loading state for ALL async operations
+  WHY: Users need feedback that something is happening
+  
+- Errors: User-friendly messages, not error.toString()
+  WHY: Technical error messages confuse non-technical users
+
+## Before Saying "Done" - Cascade Must Check These
+- [ ] Tested at 375px, 768px, 1024px
+- [ ] Zero console errors
+- [ ] Loading states added for all async operations
+- [ ] Error handling complete with user-friendly messages
+- [ ] TypeScript types complete (no 'any' anywhere)
+- [ ] Touch targets minimum 48px

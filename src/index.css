@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --transition-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body {
+    @apply bg-surface-300 text-white antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    touch-action: pan-y;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  /* Glassmorphism Card */
+  .glass-card {
+    @apply relative overflow-hidden rounded-3xl;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
+  }
+
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 50%
+    );
+    pointer-events: none;
+  }
+
+  /* Touch-friendly buttons */
+  .touch-btn {
+    @apply min-h-[48px] min-w-[48px] flex items-center justify-center;
+    @apply rounded-full transition-all duration-200;
+    @apply active:scale-95;
+  }
+
+  /* Swipe indicator overlays */
+  .swipe-overlay {
+    @apply absolute inset-0 flex items-center justify-center;
+    @apply rounded-3xl opacity-0 transition-opacity duration-200;
+    @apply pointer-events-none;
+  }
+
+  .swipe-overlay.dismiss { @apply bg-dismiss/20; }
+  .swipe-overlay.save { @apply bg-save/20; }
+  .swipe-overlay.later { @apply bg-later/20; }
+
+  /* Language badges */
+  .badge-arabic { @apply bg-arabic-500/20 text-arabic-400 border border-arabic-500/30; }
+  .badge-spanish { @apply bg-spanish-500/20 text-spanish-400 border border-spanish-500/30; }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
