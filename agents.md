@@ -20,15 +20,16 @@ Last Updated: January 4, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 6 Complete - Arabic Dual-Input, Actionable Empty States
+- Status: Phase 7 Complete - Streamlined UX, Direct Lesson Start
 - Working features:
   - Lesson feed with swipeable card stack + "Start Lesson" button
+  - **Hamburger menu** - quick access to lesson types, saved words, create lesson
   - **Content type badge** on each lesson card showing type (Aa Words, "" Phrases, etc.)
-  - **Content type filtering** (All/Words/Phrases/Dialog/Paragraphs)
-  - Language filtering (All/Arabic/Spanish) - **persists to localStorage**
-  - **Filter preferences remembered** - defaults to last used language
+  - **Content type filtering** (Words/Phrases/Dialog/Paragraphs) - defaults to Words
+  - **Language toggle** (Arabic/Spanish only, no "All") - **persists to localStorage**
+  - **Filter preferences remembered** - defaults to last used settings
   - Swipe gestures: left (dismiss), right (save), down (later), tap (start)
-  - **Lesson preview modal** - clicking "Start Lesson" shows preview with vocabulary (no translations) then starts exercise
+  - **Direct lesson start** - clicking "Start Lesson" goes directly to exercise (no preview modal)
   - **Actionable empty states** - "Create Lesson" button when filtering to content types with no lessons
   - **AI lesson generation** via OpenAI - syncs with current language filter
   - **Supabase integration** - all data persisted to database
@@ -90,10 +91,13 @@ Last Updated: January 4, 2026
 14. Desktop 3-column layout
 15. Persistent language/content type preferences
 16. Generator syncs with current language filter
-17. Lesson preview modal (vocabulary without translations)
-18. Arabic dual-input mode (transliteration + translation)
-19. Transliteration validation with fuzzy matching
-20. Actionable empty states with "Create Lesson" button
+17. Arabic dual-input mode (transliteration + translation)
+18. Transliteration validation with fuzzy matching
+19. Actionable empty states with "Create Lesson" button
+20. Direct lesson start (no preview modal)
+21. Hamburger menu on main feed with lesson type navigation
+22. "Write in English" instructions (clearer than "Translate")
+23. Language toggle (Arabic/Spanish only, no "All")
 
 ### Remaining (P2)
 1. Audio playback with speed toggle

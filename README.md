@@ -3,7 +3,7 @@
 AI-powered language learning for Arabic (novice) and Spanish (intermediate) that teaches how native speakers actually talk.
 
 **Last Updated**: January 4, 2026
-**Status**: Phase 6 Complete - Arabic Dual-Input, Actionable Empty States
+**Status**: Phase 7 Complete - Streamlined UX, Direct Lesson Start
 
 ---
 
@@ -52,9 +52,10 @@ src/
 ### Component Hierarchy
 
 **Lesson Discovery Flow:**
-- **`LessonFeed`**: Main page with language + content type filters (preferences persist).
+- **`LessonFeed`**: Main page with hamburger menu, language toggle, content type filters.
+  - **Hamburger Menu**: Quick access to lesson types, saved words, create lesson.
   - **`CardStack`**: Manages the deck with visual stacking.
-    - **`LessonCard`**: Swipeable cards with "Start Lesson" button.
+    - **`LessonCard`**: Swipeable cards with "Start Lesson" button (direct to exercise).
   - **`LessonGenerator`**: AI-powered lesson creation (syncs with current language filter).
 
 **Exercise Flow:**
@@ -200,19 +201,18 @@ Create lessons for different learning styles:
 - **Letter breakdown** for Arabic words with vowel diacritics
 
 ### Exercise Flow
-1. Tap **Start Lesson** on any lesson card - shows preview modal with vocabulary (no translations)
-2. Click **Start Lesson** in preview to begin exercise
-3. See content in target language with adaptive sizing
-4. **For Arabic**: Type BOTH pronunciation (transliteration) AND English translation
-5. **For Spanish**: Type the English translation only
-6. Get immediate feedback with **detailed word breakdown**:
+1. Tap **Start Lesson** on any lesson card - goes directly to exercise
+2. See content in target language with "Write in English" instruction
+3. **For Arabic**: Type BOTH pronunciation (transliteration) AND English translation
+4. **For Spanish**: Type the English translation only
+5. Get immediate feedback with **detailed word breakdown**:
    - Word + translation + pronunciation
    - **Hebrew Connection** (Arabic only) - shows cognate or explains why none exists
    - **Letter Breakdown** (Arabic only) - each letter with name, diacritics, and combined sound
-7. **Save items** by tapping the heart icon
-8. **Skip questions** if needed
-9. **Resume later** - progress auto-saved for 24 hours
-10. See final score at completion
+6. **Save items** by tapping the heart icon
+7. **Skip questions** if needed
+8. **Resume later** - progress auto-saved for 24 hours
+9. See final score at completion
 
 ### Desktop Layout
 On larger screens (1024px+), exercises show:
@@ -318,10 +318,16 @@ Test at these breakpoints IN ORDER:
 
 ## Completed Features
 
-### Phase 6 (Current)
+### Phase 7 (Current)
+- **Direct lesson start**: "Start Lesson" goes directly to exercise (no preview modal)
+- **Hamburger menu on main feed**: Quick access to lesson types, saved words, create lesson
+- **Clearer instructions**: "Write in English" instead of "Translate"
+- **Language toggle**: Clear Arabic/Spanish selector (no "All" option)
+- **Content type defaults to Words**: Clearer starting point
+
+### Phase 6
 - **Arabic dual-input mode**: Type BOTH transliteration AND translation for Arabic exercises
 - **Transliteration validation**: Fuzzy matching with Levenshtein distance for typo tolerance
-- **Lesson preview modal**: Shows vocabulary list (without translations) before starting
 - **Actionable empty states**: "Create Lesson" button when filtering to content types with no lessons
 
 ### Phase 5
