@@ -43,11 +43,20 @@ function normalizeTransliteration(s: string): string {
         .trim()
         // Normalize apostrophes and glottal stops
         .replace(/['`ʼ'']/g, "'")
+        // Arabic chat/number transliterations (common online)
+        .replace(/7/g, 'h')      // ح
+        .replace(/5/g, 'kh')     // خ
+        .replace(/3/g, "'")      // ع
+        .replace(/2/g, "'")      // ء
+        .replace(/9/g, 's')      // ص
+        .replace(/6/g, 't')      // ط
         // Common vowel variations
         .replace(/aa/g, 'a')
         .replace(/ee/g, 'i')
         .replace(/oo/g, 'u')
         .replace(/ou/g, 'u')
+        .replace(/ai/g, 'ay')    // normalize ai to ay
+        .replace(/ei/g, 'ay')    // normalize ei to ay
         // Common consonant variations
         .replace(/kh/g, 'x')
         .replace(/gh/g, 'g')
@@ -77,14 +86,23 @@ export function validateTransliteration(userInput: string, correct: string): boo
     }
 
     // Calculate allowed typo threshold based on word length
-    // Longer phrases get more leeway
-    const maxDistance = correctNorm.length <= 5 ? 1
-        : correctNorm.length <= 10 ? 2
-        : 3;
+    // Be generous - transliteration is hard and varies widely
+    const maxDistance = correctNorm.length <= 5 ? 2
+        : correctNorm.length <= 10 ? 3
+        : correctNorm.length <= 15 ? 4
+        : 5;
 
-    // Allow minor typos using Levenshtein distance
+    // Allow typos using Levenshtein distance
     const distance = levenshteinDistance(userNorm, correctNorm);
     if (distance <= maxDistance) {
+        return true;
+    }
+
+    // Also try comparing without spaces (handles hyphen/space confusion)
+    const userNoSpace = userNorm.replace(/\s/g, '');
+    const correctNoSpace = correctNorm.replace(/\s/g, '');
+    const distanceNoSpace = levenshteinDistance(userNoSpace, correctNoSpace);
+    if (distanceNoSpace <= maxDistance) {
         return true;
     }
 

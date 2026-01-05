@@ -149,36 +149,15 @@ export function LessonGenerator({
                     </svg>
                 </button>
 
-                <h2 className="text-2xl font-bold text-white mb-6">Create AI Lesson</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">Create AI Lesson</h2>
+                <div className="flex items-center gap-2 mb-6">
+                    <span className="text-lg">{CONTENT_TYPE_INFO[contentType].icon}</span>
+                    <span className="text-white/60">{CONTENT_TYPE_INFO[contentType].label}</span>
+                    <span className="text-white/30">•</span>
+                    <span className="text-white/60">{language === 'arabic' ? 'العربية' : 'Español'}</span>
+                </div>
 
                 <form onSubmit={handleGenerate} className="space-y-4">
-                    {/* Content Type Selector */}
-                    <div>
-                        <label className="block text-sm text-white/70 mb-2">What do you want to practice?</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {(Object.keys(CONTENT_TYPE_INFO) as ContentType[]).map(type => (
-                                <button
-                                    key={type}
-                                    type="button"
-                                    onClick={() => setContentType(type)}
-                                    className={`p-3 rounded-xl border text-left transition-all ${
-                                        contentType === type
-                                            ? 'bg-white/20 border-white/40 text-white'
-                                            : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-lg">{CONTENT_TYPE_INFO[type].icon}</span>
-                                        <div>
-                                            <div className="font-medium text-sm">{CONTENT_TYPE_INFO[type].label}</div>
-                                            <div className="text-xs text-white/40">{CONTENT_TYPE_INFO[type].description}</div>
-                                        </div>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
                     <div>
                         <label className="block text-sm text-white/70 mb-1">Topic</label>
                         <input
@@ -194,29 +173,27 @@ export function LessonGenerator({
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm text-white/70 mb-1">Language</label>
-                            <select
-                                value={language}
-                                onChange={e => setLanguage(e.target.value as Language)}
-                                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/10 text-white focus:outline-none focus:border-white/30 appearance-none"
-                            >
-                                <option value="spanish">Spanish</option>
-                                <option value="arabic">Arabic</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm text-white/70 mb-1">Level</label>
-                            <select
-                                value={level}
-                                onChange={e => setLevel(e.target.value as MasteryLevel)}
-                                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/10 text-white focus:outline-none focus:border-white/30 appearance-none"
-                            >
-                                <option value="new">Beginner</option>
-                                <option value="learning">Intermediate</option>
-                                <option value="practiced">Advanced</option>
-                            </select>
+                    <div>
+                        <label className="block text-sm text-white/70 mb-1">Level</label>
+                        <div className="flex gap-2">
+                            {[
+                                { value: 'new', label: 'Beginner' },
+                                { value: 'learning', label: 'Intermediate' },
+                                { value: 'practiced', label: 'Advanced' },
+                            ].map(opt => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setLevel(opt.value as MasteryLevel)}
+                                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                        level === opt.value
+                                            ? 'bg-white/20 text-white'
+                                            : 'bg-white/5 text-white/50 hover:bg-white/10'
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
 

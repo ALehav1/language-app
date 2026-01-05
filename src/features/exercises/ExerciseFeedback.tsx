@@ -166,8 +166,8 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                 {isArabic && letterBreakdown.length > 0 && (
                     <div className="glass-card p-4">
                         <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider mb-3">Letter Breakdown</div>
-                        <div className="flex justify-center gap-2 flex-wrap">
-                            {[...letterBreakdown].reverse().map((l, idx) => (
+                        <div className="flex flex-row-reverse justify-center gap-2 flex-wrap-reverse">
+                            {letterBreakdown.map((l, idx) => (
                                 <div key={idx} className="flex flex-col items-center gap-1 p-3 bg-white/5 rounded-xl min-w-[70px]">
                                     <span className="text-3xl font-arabic text-white">{l.letter}</span>
                                     <span className="text-[10px] text-white/50 text-center leading-tight">{l.name}</span>

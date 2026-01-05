@@ -170,36 +170,41 @@ export function LessonFeed() {
                             </div>
                         </div>
 
-                        {/* Lesson Type Selection */}
+                        {/* Lesson Types - View & Create */}
                         <div className="space-y-2">
-                            <div className="text-white/40 text-xs font-medium uppercase tracking-wider">Lesson Type</div>
-                            <div className="grid grid-cols-4 gap-1.5">
+                            <div className="text-white/40 text-xs font-medium uppercase tracking-wider">Lessons</div>
+                            <div className="space-y-1.5">
                                 {(Object.keys(CONTENT_TYPE_INFO) as ContentType[]).map(type => (
-                                    <button
-                                        key={type}
-                                        onClick={() => { setContentFilter(type); setMenuOpen(false); }}
-                                        className={`py-2.5 rounded-lg text-xs font-medium transition-all flex flex-col items-center gap-1 ${
-                                            contentFilter === type
-                                                ? 'bg-white/20 text-white'
-                                                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
-                                        }`}
-                                    >
-                                        <span className="text-base">{CONTENT_TYPE_INFO[type].icon}</span>
-                                        <span>{CONTENT_TYPE_INFO[type].label}</span>
-                                    </button>
+                                    <div key={type} className="flex gap-1.5">
+                                        <button
+                                            onClick={() => { setContentFilter(type); setMenuOpen(false); }}
+                                            className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                                                contentFilter === type
+                                                    ? 'bg-white/20 text-white'
+                                                    : 'bg-white/5 text-white/50 hover:bg-white/10'
+                                            }`}
+                                        >
+                                            <span>{CONTENT_TYPE_INFO[type].icon}</span>
+                                            <span>{CONTENT_TYPE_INFO[type].label}</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setContentFilter(type);
+                                                setGeneratorOpen(true);
+                                                setMenuOpen(false);
+                                            }}
+                                            className="w-11 py-2.5 rounded-lg bg-violet-500/20 text-violet-300 hover:bg-violet-500/40 transition-all text-sm font-bold"
+                                            title={`Create ${CONTENT_TYPE_INFO[type].label} Lesson`}
+                                        >
+                                            +
+                                        </button>
+                                    </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Actions */}
-                        <div className="pt-2 space-y-2">
-                            <button
-                                onClick={() => { setGeneratorOpen(true); setMenuOpen(false); }}
-                                className="w-full py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all"
-                            >
-                                + Create Lesson
-                            </button>
-
+                        {/* Saved Words */}
+                        <div className="pt-2">
                             <button
                                 onClick={() => { navigate('/saved'); setMenuOpen(false); }}
                                 className="w-full py-3 bg-white/5 text-white/70 font-medium rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"

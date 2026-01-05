@@ -5,7 +5,7 @@ Language Learning App - AI-powered language learning that teaches how native spe
 Target: Non-technical adult learner learning Arabic (novice) and Spanish (intermediate)
 Stack: React + TypeScript + Vite + Tailwind + Supabase + OpenAI
 
-Last Updated: January 4, 2026
+Last Updated: January 5, 2026
 
 ## What Makes This App Different
 - Multiple content types: words, phrases, dialogs, paragraphs
@@ -20,7 +20,7 @@ Last Updated: January 4, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 7 Complete - Polished Menu & RTL Letter Breakdown
+- Status: Phase 8 Complete - Enhanced Saved Words with Practice Mode
 - Working features:
   - **Simplified header** - hamburger menu + centered title (shows current content type + language)
   - **Polished bottom sheet menu** - all navigation in one place:
@@ -41,14 +41,16 @@ Last Updated: January 4, 2026
   - **Exercise flow** with prompting, validation, and feedback
   - **"Write in English" instructions** - clearer than "Translate"
   - **Arabic dual-input mode** - type BOTH transliteration AND translation for Arabic exercises
-  - **Transliteration validation** - fuzzy matching with Levenshtein distance for typo tolerance
+  - **Transliteration validation** - generous fuzzy matching with Arabic chat numbers (7=h, 5=kh, 3=', etc.)
   - **Semantic answer matching** via OpenAI (accepts synonyms/typos/alternative meanings)
   - **Skip question** functionality during exercises
   - **Resume lessons** - progress saved to localStorage for 24 hours
   - **Segmented progress bar** - each word as colored segment
   - **Desktop 3-column layout** - sidebars with progress + stats
   - **Save vocabulary** - heart button on feedback screen
-  - **Saved words view** - browse, filter, remove saved items
+  - **Saved words view** - browse, filter, practice, remove saved items
+  - **Word detail modal** - tap any saved word to see full breakdown
+  - **Practice saved words** - select words and practice as custom lesson
   - **Arabic letter breakdown** - horizontal, right-to-left display matching Arabic reading order
   - Arabic feedback: transliteration + Hebrew cognate + letter breakdown with diacritics
   - Hebrew cognates only include genuine Semitic root connections
@@ -77,7 +79,8 @@ Last Updated: January 4, 2026
 |------|-----------|-------------|
 | `/` | `LessonFeed` | Main lesson discovery with card stack |
 | `/exercise/:lessonId` | `ExerciseView` | Translation exercise flow |
-| `/saved` | `SavedVocabularyView` | Browse saved vocabulary |
+| `/exercise/saved?ids=...` | `ExerciseView` | Practice selected saved words |
+| `/saved` | `SavedVocabularyView` | Browse and practice saved vocabulary |
 
 ## Priority Features
 
@@ -99,7 +102,7 @@ Last Updated: January 4, 2026
 15. Persistent language/content type preferences
 16. Generator syncs with current filters
 17. Arabic dual-input mode (transliteration + translation)
-18. Transliteration validation with fuzzy matching
+18. Transliteration validation with Arabic chat numbers (7, 5, 3, etc.) and generous fuzzy matching
 19. Actionable empty states with "Create Lesson" button
 20. Direct lesson start (no preview modal)
 21. Polished bottom sheet menu (colored buttons, gradient styling, max-width)
@@ -107,6 +110,9 @@ Last Updated: January 4, 2026
 23. Language toggle (Arabic/Spanish only)
 24. Create Lesson always accessible from main menu (no floating button)
 25. Horizontal RTL letter breakdown matching Arabic reading order
+26. Enhanced saved words with detail modal and practice mode
+27. Selection mode for choosing which saved words to practice
+28. Custom exercise route for practicing saved words (`/exercise/saved?ids=...`)
 
 ### Remaining (P2)
 1. Audio playback with speed toggle
@@ -122,12 +128,12 @@ Last Updated: January 4, 2026
 - `src/features/exercises/ExerciseView.tsx` - Exercise flow with desktop sidebars + resume
 - `src/features/exercises/ExercisePrompt.tsx` - Adaptive content display
 - `src/features/exercises/ExerciseFeedback.tsx` - Result display with save button
-- `src/features/vocabulary/SavedVocabularyView.tsx` - Browse saved words
+- `src/features/vocabulary/SavedVocabularyView.tsx` - Browse, detail modal, selection mode, practice saved words
 
 ### Hooks
 - `src/hooks/useExercise.ts` - Exercise session state + resume + skip
 - `src/hooks/useLessons.ts` - Fetch lessons with language + content type filters
-- `src/hooks/useVocabulary.ts` - Fetch vocabulary from Supabase
+- `src/hooks/useVocabulary.ts` - Fetch vocabulary by lessonId or specific itemIds
 - `src/hooks/useLessonProgress.ts` - Save progress + update mastery
 - `src/hooks/useSavedVocabulary.ts` - Save/remove vocabulary items
 
@@ -255,6 +261,7 @@ Always shows these sections:
 3. **Letter Breakdown** - auto-generated for any Arabic word:
    - **Horizontal layout** with card for each letter
    - **Right-to-left order** matching Arabic reading direction
+   - **RTL wrapping** - overflow continues on right side of next row
    - Groups letters with their diacritics (vowel marks)
    - Shows combined pronunciation (e.g., "Meem + Fatha" = /ma/)
    - Includes: Fatha, Damma, Kasra, Sukun, Shadda, Tanwin
@@ -264,6 +271,22 @@ Always shows these sections:
 load exercise → check localStorage → has progress? → show resume prompt
                                                            ↓
                                               [Resume] or [Start Over]
+```
+
+### Saved Words Practice Flow
+```
+SavedVocabularyView → tap "Practice" → selection mode
+                   → select words (checkbox or "Select All")
+                   → tap "Practice X words"
+                   → navigate to /exercise/saved?ids=id1,id2,id3
+
+ExerciseView → detect lessonId="saved"
+            → parse ids from query string
+            → useVocabulary({ itemIds: [...] })
+            → normal exercise flow
+            → on complete, navigate back to /saved
+            → mastery levels still update
+            → NO lesson progress saved
 ```
 
 ### Arabic Dual-Input Flow
@@ -278,8 +301,11 @@ Arabic word shown → User types:
 
 **Transliteration validation:**
 - Normalizes input (lowercase, apostrophe variants)
+- Converts Arabic chat numbers: 7→h, 5→kh, 3→', 2→', 9→s, 6→t
+- Normalizes vowels: aa→a, ai→ay, ei→ay
 - Uses Levenshtein distance for fuzzy matching
-- Tolerance scales with word length (1-3 characters)
+- Generous tolerance: 2-5 characters based on length
+- Also compares without spaces (handles hyphen confusion)
 
 ## Migrations
 

@@ -54,6 +54,37 @@ Removed from `ExerciseFeedback.tsx`. Changed to horizontal right-to-left layout 
 
 ---
 
+## January 4, 2026 - Old Transliteration Validation
+
+Removed from `transliteration.ts`. Made validation more generous with Arabic chat numbers and higher tolerance.
+
+```typescript
+function normalizeTransliteration(s: string): string {
+    return s
+        .toLowerCase()
+        .trim()
+        .replace(/['`ʼ'']/g, "'")
+        .replace(/aa/g, 'a')
+        .replace(/ee/g, 'i')
+        .replace(/oo/g, 'u')
+        .replace(/ou/g, 'u')
+        .replace(/kh/g, 'x')
+        .replace(/gh/g, 'g')
+        .replace(/th/g, 't')
+        .replace(/dh/g, 'd')
+        .replace(/sh/g, 'š')
+        .replace(/-/g, ' ')
+        .replace(/\s+/g, ' ');
+}
+
+// Old tolerance was too strict:
+const maxDistance = correctNorm.length <= 5 ? 1
+    : correctNorm.length <= 10 ? 2
+    : 3;
+```
+
+---
+
 ## January 4, 2026 - Old Menu Styling
 
 Removed from `LessonFeed.tsx`. Replaced with polished bottom sheet menu with colored buttons and gradient styling.

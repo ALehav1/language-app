@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase';
 import type { VocabularyItem, DbVocabularyItem } from '../types';
 
 interface UseVocabularyOptions {
-    lessonId: string;
+    lessonId?: string;
+    itemIds?: string[];  // For fetching specific items (e.g., saved words practice)
 }
 
 interface UseVocabularyReturn {
@@ -14,15 +15,17 @@ interface UseVocabularyReturn {
 }
 
 /**
- * Hook for fetching vocabulary items for a specific lesson from Supabase.
+ * Hook for fetching vocabulary items from Supabase.
+ * Can fetch by lessonId OR by specific itemIds.
  */
-export function useVocabulary({ lessonId }: UseVocabularyOptions): UseVocabularyReturn {
+export function useVocabulary({ lessonId, itemIds }: UseVocabularyOptions): UseVocabularyReturn {
     const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const fetchVocabulary = useCallback(async () => {
-        if (!lessonId) {
+        // Need either lessonId or itemIds
+        if (!lessonId && (!itemIds || itemIds.length === 0)) {
             setVocabulary([]);
             setLoading(false);
             return;
@@ -32,10 +35,18 @@ export function useVocabulary({ lessonId }: UseVocabularyOptions): UseVocabulary
         setError(null);
 
         try {
-            const { data, error: fetchError } = await supabase
+            let query = supabase
                 .from('vocabulary_items')
-                .select('*')
-                .eq('lesson_id', lessonId)
+                .select('*');
+
+            // Fetch by specific IDs or by lesson
+            if (itemIds && itemIds.length > 0) {
+                query = query.in('id', itemIds);
+            } else if (lessonId) {
+                query = query.eq('lesson_id', lessonId);
+            }
+
+            const { data, error: fetchError } = await query
                 .order('created_at', { ascending: true })
                 .returns<DbVocabularyItem[]>();
 
@@ -70,7 +81,7 @@ export function useVocabulary({ lessonId }: UseVocabularyOptions): UseVocabulary
         } finally {
             setLoading(false);
         }
-    }, [lessonId]);
+    }, [lessonId, itemIds?.join(',')]);  // Join itemIds to create stable dependency
 
     useEffect(() => {
         fetchVocabulary();

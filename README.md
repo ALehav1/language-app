@@ -2,8 +2,8 @@
 
 AI-powered language learning for Arabic (novice) and Spanish (intermediate) that teaches how native speakers actually talk.
 
-**Last Updated**: January 4, 2026
-**Status**: Phase 7 Complete - Polished Menu & RTL Letter Breakdown
+**Last Updated**: January 5, 2026
+**Status**: Phase 8 Complete - Enhanced Saved Words with Practice Mode
 
 ---
 
@@ -75,8 +75,10 @@ src/
   - **`ExerciseFeedback`**: Shows correct/incorrect with save button.
 
 **Saved Vocabulary:**
-- **`SavedVocabularyView`**: Browse, filter, and manage saved words.
+- **`SavedVocabularyView`**: Browse, filter, practice, and manage saved words.
   - Language filtering (All/Arabic/Spanish).
+  - **Tap any word** to see full details (translation, pronunciation, Hebrew connection, letter breakdown).
+  - **Practice mode**: Select words and practice them as a custom lesson.
   - Remove items from saved collection.
 
 ### State Management
@@ -215,7 +217,7 @@ Create lessons for different learning styles:
 5. Get immediate feedback with **detailed word breakdown**:
    - Word + translation + pronunciation
    - **Hebrew Connection** (Arabic only) - shows cognate or explains why none exists
-   - **Letter Breakdown** (Arabic only) - horizontal cards, right-to-left order matching Arabic reading
+   - **Letter Breakdown** (Arabic only) - horizontal cards, RTL order with proper RTL wrapping
 6. **Save items** by tapping the heart icon
 7. **Skip questions** if needed
 8. **Resume later** - progress auto-saved for 24 hours
@@ -243,9 +245,18 @@ On larger screens (1024px+), exercises show:
 - Falls back to exact match if API fails
 
 ### Saved Vocabulary
-- Tap heart icon in top-right to view saved words
-- Filter by language
-- See word, translation, and cognate details
+- Tap heart icon during exercises to save words
+- Access via menu → Saved Words
+- Filter by language (All/Arabic/Spanish)
+- **Tap any word** to see full details:
+  - Word + translation + pronunciation
+  - Hebrew connection (Arabic only)
+  - Letter breakdown (Arabic only, RTL display)
+- **Practice mode**:
+  - Tap "Practice" button to enter selection mode
+  - Select individual words or "Select All"
+  - Tap "Practice X words" to start custom exercise
+  - Works just like regular lessons
 - Remove items from collection
 
 ### Spaced Repetition
@@ -280,7 +291,8 @@ On larger screens (1024px+), exercises show:
 |------|-----------|-------------|
 | `/` | `LessonFeed` | Main lesson discovery with card stack |
 | `/exercise/:lessonId` | `ExerciseView` | Translation exercise flow |
-| `/saved` | `SavedVocabularyView` | Browse saved vocabulary |
+| `/exercise/saved?ids=...` | `ExerciseView` | Practice selected saved words |
+| `/saved` | `SavedVocabularyView` | Browse and practice saved vocabulary |
 
 ---
 
@@ -325,7 +337,15 @@ Test at these breakpoints IN ORDER:
 
 ## Completed Features
 
-### Phase 7 (Current)
+### Phase 8 (Current)
+- **Enhanced Saved Words**:
+  - **Word detail modal**: Tap any saved word to see full breakdown
+  - **Practice mode**: Select words and practice as custom lesson
+  - **Selection UI**: Checkboxes, Select All/Clear, action bar
+  - **Custom exercise route**: `/exercise/saved?ids=...`
+  - Mastery levels still update during practice
+
+### Phase 7
 - **Polished bottom sheet menu**: All controls in one place with refined styling
   - Drag handle for mobile feel
   - Colored language buttons (teal for Arabic, amber for Spanish with glow)
@@ -338,11 +358,11 @@ Test at these breakpoints IN ORDER:
 - **Cleaner header**: Just hamburger button + centered title showing current type + language
 - **Clearer instructions**: "Write in English" instead of "Translate"
 - **Improved answer validation**: Accepts synonyms, typos, and alternative meanings
-- **Horizontal RTL letter breakdown**: Arabic letters displayed right-to-left matching word order
+- **Horizontal RTL letter breakdown**: Arabic letters displayed right-to-left with proper RTL wrapping
 
 ### Phase 6
 - **Arabic dual-input mode**: Type BOTH transliteration AND translation for Arabic exercises
-- **Transliteration validation**: Fuzzy matching with Levenshtein distance for typo tolerance
+- **Transliteration validation**: Generous fuzzy matching with Arabic chat numbers (7=h, 5=kh, 3=', etc.)
 - **Actionable empty states**: "Create Lesson" button when filtering to content types with no lessons
 
 ### Phase 5
@@ -374,5 +394,5 @@ Test at these breakpoints IN ORDER:
 - Audio playback with speed toggle
 - Speech input for pronunciation practice
 - Root word explanations for Arabic
-- Review mode for weak vocabulary
+- Review mode for weak vocabulary (partially addressed by saved words practice)
 - Cross-device sync (currently single-device)

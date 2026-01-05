@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useExercise } from '../../hooks/useExercise';
 import { useVocabulary } from '../../hooks/useVocabulary';
 import { useLessonProgress } from '../../hooks/useLessonProgress';
@@ -14,11 +14,22 @@ import { ExerciseFeedback } from './ExerciseFeedback';
  */
 export function ExerciseView() {
     const { lessonId } = useParams<{ lessonId: string }>();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showResumePrompt, setShowResumePrompt] = useState(false);
 
-    const { vocabulary: vocabItems, loading, error } = useVocabulary({ lessonId: lessonId || '' });
+    // Check if this is a saved words practice session
+    const isSavedPractice = lessonId === 'saved';
+    const savedItemIds = useMemo(() => {
+        if (!isSavedPractice) return undefined;
+        const idsParam = searchParams.get('ids');
+        return idsParam ? idsParam.split(',').filter(Boolean) : undefined;
+    }, [isSavedPractice, searchParams]);
+
+    const { vocabulary: vocabItems, loading, error } = useVocabulary({
+        lessonId: isSavedPractice ? undefined : lessonId,
+        itemIds: savedItemIds,
+    });
     const { saveProgress, updateVocabularyMastery } = useLessonProgress();
     const { saveItem, isItemSaved } = useSavedVocabulary();
 
@@ -38,9 +49,18 @@ export function ExerciseView() {
         startFresh,
     } = useExercise({
         vocabItems,
-        lessonId,
+        lessonId: isSavedPractice ? undefined : lessonId,
         onComplete: async (results) => {
-            // Save progress to Supabase
+            // Skip saving lesson progress for saved words practice
+            if (isSavedPractice) {
+                // Still update mastery levels for practiced items
+                for (const result of results) {
+                    await updateVocabularyMastery(result.itemId, result.correct);
+                }
+                return;
+            }
+
+            // Save progress to Supabase for regular lessons
             if (lessonId && vocabItems.length > 0) {
                 await saveProgress({
                     lessonId,
@@ -123,7 +143,7 @@ export function ExerciseView() {
                 {/* Header */}
                 <header className="py-4">
                     <h1 className="text-xl font-bold text-white text-center">
-                        Lesson Complete
+                        {isSavedPractice ? 'Practice Complete' : 'Lesson Complete'}
                     </h1>
                 </header>
 
@@ -174,7 +194,7 @@ export function ExerciseView() {
 
                         {/* Done button */}
                         <button
-                            onClick={() => navigate('/')}
+                            onClick={() => navigate(isSavedPractice ? '/saved' : '/')}
                             className="w-full touch-btn py-4 bg-white text-surface-300 rounded-xl font-semibold text-lg"
                         >
                             Done
@@ -187,15 +207,15 @@ export function ExerciseView() {
 
     return (
         <div className="h-screen flex flex-col bg-surface-300 relative">
-            {/* Header with Menu button */}
+            {/* Header with Back button */}
             <header className="flex items-center gap-4 p-4 shrink-0 z-10 bg-surface-300/80 backdrop-blur-sm sticky top-0">
                 <button
-                    onClick={() => setIsMenuOpen(true)}
+                    onClick={() => navigate(isSavedPractice ? '/saved' : '/')}
                     className="touch-btn w-10 h-10 bg-white/10 text-white/70 flex items-center justify-center rounded-xl"
-                    aria-label="Open menu"
+                    aria-label="Back to lessons"
                 >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
 
@@ -230,137 +250,6 @@ export function ExerciseView() {
                 </div>
             </header>
 
-            {/* Menu Overlay */}
-            {isMenuOpen && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm">
-                    <div className="w-full max-w-sm bg-surface-300 sm:rounded-2xl rounded-t-2xl p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-                        {/* Close button */}
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-xl font-bold text-white">Lesson Progress</h3>
-                            <button
-                                onClick={() => setIsMenuOpen(false)}
-                                className="w-8 h-8 text-white/50 hover:text-white"
-                            >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Progress summary */}
-                        <div className="glass-card p-4">
-                            <div className="text-white/50 text-sm mb-2">Progress</div>
-                            <div className="text-2xl font-bold text-white">
-                                {currentIndex + 1} of {totalItems}
-                            </div>
-                            <div className="h-2 bg-white/10 rounded-full mt-2 overflow-hidden">
-                                <div
-                                    className="h-full bg-green-500 transition-all"
-                                    style={{ width: `${((currentIndex + 1) / totalItems) * 100}%` }}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Word list */}
-                        <div className="space-y-2">
-                            <div className="text-white/50 text-sm px-1">Words in this lesson</div>
-                            {vocabItems.map((item, idx) => {
-                                const answered = answers.find(a => a.itemId === item.id);
-                                const isCurrent = idx === currentIndex;
-                                return (
-                                    <div
-                                        key={item.id}
-                                        className={`
-                                            p-3 rounded-xl flex items-center justify-between
-                                            ${isCurrent ? 'bg-white/20 border border-white/30' : 'bg-white/5'}
-                                        `}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-lg">{item.word}</span>
-                                            {item.transliteration && (
-                                                <span className="text-white/40 text-sm">{item.transliteration}</span>
-                                            )}
-                                        </div>
-                                        <div>
-                                            {answered ? (
-                                                answered.correct ? (
-                                                    <span className="text-green-400">✓</span>
-                                                ) : (
-                                                    <span className="text-red-400">✗</span>
-                                                )
-                                            ) : isCurrent ? (
-                                                <span className="text-white/50 text-xs">Current</span>
-                                            ) : (
-                                                <span className="text-white/30">—</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        <div className="h-px bg-white/10 my-2" />
-
-                        {/* Browse Lessons */}
-                        <div className="text-white/50 text-sm px-1 mb-2">Browse Lessons</div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button
-                                onClick={() => navigate('/?type=word')}
-                                className="py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 text-sm"
-                            >
-                                Aa Words
-                            </button>
-                            <button
-                                onClick={() => navigate('/?type=phrase')}
-                                className="py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 text-sm"
-                            >
-                                "" Phrases
-                            </button>
-                            <button
-                                onClick={() => navigate('/?type=dialog')}
-                                className="py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 text-sm"
-                            >
-                                Dialog
-                            </button>
-                            <button
-                                onClick={() => navigate('/?type=paragraph')}
-                                className="py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 text-sm"
-                            >
-                                Reading
-                            </button>
-                        </div>
-
-                        <div className="h-px bg-white/10 my-2" />
-
-                        {/* Saved Words Link */}
-                        <button
-                            onClick={() => navigate('/saved')}
-                            className="w-full py-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 flex items-center justify-center gap-2"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                            Saved Words
-                        </button>
-
-                        {/* Resume */}
-                        <button
-                            onClick={() => setIsMenuOpen(false)}
-                            className="w-full py-4 bg-white text-surface-300 font-bold rounded-xl"
-                        >
-                            Resume Lesson
-                        </button>
-
-                        {/* Quit */}
-                        <button
-                            onClick={() => navigate('/')}
-                            className="w-full py-3 text-red-400 font-medium hover:text-red-300"
-                        >
-                            Quit Lesson
-                        </button>
-                    </div>
-                </div>
-            )}
 
             {/* Resume Prompt */}
             {showResumePrompt && (
