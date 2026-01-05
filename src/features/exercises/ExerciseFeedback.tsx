@@ -30,19 +30,24 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
 
     // Fetch enhanced data for Arabic words (both dialects + Hebrew cognate)
     useEffect(() => {
-        if (!isArabic) return;
-        
-        // Only fetch if we don't have both dialects or Hebrew cognate data
-        const needsEnhancement = !item.hebrew_cognate || !item.transliteration;
-        
-        if (needsEnhancement) {
-            setIsLoadingEnhanced(true);
-            lookupWord(item.word)
-                .then(data => setEnhancedData(data))
-                .catch(err => console.error('Failed to fetch enhanced data:', err))
-                .finally(() => setIsLoadingEnhanced(false));
+        if (!isArabic) {
+            console.log('[ExerciseFeedback] Not Arabic, skipping lookup');
+            return;
         }
-    }, [item.word, item.hebrew_cognate, item.transliteration, isArabic]);
+        
+        // Always fetch for Arabic words to get both dialects
+        console.log('[ExerciseFeedback] Fetching enhanced data for:', item.word);
+        setIsLoadingEnhanced(true);
+        lookupWord(item.word)
+            .then(data => {
+                console.log('[ExerciseFeedback] Got enhanced data:', data);
+                setEnhancedData(data);
+            })
+            .catch(err => {
+                console.error('[ExerciseFeedback] Failed to fetch enhanced data:', err);
+            })
+            .finally(() => setIsLoadingEnhanced(false));
+    }, [item.word, isArabic]);
 
     // Use enhanced data if available, otherwise fall back to item data
     const hebrewCognate = enhancedData?.hebrew_cognate || item.hebrew_cognate;
