@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { Language, MasteryLevel, ContentType } from '../types';
+import type { Language, MasteryLevel, ContentType, ArabicDialect } from '../types/database';
 
 // Initialize client (dangerouslyAllowBrowser for P1 demo, backend proxy recommended for prod)
 export const openai = new OpenAI({
@@ -96,10 +96,13 @@ export async function generateLessonContent(
   topic: string,
   language: Language,
   level: MasteryLevel,
-  contentType: ContentType = 'word'
+  contentType: ContentType = 'word',
+  arabicDialect: ArabicDialect = 'standard'
 ): Promise<AIContent> {
   const isArabic = language === 'arabic';
   const itemCount = CONTENT_TYPE_COUNTS[contentType];
+  
+  const dialectName = arabicDialect === 'standard' ? 'Modern Standard Arabic (MSA/Fusha)' : 'Egyptian Arabic (Masri)';
 
   const hebrewCognateInstructions = isArabic ? `
     CRITICAL - Hebrew Cognates:
@@ -154,9 +157,16 @@ export async function generateLessonContent(
           "speaker": "A or B",
           "context": "optional stage direction"` : '';
 
+  const dialectInstruction = isArabic ? `
+    DIALECT: Use ${dialectName} pronunciation and vocabulary.
+    ${arabicDialect === 'egyptian' ? 
+      'Egyptian Arabic features: Use "g" for ج (not "j"), "e" vowels common, colloquial expressions.' : 
+      'Modern Standard Arabic: Use formal/classical pronunciation and vocabulary.'}
+    ` : '';
+
   const prompt = `
     Create a language lesson for ${language} (${level} level) about "${topic}".
-
+    ${dialectInstruction}
     CONTENT TYPE: ${contentType.toUpperCase()}
     ${CONTENT_TYPE_INSTRUCTIONS[contentType]}
 

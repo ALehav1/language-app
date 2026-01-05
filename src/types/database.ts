@@ -1,5 +1,7 @@
 export type Language = 'arabic' | 'spanish';
 
+export type ArabicDialect = 'standard' | 'egyptian';
+
 export type MasteryLevel = 'new' | 'learning' | 'practiced' | 'mastered';
 
 export type ContentType = 'word' | 'phrase' | 'dialog' | 'paragraph';

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { generateLessonContent } from '../../lib/openai';
-import type { Language, MasteryLevel, ContentType } from '../../types';
+import type { Language, MasteryLevel, ContentType, ArabicDialect } from '../../types';
 
 interface LessonGeneratorProps {
     onLessonCreated: () => void;
@@ -28,6 +28,7 @@ export function LessonGenerator({
     const [internalOpen, setInternalOpen] = useState(false);
     const [topic, setTopic] = useState('');
     const [language, setLanguage] = useState<Language>(defaultLanguage);
+    const [arabicDialect, setArabicDialect] = useState<ArabicDialect>('standard');
     const [level, setLevel] = useState<MasteryLevel>('new');
     const [contentType, setContentType] = useState<ContentType>(defaultContentType || 'word');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -66,7 +67,7 @@ export function LessonGenerator({
 
         try {
             // 1. Generate Content
-            const content = await generateLessonContent(topic, language, level, contentType);
+            const content = await generateLessonContent(topic, language, level, contentType, arabicDialect);
 
             setStatus('Saving to database...');
 
@@ -197,6 +198,32 @@ export function LessonGenerator({
                             ))}
                         </div>
                     </div>
+
+                    {/* Arabic Dialect Selector - only show for Arabic */}
+                    {language === 'arabic' && (
+                        <div>
+                            <label className="block text-sm text-white/70 mb-1">Dialect</label>
+                            <div className="flex gap-2">
+                                {[
+                                    { value: 'standard', label: 'Standard (MSA)' },
+                                    { value: 'egyptian', label: 'Egyptian' },
+                                ].map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => setArabicDialect(opt.value as ArabicDialect)}
+                                        className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                            arabicDialect === opt.value
+                                                ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
+                                                : 'bg-white/5 text-white/50 hover:bg-white/10'
+                                        }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {error && (
                         <div className="p-3 bg-red-500/20 text-red-200 text-sm rounded-lg">
