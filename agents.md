@@ -20,21 +20,18 @@ Last Updated: January 5, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 12 Complete - My Vocabulary Overhaul
+- Status: Phase 13 Complete - Unified Word Tracking & UX Cleanup
 - Working features:
-  - **Simplified header** - hamburger menu + centered title (shows current content type + language)
-  - **Polished bottom sheet menu** - all navigation in one place:
+  - **Simplified header** - filter/settings icon + centered title (shows current content type + language)
+  - **Bottom sheet menu** - filter icon opens settings popup (not hamburger - better UX signal):
     - Drag handle for mobile feel
     - Colored language buttons (teal for Arabic, amber for Spanish with glow)
-    - Compact 4-column grid for lesson types (icon + label)
-    - Purple gradient "Create Lesson" button
+    - Lesson type rows with + button for quick creation
     - Max-width constrained on desktop
-    - Saved Words link
-  - Lesson feed with swipeable card stack + "Start Lesson" button
+  - Lesson feed with card stack + "Start Lesson" button (no Skip/Save buttons - just start)
   - **Direct lesson start** - clicking "Start Lesson" goes directly to exercise (no preview modal)
   - **Content type badge** on each lesson card showing type (Aa Words, "" Phrases, etc.)
   - **Filter preferences remembered** - persists to localStorage
-  - Swipe gestures: left (dismiss), right (save), down (later), tap (start)
   - **Actionable empty states** - "Create Lesson" button when no lessons exist
   - **AI lesson generation** via OpenAI - syncs with current filters (no floating button)
   - **Supabase integration** - all data persisted to database
@@ -76,7 +73,6 @@ Last Updated: January 5, 2026
     - OpenAI retry logic with exponential backoff
     - Undo card swipes (5-second toast)
     - Improved transliteration (q/k equivalence, double consonants)
-    - Action button labels (Skip, Later, Save)
     - Saved Words uses browser history for back navigation
     - Consistent "Ready to learn?" empty state for all content types
   - **Multi-word & dialect** (Phase 11):
@@ -96,6 +92,14 @@ Last Updated: January 5, 2026
     - **Lookup Mode** - type any word (English/Arabic) for full breakdown
     - Floating + button to add words via lookup
     - Save words directly from lookup results
+  - **Unified word tracking** (Phase 13):
+    - All practiced Arabic words auto-save to `saved_words` with 'solid' status
+    - Heart button = mark for additional review (changes to 'needs_review')
+    - Removed confusing 'Later' option from lesson cards (only Skip/Save remain)
+    - Removed Skip/Save buttons from lesson feed (Start Lesson is the only action)
+    - Changed hamburger icon to filter/sliders icon (better signals popup menu)
+    - Exercise feedback fetches both dialect pronunciations + Hebrew cognates dynamically
+    - Fixed lesson resume timing issue (waits for vocabItems to load)
 - Known limitations:
   - Card swipe state stored in localStorage, not Supabase
   - No audio playback yet
