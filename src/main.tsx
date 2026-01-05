@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 import { LessonFeed } from './features/lessons/LessonFeed';
 import { ExerciseView } from './features/exercises/ExerciseView';
-import { SavedVocabularyView } from './features/vocabulary/SavedVocabularyView';
+import { MyVocabularyView } from './features/vocabulary/MyVocabularyView';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -13,7 +13,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route path="/" element={<LessonFeed />} />
           <Route path="/exercise/:lessonId" element={<ExerciseView />} />
-          <Route path="/saved" element={<SavedVocabularyView />} />
+          <Route path="/saved" element={<MyVocabularyView />} />
         </Routes>
       </div>
     </BrowserRouter>
