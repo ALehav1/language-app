@@ -65,17 +65,65 @@ export interface DbVocabularyItem extends VocabularyItem {
   lesson_id: string;
 }
 
-/** Saved vocabulary item */
-export interface SavedVocabulary {
+/** Review status for saved words */
+export type WordStatus = 'needs_review' | 'solid' | 'retired';
+
+/** Saved Arabic word (Phase 12 - Arabic only) */
+export interface SavedWord {
   id: string;
-  vocabulary_item_id: string;
-  saved_at: string;
-  notes: string | null;
+  word: string;                              // Arabic word
+  translation: string;                       // English meaning
+  language: 'arabic';                        // Phase 12 is Arabic-only
+  
+  // Dialect-specific pronunciations
+  pronunciation_standard: string | null;     // MSA/Fusha transliteration
+  pronunciation_egyptian: string | null;     // Egyptian Arabic transliteration
+  
+  // Learning metadata
+  letter_breakdown: LetterBreakdown[] | null;
+  hebrew_cognate: HebrewCognate | null;
+  
+  // Organization
+  topic: string | null;
+  tags: string[] | null;
+  
+  // Review status
+  status: WordStatus;
+  times_practiced: number;
+  times_correct: number;
+  last_practiced: string | null;
+  next_review: string | null;
+  
+  // Timestamps
+  created_at: string;
+  updated_at: string;
 }
 
-/** Saved vocabulary with full item details (for display) */
-export interface SavedVocabularyWithItem extends SavedVocabulary {
-  vocabulary_items: VocabularyItem;
+/** Source context for a saved word */
+export interface WordContext {
+  id: string;
+  saved_word_id: string;
+  
+  // Context data
+  content_type: ContentType | 'lookup';      // 'lookup' for manually added words
+  full_text: string;                         // The complete phrase/sentence
+  full_transliteration: string | null;
+  full_translation: string;
+  
+  // Dialog-specific
+  speaker: string | null;
+  dialog_context: string | null;
+  
+  // Source reference
+  lesson_id: string | null;
+  vocabulary_item_id: string | null;
+  
+  created_at: string;
+}
+
+/** Saved word with its contexts (for display) */
+export interface SavedWordWithContexts extends SavedWord {
+  contexts: WordContext[];
 }
 
 export interface Database {
@@ -96,10 +144,15 @@ export interface Database {
         Insert: Omit<LessonProgress, 'id' | 'created_at'>;
         Update: Partial<Omit<LessonProgress, 'id' | 'created_at'>>;
       };
-      saved_vocabulary: {
-        Row: SavedVocabulary;
-        Insert: Omit<SavedVocabulary, 'id' | 'saved_at'>;
-        Update: Partial<Omit<SavedVocabulary, 'id' | 'saved_at'>>;
+      saved_words: {
+        Row: SavedWord;
+        Insert: Omit<SavedWord, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<SavedWord, 'id' | 'created_at'>>;
+      };
+      word_contexts: {
+        Row: WordContext;
+        Insert: Omit<WordContext, 'id' | 'created_at'>;
+        Update: Partial<Omit<WordContext, 'id' | 'created_at'>>;
       };
     };
   };
