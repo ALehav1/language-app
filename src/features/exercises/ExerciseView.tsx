@@ -423,6 +423,10 @@ export function ExerciseView() {
                                         onSubmit={submitAnswer}
                                         disabled={false}
                                         isLoading={isValidating}
+                                        requireTransliteration={
+                                            currentItem?.language === 'arabic' &&
+                                            !!currentItem?.transliteration
+                                        }
                                     />
                                     <button
                                         onClick={skipQuestion}

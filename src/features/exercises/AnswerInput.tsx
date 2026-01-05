@@ -1,79 +1,137 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 
 interface AnswerInputProps {
-    onSubmit: (answer: string) => void;
+    onSubmit: (answer: string, transliteration?: string) => void;
     disabled?: boolean;
     isLoading?: boolean;
+    requireTransliteration?: boolean;
 }
 
 /**
  * Text input for submitting translation answers.
- * Handles keyboard submission and provides touch-friendly sizing.
+ * Supports dual-input mode for Arabic (transliteration + translation).
  */
-export function AnswerInput({ onSubmit, disabled = false, isLoading = false }: AnswerInputProps) {
-    const [value, setValue] = useState('');
-    const inputRef = useRef<HTMLInputElement>(null);
+export function AnswerInput({
+    onSubmit,
+    disabled = false,
+    isLoading = false,
+    requireTransliteration = false
+}: AnswerInputProps) {
+    const [transliteration, setTransliteration] = useState('');
+    const [translation, setTranslation] = useState('');
+    const translitInputRef = useRef<HTMLInputElement>(null);
+    const translationInputRef = useRef<HTMLInputElement>(null);
 
-    // Focus input on mount
+    // Focus first input on mount
     useEffect(() => {
         if (!disabled && !isLoading) {
-            inputRef.current?.focus();
+            if (requireTransliteration) {
+                translitInputRef.current?.focus();
+            } else {
+                translationInputRef.current?.focus();
+            }
+        }
+    }, [disabled, isLoading, requireTransliteration]);
+
+    // Clear inputs when re-enabled (new question)
+    useEffect(() => {
+        if (!disabled && !isLoading) {
+            setTransliteration('');
+            setTranslation('');
         }
     }, [disabled, isLoading]);
 
-    // Clear input when re-enabled (new question)
-    useEffect(() => {
-        if (!disabled && !isLoading) {
-            setValue('');
-        }
-    }, [disabled, isLoading]);
+    const canSubmit = requireTransliteration
+        ? transliteration.trim() && translation.trim()
+        : translation.trim();
 
     const handleSubmit = useCallback(
         (e: React.FormEvent) => {
             e.preventDefault();
-            if (value.trim() && !disabled && !isLoading) {
-                onSubmit(value);
+            if (canSubmit && !disabled && !isLoading) {
+                if (requireTransliteration) {
+                    onSubmit(translation, transliteration);
+                } else {
+                    onSubmit(translation);
+                }
             }
         },
-        [value, disabled, isLoading, onSubmit]
+        [canSubmit, disabled, isLoading, onSubmit, requireTransliteration, translation, transliteration]
     );
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
-            if (e.key === 'Enter' && value.trim() && !disabled && !isLoading) {
-                onSubmit(value);
+            if (e.key === 'Enter' && canSubmit && !disabled && !isLoading) {
+                e.preventDefault();
+                if (requireTransliteration) {
+                    onSubmit(translation, transliteration);
+                } else {
+                    onSubmit(translation);
+                }
             }
         },
-        [value, disabled, isLoading, onSubmit]
+        [canSubmit, disabled, isLoading, onSubmit, requireTransliteration, translation, transliteration]
     );
+
+    const inputClassName = `
+        w-full px-4 py-4 text-lg
+        bg-white text-surface-300
+        rounded-xl border-2 border-transparent
+        focus:border-white/30 focus:outline-none
+        placeholder:text-surface-300/50
+        disabled:opacity-50 disabled:cursor-not-allowed
+        transition-all duration-200
+    `;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-3">
-            <input
-                ref={inputRef}
-                type="text"
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={disabled || isLoading}
-                placeholder="Type your answer..."
-                autoComplete="off"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck={false}
-                className={`
-                    w-full px-4 py-4 text-lg
-                    bg-white text-surface-300
-                    rounded-xl border-2 border-transparent
-                    focus:border-white/30 focus:outline-none
-                    placeholder:text-surface-300/50
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    transition-all duration-200
-                `}
-            />
+            {requireTransliteration && (
+                <div>
+                    <label className="block text-white/50 text-sm mb-1 px-1">
+                        Pronunciation (how it sounds)
+                    </label>
+                    <input
+                        ref={translitInputRef}
+                        type="text"
+                        value={transliteration}
+                        onChange={(e) => setTransliteration(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        disabled={disabled || isLoading}
+                        placeholder="e.g., marhaba"
+                        autoComplete="off"
+                        autoCapitalize="off"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        className={inputClassName}
+                    />
+                </div>
+            )}
+
+            <div>
+                {requireTransliteration && (
+                    <label className="block text-white/50 text-sm mb-1 px-1">
+                        English meaning
+                    </label>
+                )}
+                <input
+                    ref={translationInputRef}
+                    type="text"
+                    value={translation}
+                    onChange={(e) => setTranslation(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={disabled || isLoading}
+                    placeholder={requireTransliteration ? "e.g., hello" : "Type your answer..."}
+                    autoComplete="off"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    className={inputClassName}
+                />
+            </div>
+
             <button
                 type="submit"
-                disabled={disabled || isLoading || !value.trim()}
+                disabled={disabled || isLoading || !canSubmit}
                 className={`
                     w-full touch-btn py-4 text-lg font-semibold
                     bg-white text-surface-300

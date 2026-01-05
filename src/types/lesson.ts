@@ -46,6 +46,10 @@ export interface AnswerResult {
     userAnswer: string;
     correctAnswer: string;
     feedback?: string;
+    // For Arabic dual-input mode
+    userTransliteration?: string;
+    correctTransliteration?: string;
+    transliterationCorrect?: boolean;
 }
 
 /** Exercise session state */

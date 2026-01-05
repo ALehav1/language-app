@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { VocabularyItem, ExercisePhase, AnswerResult } from '../types';
 import { evaluateAnswer } from '../lib/openai';
+import { validateTransliteration } from '../utils/transliteration';
 
 interface SavedProgress {
     currentIndex: number;
@@ -33,8 +34,8 @@ interface UseExerciseReturn {
     isValidating: boolean;
     /** Has saved progress that can be resumed */
     hasSavedProgress: boolean;
-    /** Submit an answer for the current item */
-    submitAnswer: (userAnswer: string) => Promise<void>;
+    /** Submit an answer for the current item (with optional transliteration for Arabic) */
+    submitAnswer: (userAnswer: string, userTransliteration?: string) => Promise<void>;
     /** Move to the next item after viewing feedback */
     continueToNext: () => void;
     /** Reset the exercise (start fresh) */
@@ -122,40 +123,72 @@ export function useExercise({ vocabItems, lessonId, onComplete }: UseExerciseOpt
     }, [lessonId, currentIndex, answers, phase]);
 
     const submitAnswer = useCallback(
-        async (userAnswer: string) => {
+        async (userAnswer: string, userTransliteration?: string) => {
             if (!currentItem || phase !== 'prompting') return;
 
-            // 1. Optimistic exact match (local check)
+            // Check if this is Arabic dual-input mode
+            const isDualInput = userTransliteration && currentItem.transliteration;
+
+            // 1. Validate transliteration (if provided)
+            let transliterationCorrect: boolean | undefined;
+            if (isDualInput) {
+                transliterationCorrect = validateTransliteration(
+                    userTransliteration,
+                    currentItem.transliteration!
+                );
+            }
+
+            // 2. Check translation - optimistic exact match first
             const normalizedUser = userAnswer.trim().toLowerCase();
             const normalizedCorrect = currentItem.translation.trim().toLowerCase();
 
             if (normalizedUser === normalizedCorrect) {
+                // Both must be correct for overall correct (if dual input)
+                const overallCorrect = isDualInput ? transliterationCorrect === true : true;
+
                 const result: AnswerResult = {
                     itemId: currentItem.id,
-                    correct: true,
+                    correct: overallCorrect,
                     userAnswer: userAnswer.trim(),
                     correctAnswer: currentItem.translation,
+                    // Include transliteration fields if dual input
+                    ...(isDualInput && {
+                        userTransliteration: userTransliteration.trim(),
+                        correctTransliteration: currentItem.transliteration,
+                        transliterationCorrect,
+                    }),
                 };
                 setAnswers((prev) => [...prev, result]);
                 setPhase('feedback');
                 return;
             }
 
-            // 2. Semantic Check (OpenAI)
+            // 3. Semantic Check (OpenAI) for translation
             setIsValidating(true);
             try {
-                const { correct, feedback } = await evaluateAnswer(
+                const { correct: translationCorrect, feedback } = await evaluateAnswer(
                     userAnswer,
                     currentItem.translation,
                     currentItem.language
                 );
 
+                // Both must be correct for overall correct (if dual input)
+                const overallCorrect = isDualInput
+                    ? translationCorrect && transliterationCorrect === true
+                    : translationCorrect;
+
                 const result: AnswerResult = {
                     itemId: currentItem.id,
-                    correct,
+                    correct: overallCorrect,
                     userAnswer: userAnswer.trim(),
                     correctAnswer: currentItem.translation,
-                    feedback
+                    feedback,
+                    // Include transliteration fields if dual input
+                    ...(isDualInput && {
+                        userTransliteration: userTransliteration.trim(),
+                        correctTransliteration: currentItem.transliteration,
+                        transliterationCorrect,
+                    }),
                 };
 
                 setAnswers((prev) => [...prev, result]);
@@ -168,7 +201,13 @@ export function useExercise({ vocabItems, lessonId, onComplete }: UseExerciseOpt
                     correct: false,
                     userAnswer: userAnswer.trim(),
                     correctAnswer: currentItem.translation,
-                    feedback: 'Unable to verify answer.'
+                    feedback: 'Unable to verify answer.',
+                    // Include transliteration fields if dual input
+                    ...(isDualInput && {
+                        userTransliteration: userTransliteration.trim(),
+                        correctTransliteration: currentItem.transliteration,
+                        transliterationCorrect,
+                    }),
                 };
                 setAnswers((prev) => [...prev, result]);
                 setPhase('feedback');

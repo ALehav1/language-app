@@ -51,7 +51,56 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                     {correct ? 'Correct!' : 'Not quite'}
                 </h3>
 
-                {!correct && (
+                {/* Dual result display for Arabic transliteration mode */}
+                {result.userTransliteration !== undefined && (
+                    <div className="space-y-2 mt-4 text-left">
+                        {/* Transliteration result */}
+                        <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                            result.transliterationCorrect ? 'bg-green-500/10' : 'bg-red-500/10'
+                        }`}>
+                            <span className={result.transliterationCorrect ? 'text-green-400' : 'text-red-400'}>
+                                {result.transliterationCorrect ? '✓' : '✗'}
+                            </span>
+                            <span className="text-white/70 text-sm">Pronunciation:</span>
+                            <span className={`font-medium ${result.transliterationCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                                {result.userTransliteration}
+                            </span>
+                            {!result.transliterationCorrect && (
+                                <span className="text-white/40 text-sm">
+                                    (expected: {result.correctTransliteration})
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Translation result */}
+                        <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                            correct || (result.transliterationCorrect === false && userAnswer.toLowerCase() === correctAnswer.toLowerCase())
+                                ? 'bg-green-500/10' : 'bg-red-500/10'
+                        }`}>
+                            <span className={
+                                correct || (result.transliterationCorrect === false && userAnswer.toLowerCase() === correctAnswer.toLowerCase())
+                                    ? 'text-green-400' : 'text-red-400'
+                            }>
+                                {correct || (result.transliterationCorrect === false && userAnswer.toLowerCase() === correctAnswer.toLowerCase()) ? '✓' : '✗'}
+                            </span>
+                            <span className="text-white/70 text-sm">Translation:</span>
+                            <span className={`font-medium ${
+                                correct || (result.transliterationCorrect === false && userAnswer.toLowerCase() === correctAnswer.toLowerCase())
+                                    ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                                {userAnswer}
+                            </span>
+                            {!correct && !(result.transliterationCorrect === false && userAnswer.toLowerCase() === correctAnswer.toLowerCase()) && (
+                                <span className="text-white/40 text-sm">
+                                    (expected: {correctAnswer})
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Single result display (non-Arabic or no transliteration) */}
+                {result.userTransliteration === undefined && !correct && (
                     <div className="space-y-1 mt-4">
                         <div className="text-white/50 text-sm">Correct answer:</div>
                         <div className="text-xl text-green-400 font-bold">{correctAnswer}</div>
