@@ -20,7 +20,7 @@ Last Updated: January 5, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 10 Complete - Bug Fixes & UX Improvements
+- Status: Phase 11 Complete - Multi-Word Phrases & Arabic Dialect
 - Working features:
   - **Simplified header** - hamburger menu + centered title (shows current content type + language)
   - **Polished bottom sheet menu** - all navigation in one place:
@@ -79,6 +79,11 @@ Last Updated: January 5, 2026
     - Action button labels (Skip, Later, Save)
     - Saved Words uses browser history for back navigation
     - Consistent "Ready to learn?" empty state for all content types
+  - **Multi-word & dialect** (Phase 11):
+    - Arabic dialect selector (Standard MSA or Egyptian Arabic)
+    - Letter breakdown shows each word on its own line for phrases
+    - Hebrew cognates checked per word in phrases (e.g., العمل → עמל)
+    - Check Answer button lights up when answer is filled (btn-primary gradient)
 - Known limitations:
   - Card swipe state stored in localStorage, not Supabase
   - No audio playback yet

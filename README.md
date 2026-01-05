@@ -337,7 +337,14 @@ Test at these breakpoints IN ORDER:
 
 ## Completed Features
 
-### Phase 10 (Current)
+### Phase 11 (Current)
+- **Multi-Word Phrase Support**:
+  - **Arabic dialect selector**: Choose Standard Arabic (MSA) or Egyptian Arabic when creating lessons
+  - **Word-by-word letter breakdown**: Each word in a phrase displays on its own horizontal line
+  - **Hebrew cognates per word**: Checks each word in phrases for cognates (e.g., العمل → עמל)
+  - **Check Answer button lights up**: Uses btn-primary gradient when answer fields are filled
+
+### Phase 10
 - **Bug Fixes**:
   - **Skip progress saving**: Skipping a question now saves progress for resume
   - **Mastery regression**: Incorrect answers regress mastery level (mastered→practiced→learning)

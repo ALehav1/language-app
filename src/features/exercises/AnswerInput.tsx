@@ -134,9 +134,12 @@ export function AnswerInput({
                 disabled={disabled || isLoading || !canSubmit}
                 className={`
                     w-full touch-btn py-4 text-lg font-semibold
-                    bg-white text-surface-300
-                    disabled:opacity-50 disabled:cursor-not-allowed
                     rounded-xl flex items-center justify-center gap-2
+                    transition-all duration-200
+                    ${canSubmit && !disabled && !isLoading
+                        ? 'btn-primary text-white'
+                        : 'bg-white/20 text-white/40 cursor-not-allowed'
+                    }
                 `}
             >
                 {isLoading ? (
