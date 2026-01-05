@@ -7,10 +7,10 @@ interface ExercisePromptProps {
 }
 
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
-    word: 'Translate this word',
-    phrase: 'Translate this phrase',
-    dialog: 'Translate this dialog line',
-    paragraph: 'Translate this passage',
+    word: 'Write in English',
+    phrase: 'Write in English',
+    dialog: 'Write in English',
+    paragraph: 'Write in English',
 };
 
 /**
