@@ -174,7 +174,7 @@ CREATE TYPE content_type AS ENUM ('word', 'phrase', 'dialog', 'paragraph');
 ## Known Issues & Investigation Notes
 
 ### Mystery Modal (January 4, 2026)
-**Status:** Unresolved - needs investigation
+**Status:** RESOLVED - was cached Vercel deployment
 
 A modal was observed in production (`language-bgnnugyzz-alehav1s-projects.vercel.app`) showing:
 - "Words You'll Learn" header

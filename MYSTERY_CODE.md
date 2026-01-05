@@ -6,10 +6,18 @@ Track unresolved code mysteries, phantom features, and unexplained behavior for 
 
 ## Active Mysteries
 
+_(None currently)_
+
+---
+
+## Resolved Mysteries
+
 ### 1. Lesson Preview Modal with Translations
 **Date Observed:** January 4, 2026
-**Status:** UNRESOLVED
+**Status:** RESOLVED
+**Resolution Date:** January 4, 2026
 **Severity:** Medium (feature worked but showed spoilers)
+**Root Cause:** Cached Vercel deployment - old build served from CDN before clean modal was deployed
 
 #### What Was Seen
 A modal appeared when clicking "Start Lesson" showing:
@@ -81,17 +89,11 @@ Also check:
 - Any code-splitting or lazy-loaded chunks that might contain this modal
 ```
 
-#### If Found
-1. Update this entry with file location
-2. Remove from Active Mysteries
-3. Add to Resolved Mysteries below
-4. Update `agents.md` Known Issues section
-
----
-
-## Resolved Mysteries
-
-_(None yet)_
+#### Verification
+- Windsurf search confirmed codebase is clean
+- All `item.translation` uses are legitimate (ExerciseFeedback, SavedVocabularyView, LessonGenerator)
+- New `LessonPreviewModal` explicitly hides translations
+- Fresh Vercel deploy completed January 4, 2026
 
 ---
 
