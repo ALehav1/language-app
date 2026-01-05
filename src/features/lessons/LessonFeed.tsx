@@ -115,7 +115,6 @@ export function LessonFeed() {
                     <CardStack
                         lessons={activeLessons}
                         onAction={handleCardAction}
-                        emptyMessage={`No ${currentTypeLabel.toLowerCase()} lessons yet.`}
                         onCreateLesson={() => setGeneratorOpen(true)}
                     />
                 )}
