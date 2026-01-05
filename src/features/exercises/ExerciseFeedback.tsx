@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { AnswerResult, VocabularyItem } from '../../types';
 import { generateArabicBreakdownByWord, type WordBreakdown } from '../../utils/arabicLetters';
+import { lookupWord, type LookupResult } from '../../lib/openai';
 
 interface ExerciseFeedbackProps {
     result: AnswerResult;
@@ -22,6 +23,31 @@ interface ExerciseFeedbackProps {
 export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onSave, isSaved = false }: ExerciseFeedbackProps) {
     const { correct, userAnswer, correctAnswer } = result;
     const isArabic = item.language === 'arabic';
+
+    // State for enhanced word data (both dialects, Hebrew cognate)
+    const [enhancedData, setEnhancedData] = useState<LookupResult | null>(null);
+    const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(false);
+
+    // Fetch enhanced data for Arabic words (both dialects + Hebrew cognate)
+    useEffect(() => {
+        if (!isArabic) return;
+        
+        // Only fetch if we don't have both dialects or Hebrew cognate data
+        const needsEnhancement = !item.hebrew_cognate || !item.transliteration;
+        
+        if (needsEnhancement) {
+            setIsLoadingEnhanced(true);
+            lookupWord(item.word)
+                .then(data => setEnhancedData(data))
+                .catch(err => console.error('Failed to fetch enhanced data:', err))
+                .finally(() => setIsLoadingEnhanced(false));
+        }
+    }, [item.word, item.hebrew_cognate, item.transliteration, isArabic]);
+
+    // Use enhanced data if available, otherwise fall back to item data
+    const hebrewCognate = enhancedData?.hebrew_cognate || item.hebrew_cognate;
+    const pronunciationStandard = enhancedData?.pronunciation_standard || item.transliteration;
+    const pronunciationEgyptian = enhancedData?.pronunciation_egyptian;
 
     // Generate letter breakdown by word on-the-fly
     const wordBreakdowns: WordBreakdown[] = useMemo(() => {
@@ -117,7 +143,7 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
             <div className="space-y-4">
                 <h4 className="text-white/70 font-semibold px-1">Word Details</h4>
 
-                {/* 1. The Word itself with translation */}
+                {/* 1. The Word itself with translation + both dialect pronunciations */}
                 <div className="glass-card p-4">
                     <div className="flex items-center justify-between mb-3">
                         <span className={`text-3xl font-bold text-white ${isArabic ? 'font-arabic' : ''}`} dir={isArabic ? 'rtl' : 'ltr'}>
@@ -125,37 +151,59 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                         </span>
                         <span className="text-white/60 text-lg">{item.translation}</span>
                     </div>
-                    {item.transliteration && (
+                    
+                    {/* Pronunciations - show both dialects for Arabic */}
+                    {isArabic && (pronunciationStandard || pronunciationEgyptian) ? (
+                        <div className="grid grid-cols-2 gap-3 mt-3">
+                            {pronunciationStandard && (
+                                <div className="bg-white/5 rounded-lg p-2 text-center">
+                                    <div className="text-white/40 text-xs mb-1">Standard (MSA)</div>
+                                    <div className="text-white/80 font-medium">{pronunciationStandard}</div>
+                                </div>
+                            )}
+                            {pronunciationEgyptian && (
+                                <div className="bg-white/5 rounded-lg p-2 text-center">
+                                    <div className="text-white/40 text-xs mb-1">Egyptian</div>
+                                    <div className="text-white/80 font-medium">{pronunciationEgyptian}</div>
+                                </div>
+                            )}
+                        </div>
+                    ) : item.transliteration ? (
                         <div className="flex items-center gap-2 text-white/50 text-sm">
                             <span className="text-white/30">Pronunciation:</span>
                             <span className="font-medium text-white/70">{item.transliteration}</span>
                         </div>
-                    )}
+                    ) : isLoadingEnhanced ? (
+                        <div className="text-white/30 text-sm animate-pulse">Loading pronunciations...</div>
+                    ) : null}
                 </div>
 
-                {/* 2. Hebrew Cognate (Arabic only) */}
+                {/* 2. Hebrew Cognate (Arabic only) - use enhanced data if available */}
                 {isArabic && (
-                    <div className={`glass-card p-4 space-y-2 border-l-4 ${item.hebrew_cognate ? 'border-l-blue-500/50' : 'border-l-white/10'}`}>
+                    <div className={`glass-card p-4 space-y-2 border-l-4 ${hebrewCognate ? 'border-l-blue-500/50' : 'border-l-white/10'}`}>
                         <div className="flex items-center gap-2 text-blue-300 mb-1">
                             <span className="text-xs font-bold uppercase tracking-wider">Hebrew Connection</span>
+                            {isLoadingEnhanced && !hebrewCognate && (
+                                <span className="text-white/30 text-xs animate-pulse">checking...</span>
+                            )}
                         </div>
-                        {item.hebrew_cognate ? (
+                        {hebrewCognate ? (
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <div className="text-2xl font-hebrew text-white mb-1">{item.hebrew_cognate.root}</div>
-                                    <div className="text-sm text-white/60">{item.hebrew_cognate.meaning}</div>
+                                    <div className="text-2xl font-hebrew text-white mb-1">{hebrewCognate.root}</div>
+                                    <div className="text-sm text-white/60">{hebrewCognate.meaning}</div>
                                 </div>
-                                {item.hebrew_cognate.notes && (
+                                {hebrewCognate.notes && (
                                     <div className="text-xs text-white/40 max-w-[150px] text-right italic">
-                                        "{item.hebrew_cognate.notes}"
+                                        "{hebrewCognate.notes}"
                                     </div>
                                 )}
                             </div>
-                        ) : (
+                        ) : !isLoadingEnhanced ? (
                             <div className="text-white/40 text-sm italic">
                                 No Hebrew cognate - this word doesn't share a Semitic root with Hebrew
                             </div>
-                        )}
+                        ) : null}
                     </div>
                 )}
 
