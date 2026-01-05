@@ -164,3 +164,22 @@ export function generateArabicBreakdown(word: string): LetterBreakdown[] {
 export function containsArabic(text: string): boolean {
     return /[\u0600-\u06FF]/.test(text);
 }
+
+export interface WordBreakdown {
+    word: string;
+    letters: LetterBreakdown[];
+}
+
+/**
+ * Generates letter breakdowns for each word in a phrase separately.
+ * Returns an array of word breakdowns, each containing the original word and its letters.
+ */
+export function generateArabicBreakdownByWord(phrase: string): WordBreakdown[] {
+    // Split by spaces, keeping Arabic words together
+    const words = phrase.split(/\s+/).filter(w => w.trim().length > 0);
+    
+    return words.map(word => ({
+        word,
+        letters: generateArabicBreakdown(word),
+    })).filter(wb => wb.letters.length > 0); // Only include words with Arabic letters
+}

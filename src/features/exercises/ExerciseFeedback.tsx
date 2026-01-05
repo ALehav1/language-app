@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { AnswerResult, VocabularyItem } from '../../types';
-import { generateArabicBreakdown } from '../../utils/arabicLetters';
+import { generateArabicBreakdownByWord, type WordBreakdown } from '../../utils/arabicLetters';
 
 interface ExerciseFeedbackProps {
     result: AnswerResult;
@@ -23,16 +23,13 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
     const { correct, userAnswer, correctAnswer } = result;
     const isArabic = item.language === 'arabic';
 
-    // Generate letter breakdown on-the-fly if not in database
-    const letterBreakdown = useMemo(() => {
-        if (item.letter_breakdown && item.letter_breakdown.length > 0) {
-            return item.letter_breakdown;
-        }
+    // Generate letter breakdown by word on-the-fly
+    const wordBreakdowns: WordBreakdown[] = useMemo(() => {
         if (isArabic) {
-            return generateArabicBreakdown(item.word);
+            return generateArabicBreakdownByWord(item.word);
         }
         return [];
-    }, [item.letter_breakdown, item.word, isArabic]);
+    }, [item.word, isArabic]);
 
     return (
         <div className="space-y-6 pb-20">
@@ -162,16 +159,27 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                     </div>
                 )}
 
-                {/* 3. Arabic Letter Breakdown - Horizontal, Right-to-Left reading order */}
-                {isArabic && letterBreakdown.length > 0 && (
+                {/* 3. Arabic Letter Breakdown - Each word on its own line, RTL */}
+                {isArabic && wordBreakdowns.length > 0 && (
                     <div className="glass-card p-4">
                         <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider mb-3">Letter Breakdown</div>
-                        <div className="flex flex-wrap justify-center gap-2" dir="rtl">
-                            {letterBreakdown.map((l, idx) => (
-                                <div key={idx} className="flex flex-col items-center gap-1 p-3 bg-white/5 rounded-xl min-w-[70px]">
-                                    <span className="text-3xl font-arabic text-white">{l.letter}</span>
-                                    <span className="text-[10px] text-white/50 text-center leading-tight">{l.name}</span>
-                                    <span className="text-xs text-teal-400/80 font-mono">/{l.sound}/</span>
+                        <div className="space-y-4">
+                            {wordBreakdowns.map((wordBreakdown, wordIdx) => (
+                                <div key={wordIdx} className="space-y-2">
+                                    {/* Word label */}
+                                    <div className="text-center text-white/60 text-sm font-arabic" dir="rtl">
+                                        {wordBreakdown.word}
+                                    </div>
+                                    {/* Letters for this word */}
+                                    <div className="flex flex-wrap justify-center gap-2" dir="rtl">
+                                        {wordBreakdown.letters.map((l, idx) => (
+                                            <div key={idx} className="flex flex-col items-center gap-1 p-3 bg-white/5 rounded-xl min-w-[60px]">
+                                                <span className="text-2xl font-arabic text-white">{l.letter}</span>
+                                                <span className="text-[10px] text-white/50 text-center leading-tight">{l.name}</span>
+                                                <span className="text-xs text-teal-400/80 font-mono">/{l.sound}/</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             ))}
                         </div>

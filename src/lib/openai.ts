@@ -109,16 +109,21 @@ export async function generateLessonContent(
     Arabic and Hebrew are both Semitic languages sharing trilateral root systems.
     ONLY include hebrew_root/hebrew_meaning/hebrew_note when there is a GENUINE shared Semitic root.
 
+    FOR PHRASES: Check EACH word in the phrase for cognates. If ANY word has a Hebrew cognate,
+    include it and specify which Arabic word it relates to in the hebrew_note field.
+    Example: "كيف العمل" - العمل (al-'amal/work) → עמל (amal/labor) - include this cognate!
+
     Examples of REAL cognates (include these):
     - واحد (wahid/one) → אחד (echad) - same root א-ח-ד / و-ح-د
     - سلام (salam/peace) → שלום (shalom) - same root ש-ל-ם / س-ل-م
     - كتاب (kitab/book) → כתב (ketav/writing) - same root כ-ת-ב / ك-ت-ب
     - لا (la/no) → לא (lo) - identical word
+    - عمل ('amal/work) → עמל (amal/labor) - same root ע-מ-ל / ع-م-ل
 
     Examples of NON-cognates (DO NOT include hebrew fields):
     - شكرا (shukran/thank you) - NOT related to Hebrew שכר (reward). Omit hebrew fields.
     - مرحبا (marhaba/hello) - No Hebrew cognate. Omit hebrew fields.
-    - من فضلك (min fadlak/please) - No Hebrew cognate. Omit hebrew fields.
+    - كيف (kayfa/how) - No Hebrew cognate.
 
     If uncertain or no genuine cognate exists, OMIT all hebrew fields entirely.
     Do not invent connections. Only include well-established Semitic etymologies.
