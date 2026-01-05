@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { CardStack } from '../../components/CardStack';
 import { useCardStack } from '../../hooks/useCardStack';
 import { useLessons } from '../../hooks/useLessons';
 import { LessonGenerator } from './LessonGenerator';
 import type { CardAction, Language, ContentType } from '../../types';
 
-const CONTENT_TYPE_INFO: Record<ContentType | 'all', { label: string; icon: string }> = {
-    all: { label: 'All', icon: '📚' },
+const CONTENT_TYPE_INFO: Record<ContentType, { label: string; icon: string }> = {
     word: { label: 'Words', icon: 'Aa' },
     phrase: { label: 'Phrases', icon: '""' },
     dialog: { label: 'Dialog', icon: '💬' },
@@ -20,37 +19,21 @@ const CONTENT_TYPE_STORAGE_KEY = 'language-app-content-type';
 
 export function LessonFeed() {
     const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
-
-    // Read initial content type from URL param if present
-    const urlContentType = searchParams.get('type') as ContentType | null;
 
     const [languageFilter, setLanguageFilter] = useState<Language>(() => {
         const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-        // Only accept valid languages, default to arabic
         if (saved === 'arabic' || saved === 'spanish') return saved;
         return 'arabic';
     });
-    const [contentFilter, setContentFilter] = useState<ContentType | 'all'>(() => {
-        // URL param takes priority, then localStorage, then default to 'word'
-        if (urlContentType && ['word', 'phrase', 'dialog', 'paragraph'].includes(urlContentType)) {
-            return urlContentType;
-        }
+
+    const [contentFilter, setContentFilter] = useState<ContentType>(() => {
         const saved = localStorage.getItem(CONTENT_TYPE_STORAGE_KEY);
-        if (saved && ['word', 'phrase', 'dialog', 'paragraph', 'all'].includes(saved)) {
-            return saved as ContentType | 'all';
+        if (saved && ['word', 'phrase', 'dialog', 'paragraph'].includes(saved)) {
+            return saved as ContentType;
         }
-        return 'word'; // Default to words, not 'all'
+        return 'word';
     });
 
-    // Sync URL param changes to state
-    useEffect(() => {
-        if (urlContentType && ['word', 'phrase', 'dialog', 'paragraph'].includes(urlContentType)) {
-            setContentFilter(urlContentType);
-            // Clear the URL param after reading
-            setSearchParams({}, { replace: true });
-        }
-    }, [urlContentType, setSearchParams]);
     const [generatorOpen, setGeneratorOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -68,89 +51,47 @@ export function LessonFeed() {
         contentType: contentFilter,
     });
 
-    const { activeLessons, savedLessons, handleAction, resetWithLessons } = useCardStack({
+    const { activeLessons, handleAction, resetWithLessons } = useCardStack({
         initialLessons: lessons,
         persistKey: `lesson-cards-${languageFilter}-${contentFilter}`,
-        onActionComplete: (action) => {
-            console.log('Action completed:', action);
-        },
     });
 
-    // Update card stack when lessons change (including when filtered to empty)
+    // Update card stack when lessons change
     useEffect(() => {
         resetWithLessons(lessons);
     }, [lessons, resetWithLessons]);
 
     const handleCardAction = (action: CardAction) => {
         if (action.type === 'start') {
-            // Go directly to exercise - no preview modal
             navigate(`/exercise/${action.lessonId}`);
             return;
         }
         handleAction(action);
     };
 
+    const currentTypeLabel = CONTENT_TYPE_INFO[contentFilter].label;
+
     return (
         <div className="min-h-screen flex flex-col">
-            {/* Header */}
-            <header className="px-4 pt-4 pb-4">
+            {/* Simple Header */}
+            <header className="px-4 pt-4 pb-2">
                 <div className="flex items-center justify-between">
                     <button
                         onClick={() => setMenuOpen(true)}
-                        className="touch-btn w-10 h-10 bg-white/10 text-white/70 hover:text-white flex items-center justify-center rounded-xl"
+                        className="touch-btn w-12 h-12 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center rounded-xl"
                         aria-label="Open menu"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <h1 className="text-xl font-bold text-white">Lessons</h1>
-                    <button
-                        onClick={() => navigate('/saved')}
-                        className="touch-btn w-10 h-10 bg-white/10 text-white/70 hover:text-white flex items-center justify-center rounded-xl"
-                        aria-label="Saved words"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                    </button>
-                </div>
-
-                {/* Language Selector - Prominent toggle between Arabic and Spanish */}
-                <div className="flex items-center gap-3 mt-4">
-                    <span className="text-white/50 text-sm">Learning:</span>
-                    <div className="flex bg-white/10 rounded-full p-1">
-                        {(['arabic', 'spanish'] as const).map(lang => (
-                            <button
-                                key={lang}
-                                onClick={() => setLanguageFilter(lang)}
-                                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                                    languageFilter === lang
-                                        ? 'bg-white text-surface-300 shadow-md'
-                                        : 'text-white/70 hover:text-white'
-                                }`}
-                            >
-                                {lang === 'arabic' ? 'العربية Arabic' : 'Español Spanish'}
-                            </button>
-                        ))}
+                    <div className="text-center">
+                        <h1 className="text-lg font-bold text-white">{currentTypeLabel}</h1>
+                        <span className="text-white/50 text-xs">
+                            {languageFilter === 'arabic' ? 'العربية' : 'Español'}
+                        </span>
                     </div>
-                </div>
-
-                {/* Content Type Filter */}
-                <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
-                    {(Object.keys(CONTENT_TYPE_INFO) as (ContentType | 'all')[]).map(type => (
-                        <button
-                            key={type}
-                            onClick={() => setContentFilter(type)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${contentFilter === type
-                                ? 'bg-white/20 text-white border border-white/30'
-                                : 'bg-white/5 text-white/50 hover:bg-white/10 border border-transparent'
-                                }`}
-                        >
-                            <span>{CONTENT_TYPE_INFO[type].icon}</span>
-                            <span>{CONTENT_TYPE_INFO[type].label}</span>
-                        </button>
-                    ))}
+                    <div className="w-12" /> {/* Spacer for centering */}
                 </div>
             </header>
 
@@ -169,27 +110,11 @@ export function LessonFeed() {
                     <CardStack
                         lessons={activeLessons}
                         onAction={handleCardAction}
-                        emptyMessage={
-                            contentFilter !== 'all'
-                                ? `No ${CONTENT_TYPE_INFO[contentFilter].label.toLowerCase()} lessons yet.`
-                                : "All caught up! Check back later for new lessons."
-                        }
-                        onCreateLesson={contentFilter !== 'all' ? () => setGeneratorOpen(true) : undefined}
+                        emptyMessage={`No ${currentTypeLabel.toLowerCase()} lessons yet.`}
+                        onCreateLesson={() => setGeneratorOpen(true)}
                     />
                 )}
             </main>
-
-            {/* Saved indicator */}
-            {savedLessons.length > 0 && (
-                <div className="fixed bottom-20 left-4 right-4">
-                    <button className="w-full glass-card px-4 py-3 flex items-center justify-between">
-                        <span className="text-white/70">Saved lessons</span>
-                        <span className="bg-save/20 text-save px-3 py-1 rounded-full text-sm font-medium">
-                            {savedLessons.length}
-                        </span>
-                    </button>
-                </div>
-            )}
 
             {/* AI Lesson Generator */}
             <LessonGenerator
@@ -198,76 +123,93 @@ export function LessonFeed() {
                     setGeneratorOpen(false);
                 }}
                 defaultLanguage={languageFilter}
-                defaultContentType={contentFilter !== 'all' ? contentFilter : undefined}
+                defaultContentType={contentFilter}
                 externalOpen={generatorOpen}
                 onOpenChange={setGeneratorOpen}
             />
 
             {/* Menu Overlay */}
             {menuOpen && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm">
-                    <div className="w-full max-w-sm bg-surface-300 sm:rounded-2xl rounded-t-2xl p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-                        {/* Header */}
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-xl font-bold text-white">Menu</h3>
+                <div
+                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center"
+                    onClick={() => setMenuOpen(false)}
+                >
+                    <div
+                        className="w-full max-w-md bg-gradient-to-b from-surface-200 to-surface-300 rounded-t-3xl p-5 pb-8 space-y-5"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Drag handle */}
+                        <div className="flex justify-center">
+                            <div className="w-10 h-1 bg-white/20 rounded-full" />
+                        </div>
+
+                        {/* Language Selection */}
+                        <div className="space-y-2">
+                            <div className="text-white/40 text-xs font-medium uppercase tracking-wider">Language</div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setLanguageFilter('arabic')}
+                                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                        languageFilter === 'arabic'
+                                            ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/25'
+                                            : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                    }`}
+                                >
+                                    العربية
+                                </button>
+                                <button
+                                    onClick={() => setLanguageFilter('spanish')}
+                                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                        languageFilter === 'spanish'
+                                            ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25'
+                                            : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                    }`}
+                                >
+                                    Español
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Lesson Type Selection */}
+                        <div className="space-y-2">
+                            <div className="text-white/40 text-xs font-medium uppercase tracking-wider">Lesson Type</div>
+                            <div className="grid grid-cols-4 gap-1.5">
+                                {(Object.keys(CONTENT_TYPE_INFO) as ContentType[]).map(type => (
+                                    <button
+                                        key={type}
+                                        onClick={() => { setContentFilter(type); setMenuOpen(false); }}
+                                        className={`py-2.5 rounded-lg text-xs font-medium transition-all flex flex-col items-center gap-1 ${
+                                            contentFilter === type
+                                                ? 'bg-white/20 text-white'
+                                                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
+                                        }`}
+                                    >
+                                        <span className="text-base">{CONTENT_TYPE_INFO[type].icon}</span>
+                                        <span>{CONTENT_TYPE_INFO[type].label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="pt-2 space-y-2">
                             <button
-                                onClick={() => setMenuOpen(false)}
-                                className="w-8 h-8 text-white/50 hover:text-white"
+                                onClick={() => { setGeneratorOpen(true); setMenuOpen(false); }}
+                                className="w-full py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all"
                             >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                + Create Lesson
+                            </button>
+
+                            <button
+                                onClick={() => { navigate('/saved'); setMenuOpen(false); }}
+                                className="w-full py-3 bg-white/5 text-white/70 font-medium rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                                 </svg>
+                                Saved Words
                             </button>
                         </div>
-
-                        {/* Lesson Types */}
-                        <div className="text-white/50 text-sm px-1">Lesson Types</div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button
-                                onClick={() => { setContentFilter('word'); setMenuOpen(false); }}
-                                className={`py-3 rounded-xl text-sm font-medium ${contentFilter === 'word' ? 'bg-white text-surface-300' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                            >
-                                Aa Words
-                            </button>
-                            <button
-                                onClick={() => { setContentFilter('phrase'); setMenuOpen(false); }}
-                                className={`py-3 rounded-xl text-sm font-medium ${contentFilter === 'phrase' ? 'bg-white text-surface-300' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                            >
-                                "" Phrases
-                            </button>
-                            <button
-                                onClick={() => { setContentFilter('dialog'); setMenuOpen(false); }}
-                                className={`py-3 rounded-xl text-sm font-medium ${contentFilter === 'dialog' ? 'bg-white text-surface-300' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                            >
-                                Dialog
-                            </button>
-                            <button
-                                onClick={() => { setContentFilter('paragraph'); setMenuOpen(false); }}
-                                className={`py-3 rounded-xl text-sm font-medium ${contentFilter === 'paragraph' ? 'bg-white text-surface-300' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                            >
-                                Reading
-                            </button>
-                        </div>
-
-                        <div className="h-px bg-white/10 my-2" />
-
-                        {/* Navigation */}
-                        <button
-                            onClick={() => { navigate('/saved'); setMenuOpen(false); }}
-                            className="w-full py-4 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 flex items-center justify-center gap-2"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                            Saved Words
-                        </button>
-
-                        <button
-                            onClick={() => { setGeneratorOpen(true); setMenuOpen(false); }}
-                            className="w-full py-4 bg-white text-surface-300 font-bold rounded-xl"
-                        >
-                            + Create New Lesson
-                        </button>
                     </div>
                 </div>
             )}

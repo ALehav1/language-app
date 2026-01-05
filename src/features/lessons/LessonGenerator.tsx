@@ -132,18 +132,9 @@ export function LessonGenerator({
         }
     };
 
+    // Don't render anything when closed - menu handles the open trigger
     if (!isOpen) {
-        return (
-            <button
-                onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 w-14 h-14 bg-white text-surface-300 rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
-                aria-label="Create AI Lesson"
-            >
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-            </button>
-        );
+        return null;
     }
 
     return (

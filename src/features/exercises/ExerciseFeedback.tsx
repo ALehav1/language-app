@@ -162,18 +162,16 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                     </div>
                 )}
 
-                {/* 3. Arabic Letter Breakdown */}
+                {/* 3. Arabic Letter Breakdown - Horizontal, Right-to-Left */}
                 {isArabic && letterBreakdown.length > 0 && (
                     <div className="glass-card p-4">
                         <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider mb-3">Letter Breakdown</div>
-                        <div className="space-y-3">
-                            {letterBreakdown.map((l, idx) => (
-                                <div key={idx} className="flex items-center justify-between border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-2xl font-arabic text-white w-8 text-center">{l.letter}</span>
-                                        <span className="text-white/80">{l.name}</span>
-                                    </div>
-                                    <span className="text-white/50 font-mono text-sm">/{l.sound}/</span>
+                        <div className="flex justify-center gap-2 flex-wrap">
+                            {[...letterBreakdown].reverse().map((l, idx) => (
+                                <div key={idx} className="flex flex-col items-center gap-1 p-3 bg-white/5 rounded-xl min-w-[70px]">
+                                    <span className="text-3xl font-arabic text-white">{l.letter}</span>
+                                    <span className="text-[10px] text-white/50 text-center leading-tight">{l.name}</span>
+                                    <span className="text-xs text-teal-400/80 font-mono">/{l.sound}/</span>
                                 </div>
                             ))}
                         </div>

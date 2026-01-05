@@ -20,30 +20,37 @@ Last Updated: January 4, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 7 Complete - Streamlined UX, Direct Lesson Start
+- Status: Phase 7 Complete - Polished Menu & RTL Letter Breakdown
 - Working features:
+  - **Simplified header** - hamburger menu + centered title (shows current content type + language)
+  - **Polished bottom sheet menu** - all navigation in one place:
+    - Drag handle for mobile feel
+    - Colored language buttons (teal for Arabic, amber for Spanish with glow)
+    - Compact 4-column grid for lesson types (icon + label)
+    - Purple gradient "Create Lesson" button
+    - Max-width constrained on desktop
+    - Saved Words link
   - Lesson feed with swipeable card stack + "Start Lesson" button
-  - **Hamburger menu** - quick access to lesson types, saved words, create lesson
-  - **Content type badge** on each lesson card showing type (Aa Words, "" Phrases, etc.)
-  - **Content type filtering** (Words/Phrases/Dialog/Paragraphs) - defaults to Words
-  - **Language toggle** (Arabic/Spanish only, no "All") - **persists to localStorage**
-  - **Filter preferences remembered** - defaults to last used settings
-  - Swipe gestures: left (dismiss), right (save), down (later), tap (start)
   - **Direct lesson start** - clicking "Start Lesson" goes directly to exercise (no preview modal)
-  - **Actionable empty states** - "Create Lesson" button when filtering to content types with no lessons
-  - **AI lesson generation** via OpenAI - syncs with current language filter
+  - **Content type badge** on each lesson card showing type (Aa Words, "" Phrases, etc.)
+  - **Filter preferences remembered** - persists to localStorage
+  - Swipe gestures: left (dismiss), right (save), down (later), tap (start)
+  - **Actionable empty states** - "Create Lesson" button when no lessons exist
+  - **AI lesson generation** via OpenAI - syncs with current filters (no floating button)
   - **Supabase integration** - all data persisted to database
   - **Exercise flow** with prompting, validation, and feedback
+  - **"Write in English" instructions** - clearer than "Translate"
   - **Arabic dual-input mode** - type BOTH transliteration AND translation for Arabic exercises
   - **Transliteration validation** - fuzzy matching with Levenshtein distance for typo tolerance
-  - **Semantic answer matching** via OpenAI (accepts synonyms/typos)
+  - **Semantic answer matching** via OpenAI (accepts synonyms/typos/alternative meanings)
   - **Skip question** functionality during exercises
   - **Resume lessons** - progress saved to localStorage for 24 hours
   - **Segmented progress bar** - each word as colored segment
   - **Desktop 3-column layout** - sidebars with progress + stats
   - **Save vocabulary** - heart button on feedback screen
   - **Saved words view** - browse, filter, remove saved items
-  - Arabic feedback: transliteration + Hebrew cognate + auto-generated letter breakdown with diacritics
+  - **Arabic letter breakdown** - horizontal, right-to-left display matching Arabic reading order
+  - Arabic feedback: transliteration + Hebrew cognate + letter breakdown with diacritics
   - Hebrew cognates only include genuine Semitic root connections
   - Progress persistence to Supabase on lesson completion
   - Spaced repetition mastery tracking per vocabulary item
@@ -81,7 +88,7 @@ Last Updated: January 4, 2026
 4. Supabase integration (lessons, vocab, progress)
 5. Learning state tracking (spaced repetition)
 6. AI-generated lessons via OpenAI
-7. Semantic matching for answers via OpenAI
+7. Semantic matching for answers via OpenAI (accepts synonyms, typos, alternative meanings)
 8. Skip question functionality
 9. Save vocabulary items
 10. Browse saved vocabulary
@@ -90,14 +97,16 @@ Last Updated: January 4, 2026
 13. Segmented progress bar
 14. Desktop 3-column layout
 15. Persistent language/content type preferences
-16. Generator syncs with current language filter
+16. Generator syncs with current filters
 17. Arabic dual-input mode (transliteration + translation)
 18. Transliteration validation with fuzzy matching
 19. Actionable empty states with "Create Lesson" button
 20. Direct lesson start (no preview modal)
-21. Hamburger menu on main feed with lesson type navigation
+21. Polished bottom sheet menu (colored buttons, gradient styling, max-width)
 22. "Write in English" instructions (clearer than "Translate")
-23. Language toggle (Arabic/Spanish only, no "All")
+23. Language toggle (Arabic/Spanish only)
+24. Create Lesson always accessible from main menu (no floating button)
+25. Horizontal RTL letter breakdown matching Arabic reading order
 
 ### Remaining (P2)
 1. Audio playback with speed toggle
@@ -108,8 +117,8 @@ Last Updated: January 4, 2026
 ## Key Files
 
 ### Features
-- `src/features/lessons/LessonFeed.tsx` - Main lesson discovery with persistent filters + LessonPreviewModal
-- `src/features/lessons/LessonGenerator.tsx` - AI lesson creation (syncs with current language)
+- `src/features/lessons/LessonFeed.tsx` - Main lesson discovery with bottom sheet menu (language, content type, create, saved)
+- `src/features/lessons/LessonGenerator.tsx` - AI lesson creation (syncs with current filters)
 - `src/features/exercises/ExerciseView.tsx` - Exercise flow with desktop sidebars + resume
 - `src/features/exercises/ExercisePrompt.tsx` - Adaptive content display
 - `src/features/exercises/ExerciseFeedback.tsx` - Result display with save button
@@ -244,6 +253,8 @@ Always shows these sections:
 1. **Word Card** - Arabic word + translation + pronunciation
 2. **Hebrew Connection** - cognate if exists, or "No Hebrew cognate" message
 3. **Letter Breakdown** - auto-generated for any Arabic word:
+   - **Horizontal layout** with card for each letter
+   - **Right-to-left order** matching Arabic reading direction
    - Groups letters with their diacritics (vowel marks)
    - Shows combined pronunciation (e.g., "Meem + Fatha" = /ma/)
    - Includes: Fatha, Damma, Kasra, Sukun, Shadda, Tanwin

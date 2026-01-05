@@ -3,7 +3,7 @@
 AI-powered language learning for Arabic (novice) and Spanish (intermediate) that teaches how native speakers actually talk.
 
 **Last Updated**: January 4, 2026
-**Status**: Phase 7 Complete - Streamlined UX, Direct Lesson Start
+**Status**: Phase 7 Complete - Polished Menu & RTL Letter Breakdown
 
 ---
 
@@ -52,11 +52,18 @@ src/
 ### Component Hierarchy
 
 **Lesson Discovery Flow:**
-- **`LessonFeed`**: Main page with hamburger menu, language toggle, content type filters.
-  - **Hamburger Menu**: Quick access to lesson types, saved words, create lesson.
+- **`LessonFeed`**: Main page with simplified header and polished bottom sheet menu.
+  - **Header**: Hamburger button + centered title (current content type + language)
+  - **Bottom Sheet Menu**: Polished navigation with:
+    - Drag handle for mobile feel
+    - Colored language buttons (teal for Arabic, amber for Spanish with glow)
+    - Compact 4-column grid for lesson types (icon + label)
+    - Purple gradient "Create Lesson" button
+    - Max-width constrained on desktop
+    - Saved Words link
   - **`CardStack`**: Manages the deck with visual stacking.
     - **`LessonCard`**: Swipeable cards with "Start Lesson" button (direct to exercise).
-  - **`LessonGenerator`**: AI-powered lesson creation (syncs with current language filter).
+  - **`LessonGenerator`**: AI-powered lesson creation (opens from menu only, no floating button).
 
 **Exercise Flow:**
 - **`ExerciseView`**: Controls the full exercise session.
@@ -191,7 +198,7 @@ Create lessons for different learning styles:
 - **Paragraphs**: Reading passages (2 passages)
 
 ### AI Lesson Generation
-- Tap the **+** button to create new lessons
+- Open menu and tap **Create Lesson** button
 - **Defaults to your current language filter** (syncs automatically)
 - Select content type (Words, Phrases, Dialog, Paragraphs)
 - Enter a topic (e.g., "At the grocery store")
@@ -208,7 +215,7 @@ Create lessons for different learning styles:
 5. Get immediate feedback with **detailed word breakdown**:
    - Word + translation + pronunciation
    - **Hebrew Connection** (Arabic only) - shows cognate or explains why none exists
-   - **Letter Breakdown** (Arabic only) - each letter with name, diacritics, and combined sound
+   - **Letter Breakdown** (Arabic only) - horizontal cards, right-to-left order matching Arabic reading
 6. **Save items** by tapping the heart icon
 7. **Skip questions** if needed
 8. **Resume later** - progress auto-saved for 24 hours
@@ -223,7 +230,7 @@ On larger screens (1024px+), exercises show:
 ### Persistent Preferences
 - **Language filter remembered** - defaults to your last used language
 - **Content type filter remembered** - persists across sessions
-- **Generator syncs** - "Create AI Lesson" defaults to your current language
+- **Generator syncs** - "Create AI Lesson" defaults to your current filters
 
 ### Progress Tracking
 - **Segmented progress bar**: Each item = one segment
@@ -307,7 +314,7 @@ Test at these breakpoints IN ORDER:
 - **Semantic answer validation** - accepts synonyms and minor typos
 - **Spaced repetition** tracking what you know vs struggle with
 - **Hebrew cognates** for Arabic (only genuine Semitic connections)
-- **Letter breakdown** for Arabic character learning
+- **Letter breakdown** for Arabic - horizontal, right-to-left display matching word order
 - **Save content** for later review
 - **Resume lessons** - continue where you left off
 - **Desktop-optimized** with 3-column layout
@@ -319,11 +326,19 @@ Test at these breakpoints IN ORDER:
 ## Completed Features
 
 ### Phase 7 (Current)
+- **Polished bottom sheet menu**: All controls in one place with refined styling
+  - Drag handle for mobile feel
+  - Colored language buttons (teal for Arabic, amber for Spanish with glow)
+  - Compact 4-column grid for lesson types
+  - Purple gradient "Create Lesson" button
+  - Max-width constrained on desktop
+  - Saved Words link
 - **Direct lesson start**: "Start Lesson" goes directly to exercise (no preview modal)
-- **Hamburger menu on main feed**: Quick access to lesson types, saved words, create lesson
+- **Removed floating button**: LessonGenerator opens from menu only
+- **Cleaner header**: Just hamburger button + centered title showing current type + language
 - **Clearer instructions**: "Write in English" instead of "Translate"
-- **Language toggle**: Clear Arabic/Spanish selector (no "All" option)
-- **Content type defaults to Words**: Clearer starting point
+- **Improved answer validation**: Accepts synonyms, typos, and alternative meanings
+- **Horizontal RTL letter breakdown**: Arabic letters displayed right-to-left matching word order
 
 ### Phase 6
 - **Arabic dual-input mode**: Type BOTH transliteration AND translation for Arabic exercises

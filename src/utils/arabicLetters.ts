@@ -12,7 +12,7 @@ interface ArabicLetterInfo {
 // Complete Arabic alphabet with names and sounds
 const ARABIC_LETTERS: Record<string, ArabicLetterInfo> = {
     // Basic letters
-    'ا': { name: 'Alif', sound: 'aa/a', type: 'letter' },
+    'ا': { name: 'Alif', sound: 'aa', type: 'letter' },
     'أ': { name: 'Alif + Hamza', sound: 'a', type: 'letter' },
     'إ': { name: 'Alif + Hamza below', sound: 'i', type: 'letter' },
     'آ': { name: 'Alif Madda', sound: 'aa', type: 'letter' },
