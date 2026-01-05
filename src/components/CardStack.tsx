@@ -42,7 +42,7 @@ export function CardStack({ lessons, onAction, onCreateLesson }: CardStackProps)
         );
     }
 
-    const handleButtonAction = (type: 'dismiss' | 'save' | 'later') => {
+    const handleButtonAction = (type: 'dismiss' | 'save') => {
         if (currentLesson) {
             onAction({ type, lessonId: currentLesson.id, timestamp: Date.now() });
         }
@@ -63,10 +63,9 @@ export function CardStack({ lessons, onAction, onCreateLesson }: CardStackProps)
                 ))}
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - Skip and Save only */}
             <ActionButtons
                 onDismiss={() => handleButtonAction('dismiss')}
-                onLater={() => handleButtonAction('later')}
                 onSave={() => handleButtonAction('save')}
                 disabled={lessons.length === 0}
             />
