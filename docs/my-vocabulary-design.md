@@ -1,14 +1,16 @@
 # My Vocabulary - Feature Design Document
 
-**Version**: 1.1  
+**Version**: 1.2  
 **Date**: January 5, 2026  
-**Status**: Approved with Updates
+**Status**: Approved - Arabic Focus
 
 ---
 
 ## Executive Summary
 
 Transform "Saved Words" from a minor feature into the central experience of the app. The core insight: **learning a language is about collecting and mastering words in context**. Words are the atomic unit, but the sentences, phrases, and dialogues where they appear are essential for remembering how to actually speak.
+
+**IMPORTANT**: Phase 12 focuses on **Arabic only**. Spanish will be a separate, simpler experience designed later. Arabic and Spanish vocabulary should NOT be mixed in the same cards or views.
 
 ---
 
@@ -35,7 +37,7 @@ interface SavedWord {
   // The word itself
   word: string;                    // Arabic/Spanish word
   translation: string;             // English meaning
-  language: 'arabic' | 'spanish';
+  language: 'arabic';  // Phase 12 is Arabic-only. Spanish will be separate.
   
   // Dialect-specific pronunciations (Arabic only)
   pronunciation_standard?: string;  // MSA/Fusha transliteration
@@ -294,7 +296,7 @@ CREATE TABLE saved_words (
   -- Word data
   word TEXT NOT NULL,
   translation TEXT NOT NULL,
-  language TEXT NOT NULL CHECK (language IN ('arabic', 'spanish')),
+  language TEXT NOT NULL DEFAULT 'arabic',  -- Phase 12 is Arabic-only
   
   -- Dialect-specific pronunciations (Arabic only)
   pronunciation_standard TEXT,    -- MSA/Fusha transliteration
@@ -430,11 +432,10 @@ Allow users to type or paste ANY word/phrase and get a full breakdown - translat
 2. Input modal appears with text field
 3. User types/pastes word(s) in any language
 4. System detects language and processes:
-   - **Arabic input** → translate to English, generate breakdown
-   - **Spanish input** → translate to English
-   - **English input** → translate to Arabic AND Spanish, user picks which to save
-5. Results displayed with full breakdown
-6. User can save any/all words to vocabulary
+   - **Arabic input** → translate to English, generate full breakdown
+   - **English input** → translate to Arabic with full breakdown
+5. Results displayed with both dialect pronunciations, letter breakdown, Hebrew cognate
+6. User can save word(s) to vocabulary
 
 ### Input Processing
 
@@ -442,8 +443,7 @@ Allow users to type or paste ANY word/phrase and get a full breakdown - translat
 User Input: "work" (English)
 ↓
 OpenAI API Call:
-- Translate to Arabic: العمل (al-'amal)
-- Translate to Spanish: trabajo
+- Translate to Arabic: العمل
 - Generate pronunciations (Standard + Egyptian)
 - Generate letter breakdown
 - Find Hebrew cognates
@@ -452,15 +452,17 @@ Display Results:
 ┌─────────────────────────────────────┐
 │ 🔍 "work"                           │
 ├─────────────────────────────────────┤
-│ 🇸🇦 Arabic                          │
 │ العمل                               │
-│ Standard: al-'amal                  │
-│ Egyptian: el-shoghol               │
-│ [Save Arabic]                       │
-├─────────────────────────────────────┤
-│ 🇪🇸 Spanish                         │
-│ trabajo                             │
-│ [Save Spanish]                      │
+│                                     │
+│ Standard (MSA): al-'amal            │
+│ Egyptian: el-shoghol                │
+│                                     │
+│ 📖 Letter Breakdown                 │
+│ ا ل ع م ل                          │
+│                                     │
+│ 🔗 Hebrew: עמל (amal) - labor       │
+│                                     │
+│ [Save to My Vocabulary]             │
 └─────────────────────────────────────┘
 ```
 
