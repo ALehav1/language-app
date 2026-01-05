@@ -443,7 +443,7 @@ export function ExerciseView() {
                                     item={currentItem}
                                     onContinue={continueToNext}
                                     isLastQuestion={currentIndex === totalItems - 1}
-                                    onSave={() => saveItem(currentItem.id)}
+                                    onSave={() => saveItem(currentItem.id, currentItem)}
                                     isSaved={isItemSaved(currentItem.id)}
                                 />
                             )}
