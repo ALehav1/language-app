@@ -138,7 +138,7 @@ export function AnswerInput({
                     transition-all duration-200
                     ${canSubmit && !disabled && !isLoading
                         ? 'btn-primary'
-                        : 'bg-white/20 text-white/40 cursor-not-allowed'
+                        : 'bg-surface-200 text-white/30 cursor-not-allowed'
                     }
                 `}
             >
