@@ -93,17 +93,27 @@ export function useExercise({ vocabItems, lessonId, onComplete }: UseExerciseOpt
     // Check for saved progress on mount
     const savedProgress = useMemo(() => loadSavedProgress(lessonId), [lessonId]);
 
-    const [phase, setPhase] = useState<ExercisePhase>(() =>
-        savedProgress ? 'prompting' : 'prompting'
-    );
-    const [currentIndex, setCurrentIndex] = useState(() =>
-        savedProgress?.currentIndex ?? 0
-    );
-    const [answers, setAnswers] = useState<AnswerResult[]>(() =>
-        savedProgress?.answers ?? []
-    );
+    const [phase, setPhase] = useState<ExercisePhase>('prompting');
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [answers, setAnswers] = useState<AnswerResult[]>([]);
     const [isValidating, setIsValidating] = useState(false);
-    const [hasSavedProgress] = useState(() => savedProgress !== null && savedProgress.currentIndex > 0);
+    const [hasInitialized, setHasInitialized] = useState(false);
+
+    // Derived state for whether we have saved progress to resume
+    const hasSavedProgress = savedProgress !== null && savedProgress.currentIndex > 0;
+
+    // Initialize from saved progress once vocabItems are loaded
+    useEffect(() => {
+        if (hasInitialized) return;
+        if (vocabItems.length === 0) return; // Wait for items to load
+        
+        if (savedProgress && savedProgress.currentIndex > 0) {
+            console.log('[useExercise] Restoring progress:', savedProgress.currentIndex, 'of', vocabItems.length);
+            setCurrentIndex(savedProgress.currentIndex);
+            setAnswers(savedProgress.answers);
+        }
+        setHasInitialized(true);
+    }, [vocabItems.length, savedProgress, hasInitialized]);
 
     const currentItem = vocabItems[currentIndex] || null;
     const totalItems = vocabItems.length;
