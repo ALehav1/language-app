@@ -3,7 +3,7 @@
 AI-powered language learning for Arabic (novice) and Spanish (intermediate) that teaches how native speakers actually talk.
 
 **Last Updated**: January 4, 2026
-**Status**: Phase 4 Complete - Content Types, Desktop Layout, Resume Progress
+**Status**: Phase 5 Complete - Streamlined Flow, Persistent Preferences
 
 ---
 
@@ -51,11 +51,10 @@ src/
 ### Component Hierarchy
 
 **Lesson Discovery Flow:**
-- **`LessonFeed`**: Main page with language + content type filters.
+- **`LessonFeed`**: Main page with language + content type filters (preferences persist).
   - **`CardStack`**: Manages the deck with visual stacking.
     - **`LessonCard`**: Swipeable cards with "Start Lesson" button.
-  - **Lesson Preview Modal**: Shows words/phrases before starting.
-  - **`LessonGenerator`**: AI-powered lesson creation modal.
+  - **`LessonGenerator`**: AI-powered lesson creation (syncs with current language filter).
 
 **Exercise Flow:**
 - **`ExerciseView`**: Controls the full exercise session.
@@ -191,26 +190,26 @@ Create lessons for different learning styles:
 
 ### AI Lesson Generation
 - Tap the **+** button to create new lessons
+- **Defaults to your current language filter** (syncs automatically)
 - Select content type (Words, Phrases, Dialog, Paragraphs)
 - Enter a topic (e.g., "At the grocery store")
 - Select language and difficulty level
 - AI generates appropriate content with translations
 - **Hebrew cognates** for Arabic (only genuine Semitic connections)
-- **Letter breakdown** for Arabic words
+- **Letter breakdown** for Arabic words with vowel diacritics
 
 ### Exercise Flow
-1. Tap **Start Lesson** on any lesson card
-2. See **lesson preview** with all words/phrases listed
-3. See content in target language with adaptive sizing
-4. Type the English translation
-5. Get immediate feedback with **detailed word breakdown**:
+1. Tap **Start Lesson** on any lesson card - goes directly to exercise
+2. See content in target language with adaptive sizing
+3. Type the English translation
+4. Get immediate feedback with **detailed word breakdown**:
    - Word + translation + pronunciation
    - **Hebrew Connection** (Arabic only) - shows cognate or explains why none exists
    - **Letter Breakdown** (Arabic only) - each letter with name, diacritics, and combined sound
-6. **Save items** by tapping the heart icon
-7. **Skip questions** if needed
-8. **Resume later** - progress auto-saved for 24 hours
-9. See final score at completion
+5. **Save items** by tapping the heart icon
+6. **Skip questions** if needed
+7. **Resume later** - progress auto-saved for 24 hours
+8. See final score at completion
 
 ### Desktop Layout
 On larger screens (1024px+), exercises show:
@@ -218,12 +217,10 @@ On larger screens (1024px+), exercises show:
 - **Center**: Main exercise area with larger text
 - **Right sidebar**: Session stats and current word hints
 
-### Lesson Preview
-Before starting a lesson, see:
-- Language and content type badges
-- Lesson description
-- Stats (item count, estimated time, difficulty)
-- Full list of words/phrases to learn
+### Persistent Preferences
+- **Language filter remembered** - defaults to your last used language
+- **Content type filter remembered** - persists across sessions
+- **Generator syncs** - "Create AI Lesson" defaults to your current language
 
 ### Progress Tracking
 - **Segmented progress bar**: Each item = one segment
@@ -319,10 +316,10 @@ Test at these breakpoints IN ORDER:
 ## Completed Features
 
 - Lesson discovery with swipeable cards
-- Language + content type filtering
+- Language + content type filtering (persists to localStorage)
 - Content types: words, phrases, dialogs, paragraphs
-- Lesson preview before starting
-- AI lesson generation via OpenAI
+- Direct lesson start (no preview modal)
+- AI lesson generation via OpenAI (syncs with current language)
 - Exercise flow with prompting, validation, and feedback
 - Semantic answer matching via OpenAI
 - Arabic support: script, transliteration, Hebrew cognates, letter breakdown with diacritics
@@ -335,6 +332,7 @@ Test at these breakpoints IN ORDER:
 - Supabase integration for all data
 - Spaced repetition mastery tracking
 - Mobile-first UI with 48x48px touch targets
+- Persistent user preferences
 
 ---
 

@@ -20,14 +20,15 @@ Last Updated: January 4, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 4 Complete - Content Types, Desktop Layout, Resume Progress
+- Status: Phase 5 Complete - Streamlined Flow, Persistent Preferences
 - Working features:
   - Lesson feed with swipeable card stack + "Start Lesson" button
   - **Content type filtering** (All/Words/Phrases/Dialog/Paragraphs)
-  - Language filtering (All/Arabic/Spanish)
+  - Language filtering (All/Arabic/Spanish) - **persists to localStorage**
+  - **Filter preferences remembered** - defaults to last used language
   - Swipe gestures: left (dismiss), right (save), down (later), tap (start)
-  - **Lesson preview modal** showing all words before starting
-  - **AI lesson generation** via OpenAI with content type selection
+  - **Direct lesson start** - clicking "Start Lesson" goes straight to exercise
+  - **AI lesson generation** via OpenAI - syncs with current language filter
   - **Supabase integration** - all data persisted to database
   - **Exercise flow** with prompting, validation, and feedback
   - **Semantic answer matching** via OpenAI (accepts synonyms/typos)
@@ -80,10 +81,11 @@ Last Updated: January 4, 2026
 9. Save vocabulary items
 10. Browse saved vocabulary
 11. Content types (word, phrase, dialog, paragraph)
-12. Lesson preview before starting
-13. Resume lessons from saved progress
-14. Segmented progress bar
-15. Desktop 3-column layout
+12. Resume lessons from saved progress
+13. Segmented progress bar
+14. Desktop 3-column layout
+15. Persistent language/content type preferences
+16. Generator syncs with current language filter
 
 ### Remaining (P2)
 1. Audio playback with speed toggle
@@ -94,8 +96,8 @@ Last Updated: January 4, 2026
 ## Key Files
 
 ### Features
-- `src/features/lessons/LessonFeed.tsx` - Main lesson discovery with content type filter
-- `src/features/lessons/LessonGenerator.tsx` - AI lesson creation with content type selection
+- `src/features/lessons/LessonFeed.tsx` - Main lesson discovery with persistent filters
+- `src/features/lessons/LessonGenerator.tsx` - AI lesson creation (syncs with current language)
 - `src/features/exercises/ExerciseView.tsx` - Exercise flow with desktop sidebars + resume
 - `src/features/exercises/ExercisePrompt.tsx` - Adaptive content display
 - `src/features/exercises/ExerciseFeedback.tsx` - Result display with save button
