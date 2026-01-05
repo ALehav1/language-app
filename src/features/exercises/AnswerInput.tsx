@@ -132,15 +132,12 @@ export function AnswerInput({
             <button
                 type="submit"
                 disabled={disabled || isLoading || !canSubmit}
-                className={`
-                    w-full touch-btn py-4 text-lg font-semibold
-                    rounded-xl flex items-center justify-center gap-2
-                    transition-all duration-200
-                    ${canSubmit && !disabled && !isLoading
-                        ? 'btn-primary'
-                        : 'bg-surface-200 text-white/30 cursor-not-allowed'
-                    }
-                `}
+                className="w-full touch-btn py-4 text-lg font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-200"
+                style={{
+                    backgroundColor: canSubmit && !disabled && !isLoading ? '#ffffff' : '#1e293b',
+                    color: canSubmit && !disabled && !isLoading ? '#020617' : 'rgba(255,255,255,0.4)',
+                    cursor: canSubmit && !disabled && !isLoading ? 'pointer' : 'not-allowed',
+                }}
             >
                 {isLoading ? (
                     <>
