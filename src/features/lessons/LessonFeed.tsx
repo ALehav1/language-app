@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CardStack } from '../../components/CardStack';
 import { useCardStack } from '../../hooks/useCardStack';
 import { useLessons } from '../../hooks/useLessons';
@@ -21,6 +21,11 @@ const CONTENT_TYPE_STORAGE_KEY = 'language-app-content-type';
 
 export function LessonFeed() {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Read initial content type from URL param if present
+    const urlContentType = searchParams.get('type') as ContentType | null;
+
     const [languageFilter, setLanguageFilter] = useState<Language>(() => {
         const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
         // Only accept valid languages, default to arabic
@@ -28,9 +33,25 @@ export function LessonFeed() {
         return 'arabic';
     });
     const [contentFilter, setContentFilter] = useState<ContentType | 'all'>(() => {
+        // URL param takes priority, then localStorage, then default to 'word'
+        if (urlContentType && ['word', 'phrase', 'dialog', 'paragraph'].includes(urlContentType)) {
+            return urlContentType;
+        }
         const saved = localStorage.getItem(CONTENT_TYPE_STORAGE_KEY);
-        return (saved as ContentType | 'all') || 'all';
+        if (saved && ['word', 'phrase', 'dialog', 'paragraph', 'all'].includes(saved)) {
+            return saved as ContentType | 'all';
+        }
+        return 'word'; // Default to words, not 'all'
     });
+
+    // Sync URL param changes to state
+    useEffect(() => {
+        if (urlContentType && ['word', 'phrase', 'dialog', 'paragraph'].includes(urlContentType)) {
+            setContentFilter(urlContentType);
+            // Clear the URL param after reading
+            setSearchParams({}, { replace: true });
+        }
+    }, [urlContentType, setSearchParams]);
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
     const [generatorOpen, setGeneratorOpen] = useState(false);
 

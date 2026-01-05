@@ -301,6 +301,37 @@ export function ExerciseView() {
 
                         <div className="h-px bg-white/10 my-2" />
 
+                        {/* Browse Lessons */}
+                        <div className="text-white/50 text-sm px-1 mb-2">Browse Lessons</div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                onClick={() => navigate('/?type=word')}
+                                className="py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 text-sm"
+                            >
+                                Aa Words
+                            </button>
+                            <button
+                                onClick={() => navigate('/?type=phrase')}
+                                className="py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 text-sm"
+                            >
+                                "" Phrases
+                            </button>
+                            <button
+                                onClick={() => navigate('/?type=dialog')}
+                                className="py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 text-sm"
+                            >
+                                Dialog
+                            </button>
+                            <button
+                                onClick={() => navigate('/?type=paragraph')}
+                                className="py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 text-sm"
+                            >
+                                Reading
+                            </button>
+                        </div>
+
+                        <div className="h-px bg-white/10 my-2" />
+
                         {/* Saved Words Link */}
                         <button
                             onClick={() => navigate('/saved')}
