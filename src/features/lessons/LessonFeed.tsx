@@ -30,6 +30,7 @@ export function LessonFeed() {
         return (saved as ContentType | 'all') || 'all';
     });
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+    const [generatorOpen, setGeneratorOpen] = useState(false);
 
     // Persist filter changes to localStorage
     useEffect(() => {
@@ -138,9 +139,10 @@ export function LessonFeed() {
                         onAction={handleCardAction}
                         emptyMessage={
                             contentFilter !== 'all'
-                                ? `No ${CONTENT_TYPE_INFO[contentFilter].label.toLowerCase()} lessons yet. Tap + to create one!`
+                                ? `No ${CONTENT_TYPE_INFO[contentFilter].label.toLowerCase()} lessons yet.`
                                 : "All caught up! Check back later for new lessons."
                         }
+                        onCreateLesson={contentFilter !== 'all' ? () => setGeneratorOpen(true) : undefined}
                     />
                 )}
             </main>
@@ -159,8 +161,14 @@ export function LessonFeed() {
 
             {/* AI Lesson Generator */}
             <LessonGenerator
-                onLessonCreated={refetch}
+                onLessonCreated={() => {
+                    refetch();
+                    setGeneratorOpen(false);
+                }}
                 defaultLanguage={languageFilter === 'all' ? 'arabic' : languageFilter}
+                defaultContentType={contentFilter !== 'all' ? contentFilter : undefined}
+                externalOpen={generatorOpen}
+                onOpenChange={setGeneratorOpen}
             />
 
             {/* Lesson Preview Modal */}
