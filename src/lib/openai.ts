@@ -252,3 +252,77 @@ export async function evaluateAnswer(
 
   return JSON.parse(response.choices[0].message.content || '{"correct": false, "feedback": "Error"}');
 }
+
+/**
+ * Lookup result for a word or phrase.
+ */
+export interface LookupResult {
+  detected_language: 'arabic' | 'english';
+  arabic_word: string;
+  translation: string;
+  pronunciation_standard: string;  // MSA
+  pronunciation_egyptian: string;  // Egyptian Arabic
+  letter_breakdown: Array<{
+    letter: string;
+    name: string;
+    sound: string;
+  }>;
+  hebrew_cognate?: {
+    root: string;
+    meaning: string;
+    notes?: string;
+  };
+}
+
+/**
+ * Look up any word (Arabic or English) and get full breakdown.
+ * Returns Arabic word with both dialect pronunciations, letter breakdown, and Hebrew cognate.
+ */
+export async function lookupWord(input: string): Promise<LookupResult> {
+  const prompt = `
+    Analyze this word/phrase: "${input}"
+    
+    1. Detect the language (Arabic or English)
+    2. If English: translate to Arabic
+    3. If Arabic: provide English translation
+    4. Provide BOTH pronunciations:
+       - Standard Arabic (MSA/Fusha) transliteration
+       - Egyptian Arabic transliteration (may differ significantly!)
+    5. Letter-by-letter breakdown for the Arabic word
+    6. Hebrew cognate ONLY if there's a genuine shared Semitic root
+    
+    Examples of pronunciation differences:
+    - "work" = العمل: MSA "al-'amal", Egyptian "el-shoghol" (completely different word!)
+    - "how" = كيف: MSA "kayfa", Egyptian "ezzay" (different word!)
+    - "what" = ماذا: MSA "matha", Egyptian "eih" (different word!)
+    - "good" = جيد: MSA "jayyid", Egyptian "kwayyis" (different word!)
+    - "hello" = مرحبا: MSA "marhaba", Egyptian "ahlan" (different greeting!)
+    
+    Return ONLY valid JSON:
+    {
+      "detected_language": "arabic" | "english",
+      "arabic_word": "the Arabic word",
+      "translation": "English translation",
+      "pronunciation_standard": "MSA transliteration",
+      "pronunciation_egyptian": "Egyptian Arabic transliteration",
+      "letter_breakdown": [
+        { "letter": "م", "name": "Meem", "sound": "m" }
+      ],
+      "hebrew_cognate": {
+        "root": "Hebrew root if exists",
+        "meaning": "meaning",
+        "notes": "connection notes"
+      } // OMIT this field entirely if no genuine cognate exists
+    }
+  `;
+
+  const response = await withRetry(() =>
+    openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" }
+    })
+  );
+
+  return JSON.parse(response.choices[0].message.content || '{}');
+}

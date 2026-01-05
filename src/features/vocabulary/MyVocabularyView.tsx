@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { generateArabicBreakdownByWord } from '../../utils/arabicLetters';
+import { LookupModal } from './LookupModal';
 import type { SavedWordWithContexts, WordStatus } from '../../types';
 
 type SortOption = 'recent' | 'alphabetical' | 'alphabetical-en';
@@ -20,6 +21,7 @@ export function MyVocabularyView() {
     const [selectedWord, setSelectedWord] = useState<SavedWordWithContexts | null>(null);
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [showLookup, setShowLookup] = useState(false);
 
     // Fetch words with filters
     const { 
@@ -556,6 +558,28 @@ export function MyVocabularyView() {
                     </div>
                 </div>
             )}
+
+            {/* Floating Add Button */}
+            {!selectionMode && (
+                <button
+                    onClick={() => setShowLookup(true)}
+                    className="fixed bottom-24 right-4 w-14 h-14 btn-primary rounded-full shadow-lg flex items-center justify-center z-40"
+                    aria-label="Look up word"
+                >
+                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            )}
+
+            {/* Lookup Modal */}
+            <LookupModal 
+                isOpen={showLookup} 
+                onClose={() => {
+                    setShowLookup(false);
+                    refetch();  // Refresh list after adding words
+                }} 
+            />
         </div>
     );
 }
