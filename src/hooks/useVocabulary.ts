@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { VocabularyItem, DbVocabularyItem } from '../types';
+import type { VocabularyItem, DbVocabularyItem, SavedWord } from '../types';
 
 interface UseVocabularyOptions {
     lessonId?: string;
     itemIds?: string[];  // For fetching specific items (e.g., saved words practice)
+    fromSavedWords?: boolean;  // If true, fetch from saved_words table instead
 }
 
 interface UseVocabularyReturn {
@@ -17,8 +18,9 @@ interface UseVocabularyReturn {
 /**
  * Hook for fetching vocabulary items from Supabase.
  * Can fetch by lessonId OR by specific itemIds.
+ * If fromSavedWords is true, fetches from saved_words table instead.
  */
-export function useVocabulary({ lessonId, itemIds }: UseVocabularyOptions): UseVocabularyReturn {
+export function useVocabulary({ lessonId, itemIds, fromSavedWords }: UseVocabularyOptions): UseVocabularyReturn {
     const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -35,6 +37,39 @@ export function useVocabulary({ lessonId, itemIds }: UseVocabularyOptions): UseV
         setError(null);
 
         try {
+            // Fetch from saved_words table if specified
+            if (fromSavedWords && itemIds && itemIds.length > 0) {
+                const { data: savedData, error: savedError } = await supabase
+                    .from('saved_words')
+                    .select('*')
+                    .in('id', itemIds);
+
+                if (savedError) throw new Error(savedError.message);
+
+                // Transform saved_words to VocabularyItem format for exercise compatibility
+                const items: VocabularyItem[] = (savedData || []).map((row: SavedWord) => ({
+                    id: row.id,
+                    word: row.word,
+                    translation: row.translation,
+                    language: 'arabic' as const,
+                    content_type: 'word' as const,
+                    transliteration: row.pronunciation_standard || undefined,
+                    hebrew_cognate: row.hebrew_cognate,
+                    letter_breakdown: row.letter_breakdown,
+                    speaker: undefined,
+                    context: undefined,
+                    mastery_level: row.status === 'solid' ? 'practiced' : 'learning',
+                    last_reviewed: row.last_practiced,
+                    next_review: row.next_review,
+                    times_practiced: row.times_practiced,
+                    created_at: row.created_at,
+                }));
+
+                setVocabulary(items);
+                return;
+            }
+
+            // Standard fetch from vocabulary_items
             let query = supabase
                 .from('vocabulary_items')
                 .select('*');
@@ -81,7 +116,7 @@ export function useVocabulary({ lessonId, itemIds }: UseVocabularyOptions): UseV
         } finally {
             setLoading(false);
         }
-    }, [lessonId, itemIds?.join(',')]);  // Join itemIds to create stable dependency
+    }, [lessonId, itemIds?.join(','), fromSavedWords]);  // Join itemIds to create stable dependency
 
     useEffect(() => {
         fetchVocabulary();

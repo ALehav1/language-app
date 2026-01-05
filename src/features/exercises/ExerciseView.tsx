@@ -30,6 +30,7 @@ export function ExerciseView() {
     const { vocabulary: vocabItems, loading, error } = useVocabulary({
         lessonId: isSavedPractice ? undefined : lessonId,
         itemIds: savedItemIds,
+        fromSavedWords: isSavedPractice,  // Fetch from saved_words table for practice
     });
     const { saveProgress, updateVocabularyMastery } = useLessonProgress();
     const { saveItem, isItemSaved } = useSavedVocabulary();
