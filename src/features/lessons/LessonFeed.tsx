@@ -21,9 +21,11 @@ const CONTENT_TYPE_STORAGE_KEY = 'language-app-content-type';
 
 export function LessonFeed() {
     const navigate = useNavigate();
-    const [languageFilter, setLanguageFilter] = useState<Language | 'all'>(() => {
+    const [languageFilter, setLanguageFilter] = useState<Language>(() => {
         const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-        return (saved as Language | 'all') || 'arabic';
+        // Only accept valid languages, default to arabic
+        if (saved === 'arabic' || saved === 'spanish') return saved;
+        return 'arabic';
     });
     const [contentFilter, setContentFilter] = useState<ContentType | 'all'>(() => {
         const saved = localStorage.getItem(CONTENT_TYPE_STORAGE_KEY);
@@ -61,10 +63,14 @@ export function LessonFeed() {
 
     const handleCardAction = (action: CardAction) => {
         if (action.type === 'start') {
-            // Show preview modal instead of going directly to exercise
-            const lesson = activeLessons.find(l => l.id === action.lessonId);
+            // Show preview modal - try activeLessons first, then raw lessons as fallback
+            const lesson = activeLessons.find(l => l.id === action.lessonId)
+                || lessons.find(l => l.id === action.lessonId);
             if (lesson) {
                 setSelectedLesson(lesson);
+            } else {
+                // Fallback: navigate directly if lesson not found
+                navigate(`/exercise/${action.lessonId}`);
             }
             return;
         }
@@ -88,20 +94,24 @@ export function LessonFeed() {
                     </button>
                 </div>
 
-                {/* Language Filter */}
-                <div className="flex gap-2 mt-4">
-                    {(['all', 'arabic', 'spanish'] as const).map(lang => (
-                        <button
-                            key={lang}
-                            onClick={() => setLanguageFilter(lang)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${languageFilter === lang
-                                ? 'bg-white text-surface-300'
-                                : 'bg-white/10 text-white/70 hover:bg-white/20'
+                {/* Language Selector - Prominent toggle between Arabic and Spanish */}
+                <div className="flex items-center gap-3 mt-4">
+                    <span className="text-white/50 text-sm">Learning:</span>
+                    <div className="flex bg-white/10 rounded-full p-1">
+                        {(['arabic', 'spanish'] as const).map(lang => (
+                            <button
+                                key={lang}
+                                onClick={() => setLanguageFilter(lang)}
+                                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                                    languageFilter === lang
+                                        ? 'bg-white text-surface-300 shadow-md'
+                                        : 'text-white/70 hover:text-white'
                                 }`}
-                        >
-                            {lang === 'all' ? 'All' : lang === 'arabic' ? 'العربية' : 'Español'}
-                        </button>
-                    ))}
+                            >
+                                {lang === 'arabic' ? 'العربية Arabic' : 'Español Spanish'}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Content Type Filter */}
@@ -165,7 +175,7 @@ export function LessonFeed() {
                     refetch();
                     setGeneratorOpen(false);
                 }}
-                defaultLanguage={languageFilter === 'all' ? 'arabic' : languageFilter}
+                defaultLanguage={languageFilter}
                 defaultContentType={contentFilter !== 'all' ? contentFilter : undefined}
                 externalOpen={generatorOpen}
                 onOpenChange={setGeneratorOpen}
