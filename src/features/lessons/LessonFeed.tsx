@@ -51,7 +51,7 @@ export function LessonFeed() {
         contentType: contentFilter,
     });
 
-    const { activeLessons, handleAction, resetWithLessons } = useCardStack({
+    const { activeLessons, handleAction, resetWithLessons, canUndo, undoLastAction, lastActionType } = useCardStack({
         initialLessons: lessons,
         persistKey: `lesson-cards-${languageFilter}-${contentFilter}`,
     });
@@ -221,6 +221,23 @@ export function LessonFeed() {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Undo Toast */}
+            {canUndo && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 animate-card-enter">
+                    <button
+                        onClick={undoLastAction}
+                        className="flex items-center gap-3 px-5 py-3 bg-surface-100 rounded-full shadow-lg border border-white/10"
+                    >
+                        <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        <span className="text-white font-medium">
+                            Undo {lastActionType === 'dismiss' ? 'skip' : lastActionType}
+                        </span>
+                    </button>
                 </div>
             )}
         </div>

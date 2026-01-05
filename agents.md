@@ -20,7 +20,7 @@ Last Updated: January 5, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 8 Complete - Enhanced Saved Words with Practice Mode
+- Status: Phase 9 Complete - Design Polish & Visual Improvements
 - Working features:
   - **Simplified header** - hamburger menu + centered title (shows current content type + language)
   - **Polished bottom sheet menu** - all navigation in one place:
@@ -60,6 +60,14 @@ Last Updated: January 5, 2026
   - Loading and error states for async operations
   - Glassmorphism UI with dark theme
   - Touch-friendly design (48px+ targets)
+  - **Design polish** (Phase 9):
+    - Skeleton loading with shimmer animation
+    - Heart pop animation when saving words
+    - Progress bar glow for correct/incorrect segments
+    - Softer modal backdrops (bg-black/60 + backdrop-blur-md)
+    - btn-primary gradient with active:scale-95
+    - Empty state with book emoji icon
+    - Custom .font-arabic and .font-hebrew classes
 - Known limitations:
   - Card swipe state stored in localStorage, not Supabase
   - No audio playback yet
@@ -113,6 +121,9 @@ Last Updated: January 5, 2026
 26. Enhanced saved words with detail modal and practice mode
 27. Selection mode for choosing which saved words to practice
 28. Custom exercise route for practicing saved words (`/exercise/saved?ids=...`)
+29. Design polish: skeleton loading, heart pop animation, progress glow, softer modals
+30. btn-primary gradient class for consistent button styling
+31. Custom Arabic/Hebrew font classes
 
 ### Remaining (P2)
 1. Audio playback with speed toggle

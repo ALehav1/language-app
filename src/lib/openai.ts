@@ -7,6 +7,39 @@ export const openai = new OpenAI({
   dangerouslyAllowBrowser: true
 });
 
+/**
+ * Retry wrapper with exponential backoff for OpenAI API calls.
+ * Retries up to 3 times with delays of 1s, 2s, 4s.
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelayMs: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`OpenAI API attempt ${attempt + 1} failed:`, lastError.message);
+      
+      // Don't retry on certain errors
+      if (lastError.message.includes('API key') || lastError.message.includes('401')) {
+        throw lastError; // Auth errors won't be fixed by retrying
+      }
+      
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelayMs * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Unknown error during API call');
+}
+
 export interface AIContent {
   title: string;
   description: string;
@@ -151,11 +184,13 @@ export async function generateLessonContent(
     Generate exactly ${itemCount} items.
   `;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" }
-  });
+  const response = await withRetry(() => 
+    openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" }
+    })
+  );
 
   const content = JSON.parse(response.choices[0].message.content || '{}');
   return content as AIContent;
@@ -192,11 +227,13 @@ export async function evaluateAnswer(
     }
   `;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" }
-  });
+  const response = await withRetry(() =>
+    openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" }
+    })
+  );
 
   return JSON.parse(response.choices[0].message.content || '{"correct": false, "feedback": "Error"}');
 }

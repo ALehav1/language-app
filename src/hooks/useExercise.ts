@@ -253,11 +253,14 @@ export function useExercise({ vocabItems, lessonId, onComplete }: UseExerciseOpt
         if (nextIndex >= totalItems) {
             // If this was the last question, complete the exercise
             setPhase('complete');
+            clearSavedProgress(lessonId);
             onComplete?.(answers);
         } else {
             setCurrentIndex(nextIndex);
+            // Save progress after skipping so user can resume
+            saveProgress(lessonId, nextIndex, answers);
         }
-    }, [phase, currentItem, currentIndex, totalItems, answers, onComplete]);
+    }, [phase, currentItem, currentIndex, totalItems, answers, onComplete, lessonId]);
 
     return {
         phase,

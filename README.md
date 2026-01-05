@@ -3,7 +3,7 @@
 AI-powered language learning for Arabic (novice) and Spanish (intermediate) that teaches how native speakers actually talk.
 
 **Last Updated**: January 5, 2026
-**Status**: Phase 8 Complete - Enhanced Saved Words with Practice Mode
+**Status**: Phase 9 Complete - Design Polish & Visual Improvements
 
 ---
 
@@ -337,7 +337,18 @@ Test at these breakpoints IN ORDER:
 
 ## Completed Features
 
-### Phase 8 (Current)
+### Phase 9 (Current)
+- **Design Polish**:
+  - **Skeleton loading**: Shimmer animation while lessons load
+  - **Heart pop animation**: Bouncy effect when saving a word
+  - **Progress bar glow**: Green/red glow on correct/incorrect segments
+  - **Softer modal backdrops**: Less harsh with more blur
+  - **btn-primary gradient**: Consistent button styling with active:scale-95
+  - **Empty state icon**: Book emoji with softer text styling
+  - **Custom font classes**: `.font-arabic` and `.font-hebrew` for proper script rendering
+  - **Accessibility**: Added aria-labels to modal close buttons
+
+### Phase 8
 - **Enhanced Saved Words**:
   - **Word detail modal**: Tap any saved word to see full breakdown
   - **Practice mode**: Select words and practice as custom lesson

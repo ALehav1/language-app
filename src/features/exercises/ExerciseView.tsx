@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useExercise } from '../../hooks/useExercise';
 import { useVocabulary } from '../../hooks/useVocabulary';
@@ -17,6 +17,7 @@ export function ExerciseView() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [showResumePrompt, setShowResumePrompt] = useState(false);
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
 
     // Check if this is a saved words practice session
     const isSavedPractice = lessonId === 'saved';
@@ -83,11 +84,52 @@ export function ExerciseView() {
         }
     }, [hasSavedProgress, loading, vocabItems.length]);
 
-    // Loading state
+    // Warn user before leaving during an active exercise
+    const hasProgress = currentIndex > 0 && phase !== 'complete';
+    useEffect(() => {
+        if (!hasProgress) return;
+
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasProgress]);
+
+    // Handle back button with confirmation
+    const handleBackClick = useCallback(() => {
+        if (hasProgress) {
+            setShowExitConfirm(true);
+        } else {
+            navigate(isSavedPractice ? '/saved' : '/');
+        }
+    }, [hasProgress, navigate, isSavedPractice]);
+
+    const confirmExit = useCallback(() => {
+        navigate(isSavedPractice ? '/saved' : '/');
+    }, [navigate, isSavedPractice]);
+
+    // Loading state with skeleton
     if (loading) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-4">
-                <div className="text-white/50">Loading exercise...</div>
+            <div className="min-h-screen flex flex-col bg-surface-300 p-4">
+                <header className="flex items-center gap-4 mb-6">
+                    <div className="skeleton w-10 h-10 rounded-xl" />
+                    <div className="flex-1 flex gap-1">
+                        {[1, 2, 3, 4, 5].map(i => (
+                            <div key={i} className="skeleton h-2 flex-1 rounded-full" />
+                        ))}
+                    </div>
+                    <div className="skeleton w-12 h-4 rounded" />
+                </header>
+                <div className="flex-1 flex flex-col items-center justify-center space-y-6 max-w-md mx-auto w-full">
+                    <div className="skeleton w-full h-32 rounded-3xl" />
+                    <div className="skeleton w-3/4 h-6 rounded-xl" />
+                    <div className="skeleton w-full h-14 rounded-xl" />
+                    <div className="skeleton w-full h-14 rounded-xl" />
+                </div>
             </div>
         );
     }
@@ -210,7 +252,7 @@ export function ExerciseView() {
             {/* Header with Back button */}
             <header className="flex items-center gap-4 p-4 shrink-0 z-10 bg-surface-300/80 backdrop-blur-sm sticky top-0">
                 <button
-                    onClick={() => navigate(isSavedPractice ? '/saved' : '/')}
+                    onClick={handleBackClick}
                     className="touch-btn w-10 h-10 bg-white/10 text-white/70 flex items-center justify-center rounded-xl"
                     aria-label="Back to lessons"
                 >
@@ -257,6 +299,36 @@ export function ExerciseView() {
                 </div>
             </header>
 
+
+            {/* Exit Confirmation Modal */}
+            {showExitConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+                    <div className="w-full max-w-sm bg-surface-300 rounded-2xl p-6 mx-4 space-y-4">
+                        <h3 className="text-xl font-bold text-white">Leave Exercise?</h3>
+                        <p className="text-white/70">
+                            Your progress is saved. You can resume this lesson later.
+                        </p>
+                        <div className="text-white/50 text-sm">
+                            Progress: {currentIndex} of {totalItems} words completed
+                        </div>
+
+                        <div className="space-y-3 pt-2">
+                            <button
+                                onClick={() => setShowExitConfirm(false)}
+                                className="w-full py-4 btn-primary font-bold rounded-xl"
+                            >
+                                Continue Learning
+                            </button>
+                            <button
+                                onClick={confirmExit}
+                                className="w-full py-3 text-white/70 font-medium hover:text-white"
+                            >
+                                Leave & Save Progress
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Resume Prompt */}
             {showResumePrompt && (

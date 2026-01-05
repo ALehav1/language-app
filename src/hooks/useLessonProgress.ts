@@ -72,6 +72,14 @@ export function useLessonProgress(): UseLessonProgressReturn {
                 } else if (current.mastery_level === 'practiced' && newTimesPracticed >= 10) {
                     newMasteryLevel = 'mastered';
                 }
+            } else {
+                // Regress mastery on incorrect answers (but not below 'new')
+                if (current.mastery_level === 'mastered') {
+                    newMasteryLevel = 'practiced';
+                } else if (current.mastery_level === 'practiced') {
+                    newMasteryLevel = 'learning';
+                }
+                // 'learning' and 'new' stay the same on incorrect
             }
 
             // Calculate next review time (simple spaced repetition)

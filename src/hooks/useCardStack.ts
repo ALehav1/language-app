@@ -12,6 +12,12 @@ interface UseCardStackOptions {
     persistKey?: string;
 }
 
+interface UndoState {
+    action: CardAction;
+    previousCards: CardState[];
+    timestamp: number;
+}
+
 export function useCardStack({ initialLessons, onActionComplete, persistKey }: UseCardStackOptions) {
     const [cards, setCards] = useState<CardState[]>(() => {
         // Try to restore from localStorage
@@ -27,6 +33,9 @@ export function useCardStack({ initialLessons, onActionComplete, persistKey }: U
         }
         return initialLessons.map(lesson => ({ lesson, status: 'active' as CardStatus }));
     });
+
+    // Undo state - stores last action for 5 seconds
+    const [undoState, setUndoState] = useState<UndoState | null>(null);
 
     // Persist to localStorage
     useEffect(() => {
@@ -46,6 +55,25 @@ export function useCardStack({ initialLessons, onActionComplete, persistKey }: U
         .map(c => c.lesson);
 
     const handleAction = useCallback((action: CardAction) => {
+        // Save current state for undo (only for dismiss/save/later actions)
+        if (action.type !== 'start') {
+            setUndoState({
+                action,
+                previousCards: [...cards.map(c => ({ ...c }))],
+                timestamp: Date.now(),
+            });
+
+            // Auto-clear undo after 5 seconds
+            setTimeout(() => {
+                setUndoState(prev => {
+                    if (prev && Date.now() - prev.timestamp >= 5000) {
+                        return null;
+                    }
+                    return prev;
+                });
+            }, 5000);
+        }
+
         setCards(prev => {
             const newCards = [...prev];
             const cardIndex = newCards.findIndex(c => c.lesson.id === action.lessonId);
@@ -74,7 +102,7 @@ export function useCardStack({ initialLessons, onActionComplete, persistKey }: U
         });
 
         onActionComplete?.(action);
-    }, [onActionComplete]);
+    }, [onActionComplete, cards]);
 
     const resetCards = useCallback(() => {
         setCards(initialLessons.map(lesson => ({ lesson, status: 'active' })));
@@ -91,6 +119,17 @@ export function useCardStack({ initialLessons, onActionComplete, persistKey }: U
         });
     }, []);
 
+    // Undo last action
+    const undoLastAction = useCallback(() => {
+        if (undoState) {
+            setCards(undoState.previousCards);
+            setUndoState(null);
+        }
+    }, [undoState]);
+
+    // Check if undo is available
+    const canUndo = undoState !== null;
+
     return {
         activeLessons,
         savedLessons,
@@ -99,5 +138,8 @@ export function useCardStack({ initialLessons, onActionComplete, persistKey }: U
         resetWithLessons,
         totalCards: cards.length,
         remainingCards: activeLessons.length,
+        undoLastAction,
+        canUndo,
+        lastActionType: undoState?.action.type,
     };
 }
