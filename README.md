@@ -11,6 +11,8 @@ AI-powered language learning for Arabic (novice) and Spanish (intermediate) that
 
 ```
 src/
+├── utils/
+│   └── arabicLetters.ts          # Arabic letter breakdown generator
 ├── features/
 │   ├── lessons/
 │   │   ├── LessonFeed.tsx        # Main feed with language + content type filters
@@ -204,7 +206,7 @@ Create lessons for different learning styles:
 5. Get immediate feedback with **detailed word breakdown**:
    - Word + translation + pronunciation
    - **Hebrew Connection** (Arabic only) - shows cognate or explains why none exists
-   - **Letter Breakdown** (Arabic only) - each letter with name and sound
+   - **Letter Breakdown** (Arabic only) - each letter with name, diacritics, and combined sound
 6. **Save items** by tapping the heart icon
 7. **Skip questions** if needed
 8. **Resume later** - progress auto-saved for 24 hours
@@ -323,7 +325,7 @@ Test at these breakpoints IN ORDER:
 - AI lesson generation via OpenAI
 - Exercise flow with prompting, validation, and feedback
 - Semantic answer matching via OpenAI
-- Arabic support: script, transliteration, Hebrew cognates, letter breakdown (always shown in feedback)
+- Arabic support: script, transliteration, Hebrew cognates, letter breakdown with diacritics
 - Skip question functionality
 - Save vocabulary items during exercises
 - Browse and manage saved words

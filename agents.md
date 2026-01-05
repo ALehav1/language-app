@@ -37,7 +37,7 @@ Last Updated: January 4, 2026
   - **Desktop 3-column layout** - sidebars with progress + stats
   - **Save vocabulary** - heart button on feedback screen
   - **Saved words view** - browse, filter, remove saved items
-  - Arabic feedback: transliteration + Hebrew cognate + letter breakdown (always shown)
+  - Arabic feedback: transliteration + Hebrew cognate + auto-generated letter breakdown with diacritics
   - Hebrew cognates only include genuine Semitic root connections
   - Progress persistence to Supabase on lesson completion
   - Spaced repetition mastery tracking per vocabulary item
@@ -111,6 +111,9 @@ Last Updated: January 4, 2026
 ### Lib
 - `src/lib/supabase.ts` - Supabase client
 - `src/lib/openai.ts` - OpenAI client + content generation + answer validation
+
+### Utils
+- `src/utils/arabicLetters.ts` - Arabic letter breakdown generator (28 letters + diacritics)
 
 ### Types
 - `src/types/database.ts` - All database types including ContentType
@@ -199,7 +202,10 @@ prompting → (submit answer) → feedback → (continue) → prompting | comple
 Always shows these sections:
 1. **Word Card** - Arabic word + translation + pronunciation
 2. **Hebrew Connection** - cognate if exists, or "No Hebrew cognate" message
-3. **Letter Breakdown** - each letter with name/sound, or "not available" message
+3. **Letter Breakdown** - auto-generated for any Arabic word:
+   - Groups letters with their diacritics (vowel marks)
+   - Shows combined pronunciation (e.g., "Meem + Fatha" = /ma/)
+   - Includes: Fatha, Damma, Kasra, Sukun, Shadda, Tanwin
 
 ### Resume Flow
 ```

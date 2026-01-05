@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import type { AnswerResult, VocabularyItem } from '../../types';
+import { generateArabicBreakdown } from '../../utils/arabicLetters';
 
 interface ExerciseFeedbackProps {
     result: AnswerResult;
@@ -20,6 +22,17 @@ interface ExerciseFeedbackProps {
 export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onSave, isSaved = false }: ExerciseFeedbackProps) {
     const { correct, userAnswer, correctAnswer } = result;
     const isArabic = item.language === 'arabic';
+
+    // Generate letter breakdown on-the-fly if not in database
+    const letterBreakdown = useMemo(() => {
+        if (item.letter_breakdown && item.letter_breakdown.length > 0) {
+            return item.letter_breakdown;
+        }
+        if (isArabic) {
+            return generateArabicBreakdown(item.word);
+        }
+        return [];
+    }, [item.letter_breakdown, item.word, isArabic]);
 
     return (
         <div className="space-y-6 pb-20">
@@ -101,26 +114,20 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                 )}
 
                 {/* 3. Arabic Letter Breakdown */}
-                {isArabic && (
+                {isArabic && letterBreakdown.length > 0 && (
                     <div className="glass-card p-4">
                         <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider mb-3">Letter Breakdown</div>
-                        {item.letter_breakdown && item.letter_breakdown.length > 0 ? (
-                            <div className="space-y-3">
-                                {item.letter_breakdown.map((l, idx) => (
-                                    <div key={idx} className="flex items-center justify-between border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                                        <div className="flex items-center gap-4">
-                                            <span className="text-2xl font-arabic text-white w-8 text-center">{l.letter}</span>
-                                            <span className="text-white/80">{l.name}</span>
-                                        </div>
-                                        <span className="text-white/50 font-mono text-sm">/{l.sound}/</span>
+                        <div className="space-y-3">
+                            {letterBreakdown.map((l, idx) => (
+                                <div key={idx} className="flex items-center justify-between border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-2xl font-arabic text-white w-8 text-center">{l.letter}</span>
+                                        <span className="text-white/80">{l.name}</span>
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-white/40 text-sm italic">
-                                Letter breakdown not available for this word. Create a new lesson to get detailed breakdowns.
-                            </div>
-                        )}
+                                    <span className="text-white/50 font-mono text-sm">/{l.sound}/</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
