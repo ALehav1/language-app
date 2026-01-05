@@ -20,7 +20,7 @@ Last Updated: January 5, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 9 Complete - Design Polish & Visual Improvements
+- Status: Phase 10 Complete - Bug Fixes & UX Improvements
 - Working features:
   - **Simplified header** - hamburger menu + centered title (shows current content type + language)
   - **Polished bottom sheet menu** - all navigation in one place:
@@ -66,8 +66,19 @@ Last Updated: January 5, 2026
     - Progress bar glow for correct/incorrect segments
     - Softer modal backdrops (bg-black/60 + backdrop-blur-md)
     - btn-primary gradient with active:scale-95
-    - Empty state with book emoji icon
     - Custom .font-arabic and .font-hebrew classes
+  - **Bug fixes & UX** (Phase 10):
+    - Skip progress saving - skipping saves progress for resume
+    - Mastery regression - incorrect answers regress mastery level
+    - Exit confirmation modal during exercises
+    - Browser beforeunload warning during exercises
+    - Skeleton loading in ExerciseView
+    - OpenAI retry logic with exponential backoff
+    - Undo card swipes (5-second toast)
+    - Improved transliteration (q/k equivalence, double consonants)
+    - Action button labels (Skip, Later, Save)
+    - Saved Words uses browser history for back navigation
+    - Consistent "Ready to learn?" empty state for all content types
 - Known limitations:
   - Card swipe state stored in localStorage, not Supabase
   - No audio playback yet
@@ -124,6 +135,15 @@ Last Updated: January 5, 2026
 29. Design polish: skeleton loading, heart pop animation, progress glow, softer modals
 30. btn-primary gradient class for consistent button styling
 31. Custom Arabic/Hebrew font classes
+32. Skip progress saving for resume capability
+33. Mastery regression on incorrect answers
+34. Exit confirmation modal during exercises
+35. OpenAI retry logic with exponential backoff
+36. Undo card swipes with 5-second toast
+37. Improved transliteration tolerance (q/k, double consonants)
+38. Action button labels (Skip, Later, Save)
+39. Saved Words back navigation uses browser history
+40. Consistent empty state for all content types
 
 ### Remaining (P2)
 1. Audio playback with speed toggle

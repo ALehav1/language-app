@@ -3,7 +3,7 @@
 AI-powered language learning for Arabic (novice) and Spanish (intermediate) that teaches how native speakers actually talk.
 
 **Last Updated**: January 5, 2026
-**Status**: Phase 9 Complete - Design Polish & Visual Improvements
+**Status**: Phase 10 Complete - Bug Fixes & UX Improvements
 
 ---
 
@@ -337,7 +337,22 @@ Test at these breakpoints IN ORDER:
 
 ## Completed Features
 
-### Phase 9 (Current)
+### Phase 10 (Current)
+- **Bug Fixes**:
+  - **Skip progress saving**: Skipping a question now saves progress for resume
+  - **Mastery regression**: Incorrect answers regress mastery level (mastered→practiced→learning)
+- **UX Improvements**:
+  - **Exit confirmation**: Modal asks "Leave Exercise?" when user has progress
+  - **Browser warning**: `beforeunload` event warns before closing tab during exercise
+  - **Skeleton loading in ExerciseView**: Shimmer animation while vocabulary loads
+  - **OpenAI retry logic**: 3 retries with exponential backoff (1s, 2s, 4s)
+  - **Undo card swipes**: 5-second undo toast after dismiss/save/later actions
+  - **Improved transliteration**: q/k equivalence, double consonant normalization (kitta = quitta)
+  - **Action button labels**: Skip, Later, Save text labels under icons
+  - **Saved Words back navigation**: Uses browser history instead of always going home
+  - **Consistent empty state**: All content types show same "Ready to learn?" prompt
+
+### Phase 9
 - **Design Polish**:
   - **Skeleton loading**: Shimmer animation while lessons load
   - **Heart pop animation**: Bouncy effect when saving a word
