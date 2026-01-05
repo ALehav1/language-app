@@ -337,7 +337,20 @@ Test at these breakpoints IN ORDER:
 
 ## Completed Features
 
-### Phase 11 (Current)
+### Phase 12 (Current)
+- **My Vocabulary Overhaul**:
+  - **New database schema**: `saved_words` and `word_contexts` tables for word-centric data model
+  - **Dialect pronunciations**: Each word stores both Standard MSA and Egyptian Arabic pronunciations
+  - **Bottom navigation**: Lessons + My Words tabs (vocabulary now prominent)
+  - **My Vocabulary screen**: Search, filter by status (needs_review/solid), sort (recent/A-Z)
+  - **Status tracking**: Words progress through needs_review → solid → retired
+  - **Word detail modal**: Full breakdown with letter breakdown, Hebrew cognate, source contexts
+  - **Selection mode**: Select any saved words for custom practice sessions
+  - **Lookup Mode**: Type any word (English or Arabic) to get full breakdown
+  - **Floating + button**: Quick access to lookup mode from My Vocabulary screen
+  - **Save from lookup**: Save words directly to vocabulary from lookup results
+
+### Phase 11
 - **Multi-Word Phrase Support**:
   - **Arabic dialect selector**: Choose Standard Arabic (MSA) or Egyptian Arabic when creating lessons
   - **Word-by-word letter breakdown**: Each word in a phrase displays on its own horizontal line

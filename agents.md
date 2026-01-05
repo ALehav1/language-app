@@ -20,7 +20,7 @@ Last Updated: January 5, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 11 Complete - Multi-Word Phrases & Arabic Dialect
+- Status: Phase 12 Complete - My Vocabulary Overhaul
 - Working features:
   - **Simplified header** - hamburger menu + centered title (shows current content type + language)
   - **Polished bottom sheet menu** - all navigation in one place:
@@ -84,6 +84,18 @@ Last Updated: January 5, 2026
     - Letter breakdown shows each word on its own line for phrases
     - Hebrew cognates checked per word in phrases (e.g., العمل → עמל)
     - Check Answer button lights up when answer is filled (btn-primary gradient)
+  - **My Vocabulary overhaul** (Phase 12):
+    - New `saved_words` and `word_contexts` database tables
+    - Word-centric data model with source context preservation
+    - Dialect pronunciations: Standard MSA + Egyptian Arabic for each word
+    - **Bottom navigation** - Lessons + My Words tabs (vocabulary now prominent)
+    - **My Vocabulary screen** - search, filter by status, sort options
+    - Status tracking: needs_review → solid → retired
+    - Word detail modal with full breakdown and source contexts
+    - Selection mode for custom practice sessions
+    - **Lookup Mode** - type any word (English/Arabic) for full breakdown
+    - Floating + button to add words via lookup
+    - Save words directly from lookup results
 - Known limitations:
   - Card swipe state stored in localStorage, not Supabase
   - No audio playback yet
