@@ -195,7 +195,7 @@ export function ExerciseView() {
                         {/* Done button */}
                         <button
                             onClick={() => navigate(isSavedPractice ? '/saved' : '/')}
-                            className="w-full touch-btn py-4 bg-white text-surface-300 rounded-xl font-semibold text-lg"
+                            className="w-full touch-btn py-4 btn-primary rounded-xl font-semibold text-lg"
                         >
                             Done
                         </button>
@@ -226,16 +226,23 @@ export function ExerciseView() {
                         const isCurrent = idx === currentIndex;
 
                         let bgColor = 'bg-white/20'; // Future
-                        if (answered?.correct) bgColor = 'bg-green-500';
-                        else if (answered && !answered.correct) bgColor = 'bg-red-500';
-                        else if (isCurrent) bgColor = 'bg-white';
+                        let glowClass = '';
+                        if (answered?.correct) {
+                            bgColor = 'bg-green-500';
+                            glowClass = 'glow-success';
+                        } else if (answered && !answered.correct) {
+                            bgColor = 'bg-red-500';
+                            glowClass = 'glow-error';
+                        } else if (isCurrent) {
+                            bgColor = 'bg-white';
+                        }
 
                         return (
                             <div
                                 key={item.id}
                                 className={`
                                     h-2 flex-1 rounded-full transition-all duration-300
-                                    ${bgColor}
+                                    ${bgColor} ${glowClass}
                                     ${isCurrent ? 'ring-2 ring-white/50 ring-offset-1 ring-offset-surface-300' : ''}
                                 `}
                                 title={`${idx + 1}. ${item.word}`}
@@ -253,7 +260,7 @@ export function ExerciseView() {
 
             {/* Resume Prompt */}
             {showResumePrompt && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
                     <div className="w-full max-w-sm bg-surface-300 rounded-2xl p-6 mx-4 space-y-4">
                         <h3 className="text-xl font-bold text-white">Resume Lesson?</h3>
                         <p className="text-white/70">

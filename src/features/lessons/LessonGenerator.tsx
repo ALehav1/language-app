@@ -138,11 +138,12 @@ export function LessonGenerator({
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
             <div className="glass-card w-full max-w-md p-6 relative animate-card-enter">
                 <button
                     onClick={() => setIsOpen(false)}
                     className="absolute top-4 right-4 text-white/50 hover:text-white"
+                    aria-label="Close"
                 >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

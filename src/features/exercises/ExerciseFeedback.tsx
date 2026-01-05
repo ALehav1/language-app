@@ -196,7 +196,7 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                         `}
                         aria-label={isSaved ? 'Saved' : 'Save word'}
                     >
-                        <svg className="w-6 h-6" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className={`w-6 h-6 ${isSaved ? 'heart-pop' : ''}`} fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
                     </button>
@@ -205,11 +205,7 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                 {/* Continue button */}
                 <button
                     onClick={onContinue}
-                    className={`
-                        flex-1 touch-btn py-4 text-lg font-semibold
-                        rounded-xl transition-all duration-200
-                        bg-white text-surface-300 hover:bg-white/90
-                    `}
+                    className="flex-1 touch-btn py-4 text-lg font-semibold rounded-xl btn-primary"
                 >
                     {isLastQuestion ? 'See Results' : 'Continue'}
                 </button>

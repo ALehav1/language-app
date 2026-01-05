@@ -98,8 +98,13 @@ export function LessonFeed() {
             {/* Card Stack */}
             <main className="flex-1 px-0">
                 {loading ? (
-                    <div className="flex items-center justify-center h-64">
-                        <div className="text-white/50">Loading lessons...</div>
+                    <div className="flex flex-col items-center justify-center h-64 px-4 space-y-4">
+                        {/* Skeleton loading cards */}
+                        <div className="w-full max-w-sm space-y-3">
+                            <div className="skeleton h-48 rounded-3xl" />
+                            <div className="skeleton h-4 w-3/4 mx-auto" />
+                            <div className="skeleton h-4 w-1/2 mx-auto" />
+                        </div>
                     </div>
                 ) : error ? (
                     <div className="flex flex-col items-center justify-center h-64 px-4">
@@ -131,7 +136,7 @@ export function LessonFeed() {
             {/* Menu Overlay */}
             {menuOpen && (
                 <div
-                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center"
+                    className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-end justify-center"
                     onClick={() => setMenuOpen(false)}
                 >
                     <div

@@ -173,7 +173,7 @@ export function LessonCard({ lesson, stackIndex, onAction, isActive }: LessonCar
                         </div>
                     </div>
                     <button
-                        className="px-5 py-2 bg-white text-surface-300 rounded-full font-semibold text-sm hover:bg-white/90 transition-all"
+                        className="px-5 py-2 btn-primary rounded-full font-semibold text-sm"
                         onClick={(e) => {
                             e.stopPropagation();
                             onAction({ type: 'start', lessonId: lesson.id, timestamp: Date.now() });

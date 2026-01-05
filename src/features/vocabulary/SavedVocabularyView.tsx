@@ -252,7 +252,7 @@ export function SavedVocabularyView() {
                     <button
                         onClick={startPractice}
                         disabled={selectedIds.size === 0}
-                        className="w-full py-4 bg-white text-surface-300 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-4 btn-primary font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Practice {selectedIds.size > 0 ? `${selectedIds.size} words` : 'selected words'}
                     </button>
@@ -262,7 +262,7 @@ export function SavedVocabularyView() {
             {/* Word Detail Modal */}
             {selectedItem && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
                     onClick={() => setSelectedItem(null)}
                 >
                     <div
@@ -273,6 +273,7 @@ export function SavedVocabularyView() {
                         <button
                             onClick={() => setSelectedItem(null)}
                             className="absolute top-4 right-4 text-white/50 hover:text-white"
+                            aria-label="Close"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

@@ -17,12 +17,16 @@ export function CardStack({ lessons, onAction, emptyMessage = "No lessons availa
 
     if (lessons.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] text-white/50 px-8">
-                <p className="text-lg text-center mb-6">{emptyMessage}</p>
+            <div className="flex flex-col items-center justify-center min-h-[400px] px-8">
+                {/* Empty state icon */}
+                <div className="w-20 h-20 mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                    <span className="text-4xl">📚</span>
+                </div>
+                <p className="text-lg text-center text-white/60 mb-6">{emptyMessage}</p>
                 {onCreateLesson && (
                     <button
                         onClick={onCreateLesson}
-                        className="px-6 py-3 bg-white text-surface-300 font-semibold rounded-xl hover:bg-white/90 transition-all flex items-center gap-2"
+                        className="px-6 py-3 btn-primary font-semibold rounded-xl flex items-center gap-2"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
