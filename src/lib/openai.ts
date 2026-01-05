@@ -258,12 +258,13 @@ export async function evaluateAnswer(
  */
 export interface LookupResult {
   detected_language: 'arabic' | 'english';
-  arabic_word: string;
+  arabic_word: string;  // MSA word WITH harakat (vowel diacritics)
+  arabic_word_egyptian?: string;  // Egyptian word if different from MSA
   translation: string;
-  pronunciation_standard: string;  // MSA
-  pronunciation_egyptian: string;  // Egyptian Arabic
+  pronunciation_standard: string;  // MSA transliteration
+  pronunciation_egyptian: string;  // Egyptian transliteration
   letter_breakdown: Array<{
-    letter: string;
+    letter: string;  // Letter WITH diacritics
     name: string;
     sound: string;
   }>;
@@ -282,37 +283,48 @@ export async function lookupWord(input: string): Promise<LookupResult> {
   const prompt = `
     Analyze this word/phrase: "${input}"
     
-    1. Detect the language (Arabic or English)
-    2. If English: translate to Arabic
-    3. If Arabic: provide English translation
-    4. Provide BOTH pronunciations:
-       - Standard Arabic (MSA/Fusha) transliteration
-       - Egyptian Arabic transliteration (may differ significantly!)
-    5. Letter-by-letter breakdown for the Arabic word
-    6. Hebrew cognate ONLY if there's a genuine shared Semitic root
+    CRITICAL REQUIREMENTS:
     
-    Examples of pronunciation differences:
-    - "work" = العمل: MSA "al-'amal", Egyptian "el-shoghol" (completely different word!)
-    - "how" = كيف: MSA "kayfa", Egyptian "ezzay" (different word!)
-    - "what" = ماذا: MSA "matha", Egyptian "eih" (different word!)
-    - "good" = جيد: MSA "jayyid", Egyptian "kwayyis" (different word!)
-    - "hello" = مرحبا: MSA "marhaba", Egyptian "ahlan" (different greeting!)
+    1. Detect the language (Arabic or English)
+    2. If English: translate to Arabic WITH FULL VOWEL DIACRITICS (harakat)
+    3. If Arabic: provide English translation
+    
+    4. For EGYPTIAN Arabic - provide the ACTUAL WORD Egyptians use, NOT just a pronunciation variant!
+       Examples:
+       - "work" → MSA: العَمَل (al-'amal), Egyptian: الشُغْل (el-shoghl) - DIFFERENT WORD!
+       - "how" → MSA: كَيْفَ (kayfa), Egyptian: إزَّاي (ezzay) - DIFFERENT WORD!
+       - "what" → MSA: مَاذَا (matha), Egyptian: إيه (eih) - DIFFERENT WORD!
+       - "good" → MSA: جَيِّد (jayyid), Egyptian: كْوَيِّس (kwayyis) - DIFFERENT WORD!
+       - "want" → MSA: أُرِيد (ureed), Egyptian: عَايِز (aayez) - DIFFERENT WORD!
+       - "now" → MSA: الآن (al-aan), Egyptian: دِلْوَقْتِي (dilwa'ti) - DIFFERENT WORD!
+    
+    5. Letter breakdown MUST include vowel diacritics:
+       - فَتْحَة (fatha) = a
+       - كَسْرَة (kasra) = i  
+       - ضَمَّة (damma) = u
+       - سُكُون (sukun) = no vowel
+       - شَدَّة (shadda) = doubled consonant
+    
+    6. Hebrew cognate ONLY if genuine shared Semitic root exists
     
     Return ONLY valid JSON:
     {
       "detected_language": "arabic" | "english",
-      "arabic_word": "the Arabic word",
+      "arabic_word": "Arabic word WITH harakat (e.g., عَمَل not عمل)",
+      "arabic_word_egyptian": "Egyptian Arabic word if different (e.g., شُغْل)",
       "translation": "English translation",
       "pronunciation_standard": "MSA transliteration",
-      "pronunciation_egyptian": "Egyptian Arabic transliteration",
+      "pronunciation_egyptian": "Egyptian transliteration (of Egyptian word if different)",
       "letter_breakdown": [
-        { "letter": "م", "name": "Meem", "sound": "m" }
+        { "letter": "عَ", "name": "Ayn with fatha", "sound": "a" },
+        { "letter": "مَ", "name": "Meem with fatha", "sound": "ma" },
+        { "letter": "ل", "name": "Lam", "sound": "l" }
       ],
       "hebrew_cognate": {
         "root": "Hebrew root if exists",
         "meaning": "meaning",
         "notes": "connection notes"
-      } // OMIT this field entirely if no genuine cognate exists
+      } // OMIT if no genuine cognate
     }
   `;
 

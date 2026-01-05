@@ -53,6 +53,8 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
     const hebrewCognate = enhancedData?.hebrew_cognate || item.hebrew_cognate;
     const pronunciationStandard = enhancedData?.pronunciation_standard || item.transliteration;
     const pronunciationEgyptian = enhancedData?.pronunciation_egyptian;
+    const arabicWordWithHarakat = enhancedData?.arabic_word || item.word;
+    const egyptianWord = enhancedData?.arabic_word_egyptian;
 
     // Generate letter breakdown by word on-the-fly
     const wordBreakdowns: WordBreakdown[] = useMemo(() => {
@@ -152,24 +154,32 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                 <div className="glass-card p-4">
                     <div className="flex items-center justify-between mb-3">
                         <span className={`text-3xl font-bold text-white ${isArabic ? 'font-arabic' : ''}`} dir={isArabic ? 'rtl' : 'ltr'}>
-                            {item.word}
+                            {arabicWordWithHarakat}
                         </span>
                         <span className="text-white/60 text-lg">{item.translation}</span>
                     </div>
                     
-                    {/* Pronunciations - show both dialects for Arabic */}
+                    {/* Pronunciations - show both dialects for Arabic with actual words */}
                     {isArabic && (pronunciationStandard || pronunciationEgyptian) ? (
                         <div className="grid grid-cols-2 gap-3 mt-3">
                             {pronunciationStandard && (
-                                <div className="bg-white/5 rounded-lg p-2 text-center">
+                                <div className="bg-white/5 rounded-lg p-3 text-center">
                                     <div className="text-white/40 text-xs mb-1">Standard (MSA)</div>
-                                    <div className="text-white/80 font-medium">{pronunciationStandard}</div>
+                                    <div className="text-xl font-arabic text-white/90 mb-1" dir="rtl">{arabicWordWithHarakat}</div>
+                                    <div className="text-white/60 text-sm">{pronunciationStandard}</div>
                                 </div>
                             )}
                             {pronunciationEgyptian && (
-                                <div className="bg-white/5 rounded-lg p-2 text-center">
+                                <div className="bg-white/5 rounded-lg p-3 text-center">
                                     <div className="text-white/40 text-xs mb-1">Egyptian</div>
-                                    <div className="text-white/80 font-medium">{pronunciationEgyptian}</div>
+                                    {egyptianWord && egyptianWord !== arabicWordWithHarakat ? (
+                                        <>
+                                            <div className="text-xl font-arabic text-amber-300/90 mb-1" dir="rtl">{egyptianWord}</div>
+                                            <div className="text-white/60 text-sm">{pronunciationEgyptian}</div>
+                                        </>
+                                    ) : (
+                                        <div className="text-white/60 text-sm mt-2">{pronunciationEgyptian}</div>
+                                    )}
                                 </div>
                             )}
                         </div>

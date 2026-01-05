@@ -512,16 +512,19 @@ export function ExerciseView() {
                                     <div>
                                         <h3 className="text-white/70 font-semibold mb-2 text-sm">Current Word</h3>
                                         <div className="bg-white/5 rounded-lg p-3 space-y-2">
+                                            {/* Show the actual Arabic word, not just transliteration */}
+                                            <div>
+                                                <div className="text-white/40 text-xs">Word</div>
+                                                <div className={`text-white text-lg font-semibold ${currentItem.language === 'arabic' ? 'font-arabic' : ''}`} dir={currentItem.language === 'arabic' ? 'rtl' : 'ltr'}>
+                                                    {currentItem.word}
+                                                </div>
+                                            </div>
                                             {currentItem.transliteration && (
                                                 <div>
                                                     <div className="text-white/40 text-xs">Pronunciation</div>
-                                                    <div className="text-white/80 text-sm">{currentItem.transliteration}</div>
+                                                    <div className="text-white/60 text-sm">{currentItem.transliteration}</div>
                                                 </div>
                                             )}
-                                            <div>
-                                                <div className="text-white/40 text-xs">Language</div>
-                                                <div className="text-white/80 text-sm capitalize">{currentItem.language}</div>
-                                            </div>
                                         </div>
                                     </div>
                                 )}
