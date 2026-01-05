@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { generateLessonContent } from '../../lib/openai';
 import type { Language, MasteryLevel, ContentType } from '../../types';
 
 interface LessonGeneratorProps {
     onLessonCreated: () => void;
+    defaultLanguage?: Language;
 }
 
 const CONTENT_TYPE_INFO: Record<ContentType, { label: string; description: string; icon: string }> = {
@@ -14,15 +15,20 @@ const CONTENT_TYPE_INFO: Record<ContentType, { label: string; description: strin
     paragraph: { label: 'Paragraphs', description: 'Reading passages', icon: '📄' },
 };
 
-export function LessonGenerator({ onLessonCreated }: LessonGeneratorProps) {
+export function LessonGenerator({ onLessonCreated, defaultLanguage = 'arabic' }: LessonGeneratorProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [topic, setTopic] = useState('');
-    const [language, setLanguage] = useState<Language>('spanish');
+    const [language, setLanguage] = useState<Language>(defaultLanguage);
     const [level, setLevel] = useState<MasteryLevel>('new');
     const [contentType, setContentType] = useState<ContentType>('word');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [status, setStatus] = useState<string>('');
+
+    // Update language when defaultLanguage changes (e.g., user switches filter)
+    useEffect(() => {
+        setLanguage(defaultLanguage);
+    }, [defaultLanguage]);
 
     const handleGenerate = async (e: React.FormEvent) => {
         e.preventDefault();

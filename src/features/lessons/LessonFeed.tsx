@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { CardStack } from '../../components/CardStack';
 import { useCardStack } from '../../hooks/useCardStack';
 import { useLessons } from '../../hooks/useLessons';
-import { useVocabulary } from '../../hooks/useVocabulary';
 import { LessonGenerator } from './LessonGenerator';
-import type { CardAction, Language, ContentType, Lesson } from '../../types';
+import type { CardAction, Language, ContentType } from '../../types';
 
 const CONTENT_TYPE_INFO: Record<ContentType | 'all', { label: string; icon: string }> = {
     all: { label: 'All', icon: '📚' },
@@ -15,20 +14,33 @@ const CONTENT_TYPE_INFO: Record<ContentType | 'all', { label: string; icon: stri
     paragraph: { label: 'Reading', icon: '📄' },
 };
 
+// localStorage keys for persisting user preferences
+const LANGUAGE_STORAGE_KEY = 'language-app-language';
+const CONTENT_TYPE_STORAGE_KEY = 'language-app-content-type';
+
 export function LessonFeed() {
     const navigate = useNavigate();
-    const [languageFilter, setLanguageFilter] = useState<Language | 'all'>('all');
-    const [contentFilter, setContentFilter] = useState<ContentType | 'all'>('all');
-    const [previewLesson, setPreviewLesson] = useState<Lesson | null>(null);
+    const [languageFilter, setLanguageFilter] = useState<Language | 'all'>(() => {
+        const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+        return (saved as Language | 'all') || 'arabic';
+    });
+    const [contentFilter, setContentFilter] = useState<ContentType | 'all'>(() => {
+        const saved = localStorage.getItem(CONTENT_TYPE_STORAGE_KEY);
+        return (saved as ContentType | 'all') || 'all';
+    });
+
+    // Persist filter changes to localStorage
+    useEffect(() => {
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, languageFilter);
+    }, [languageFilter]);
+
+    useEffect(() => {
+        localStorage.setItem(CONTENT_TYPE_STORAGE_KEY, contentFilter);
+    }, [contentFilter]);
 
     const { lessons, loading, error, refetch } = useLessons({
         language: languageFilter,
         contentType: contentFilter,
-    });
-
-    // Fetch vocabulary for preview when a lesson is selected
-    const { vocabulary: previewVocab, loading: vocabLoading } = useVocabulary({
-        lessonId: previewLesson?.id || '',
     });
 
     const { activeLessons, savedLessons, handleAction, resetWithLessons } = useCardStack({
@@ -48,20 +60,11 @@ export function LessonFeed() {
 
     const handleCardAction = (action: CardAction) => {
         if (action.type === 'start') {
-            // Find the lesson and show preview
-            const lesson = lessons.find(l => l.id === action.lessonId);
-            if (lesson) {
-                setPreviewLesson(lesson);
-            }
+            // Go directly to the exercise
+            navigate(`/exercise/${action.lessonId}`);
             return;
         }
         handleAction(action);
-    };
-
-    const startLesson = () => {
-        if (previewLesson) {
-            navigate(`/exercise/${previewLesson.id}`);
-        }
     };
 
     return (
@@ -147,112 +150,11 @@ export function LessonFeed() {
                 </div>
             )}
 
-            {/* Lesson Preview Modal */}
-            {previewLesson && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm">
-                    <div className="w-full max-w-md bg-surface-300 sm:rounded-2xl rounded-t-2xl p-6 max-h-[85vh] overflow-y-auto">
-                        {/* Header */}
-                        <div className="flex items-start justify-between mb-4">
-                            <div>
-                                <div className="flex gap-2 mb-2">
-                                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                                        previewLesson.language === 'arabic' ? 'badge-arabic' : 'badge-spanish'
-                                    }`}>
-                                        {previewLesson.language === 'arabic' ? 'العربية' : 'Español'}
-                                    </span>
-                                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-white/10 text-white/70 capitalize">
-                                        {CONTENT_TYPE_INFO[previewLesson.contentType || 'word'].icon} {previewLesson.contentType || 'word'}
-                                    </span>
-                                </div>
-                                <h2 className="text-2xl font-bold text-white">{previewLesson.title}</h2>
-                            </div>
-                            <button
-                                onClick={() => setPreviewLesson(null)}
-                                className="w-8 h-8 text-white/50 hover:text-white"
-                            >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <p className="text-white/70 mb-6">{previewLesson.description}</p>
-
-                        {/* Lesson Stats */}
-                        <div className="flex gap-4 mb-6">
-                            <div className="glass-card px-4 py-2 flex-1 text-center">
-                                <div className="text-2xl font-bold text-white">{previewLesson.vocabCount}</div>
-                                <div className="text-white/50 text-xs">
-                                    {previewLesson.contentType === 'word' ? 'Words'
-                                        : previewLesson.contentType === 'phrase' ? 'Phrases'
-                                        : previewLesson.contentType === 'dialog' ? 'Lines'
-                                        : 'Passages'}
-                                </div>
-                            </div>
-                            <div className="glass-card px-4 py-2 flex-1 text-center">
-                                <div className="text-2xl font-bold text-white">{previewLesson.estimatedMinutes}</div>
-                                <div className="text-white/50 text-xs">Minutes</div>
-                            </div>
-                            <div className="glass-card px-4 py-2 flex-1 text-center">
-                                <div className="text-lg font-bold text-white capitalize">{previewLesson.difficulty}</div>
-                                <div className="text-white/50 text-xs">Level</div>
-                            </div>
-                        </div>
-
-                        {/* Content Preview */}
-                        <div className="mb-6">
-                            <h3 className="text-white/70 font-semibold mb-3">
-                                {previewLesson.contentType === 'word' ? "Words You'll Learn"
-                                    : previewLesson.contentType === 'phrase' ? "Phrases You'll Practice"
-                                    : previewLesson.contentType === 'dialog' ? "Dialog Preview"
-                                    : "Reading Passages"}
-                            </h3>
-                            {vocabLoading ? (
-                                <div className="text-white/50 text-center py-4">Loading words...</div>
-                            ) : previewVocab.length === 0 ? (
-                                <div className="text-white/50 text-center py-4">No words yet</div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {previewVocab.map((item, idx) => (
-                                        <div key={item.id} className="glass-card p-3 flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-white/30 text-sm w-5">{idx + 1}.</span>
-                                                <div>
-                                                    <span className="text-lg text-white">{item.word}</span>
-                                                    {item.transliteration && (
-                                                        <span className="text-white/40 text-sm ml-2">({item.transliteration})</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <span className="text-white/50 text-sm">{item.translation}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="space-y-3">
-                            <button
-                                onClick={startLesson}
-                                disabled={previewVocab.length === 0}
-                                className="w-full py-4 bg-white text-surface-300 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Start Lesson
-                            </button>
-                            <button
-                                onClick={() => setPreviewLesson(null)}
-                                className="w-full py-3 text-white/70 font-medium hover:text-white"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* AI Lesson Generator */}
-            <LessonGenerator onLessonCreated={refetch} />
+            <LessonGenerator
+                onLessonCreated={refetch}
+                defaultLanguage={languageFilter === 'all' ? 'arabic' : languageFilter}
+            />
         </div>
     );
 }

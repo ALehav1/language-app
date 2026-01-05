@@ -89,11 +89,32 @@ export async function generateLessonContent(
     ` : '';
 
   const breakdownInstructions = isArabic ? `
-    CRITICAL - Arabic Letter Breakdown:
-    For "letter_breakdown", provide an array of objects for each letter in the word.
-    - letter: The distinct arabic letter form used
-    - name: The name of the letter (e.g. Alif, Ba, Meem)
-    - sound: The English sound approximation (e.g. 'm', 'b', 'aa')
+    CRITICAL - Arabic Letter Breakdown (WITH VOWELS):
+    For "letter_breakdown", provide an array for EACH SYLLABLE in the word.
+    IMPORTANT: Include the vowel diacritics (harakat) that appear on each letter!
+    
+    Structure for each entry:
+    - letter: The Arabic letter WITH its vowel mark (e.g., "شُ" not just "ش")
+    - name: Letter name + vowel name (e.g., "Sheen + Damma", "Ra + Fatha", "Nun + Sukun")
+    - sound: The COMBINED pronunciation (e.g., "shu", "ra", "n")
+    
+    Arabic vowel marks to include:
+    - Fatha (  َ ) = "a" sound
+    - Damma (  ُ ) = "u" sound  
+    - Kasra (  ِ ) = "i" sound
+    - Sukun (  ْ ) = no vowel (just consonant)
+    - Tanween Fatha ( ً ) = "-an" ending
+    - Tanween Damma ( ٌ ) = "-un" ending
+    - Tanween Kasra ( ٍ ) = "-in" ending
+    - Shadda (  ّ ) = doubled consonant
+    
+    Example for "شُكْرًا" (shukran):
+    [
+      { "letter": "شُ", "name": "Sheen + Damma", "sound": "shu" },
+      { "letter": "كْ", "name": "Kaf + Sukun", "sound": "k" },
+      { "letter": "رً", "name": "Ra + Tanween Fatha", "sound": "ran" },
+      { "letter": "ا", "name": "Alif (silent)", "sound": "-" }
+    ]
     ` : '';
 
   const dialogFields = contentType === 'dialog' ? `,
