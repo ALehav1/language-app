@@ -63,6 +63,17 @@ function normalizeTransliteration(s: string): string {
         .replace(/th/g, 't')
         .replace(/dh/g, 'd')
         .replace(/sh/g, 'š')
+        // Q and K are often interchangeable in transliteration
+        .replace(/q/g, 'k')
+        // Double consonants can be written as single
+        .replace(/tt/g, 't')
+        .replace(/dd/g, 'd')
+        .replace(/ss/g, 's')
+        .replace(/ll/g, 'l')
+        .replace(/mm/g, 'm')
+        .replace(/nn/g, 'n')
+        .replace(/rr/g, 'r')
+        .replace(/bb/g, 'b')
         // Remove hyphens and extra spaces
         .replace(/-/g, ' ')
         .replace(/\s+/g, ' ');

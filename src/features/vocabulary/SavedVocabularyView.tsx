@@ -70,9 +70,9 @@ export function SavedVocabularyView() {
             {/* Header */}
             <header className="flex items-center gap-4 py-4">
                 <button
-                    onClick={() => selectionMode ? setSelectionMode(false) : navigate('/')}
+                    onClick={() => selectionMode ? setSelectionMode(false) : navigate(-1)}
                     className="touch-btn w-10 h-10 bg-white/10 text-white/70 flex items-center justify-center rounded-xl"
-                    aria-label={selectionMode ? 'Exit selection' : 'Back to lessons'}
+                    aria-label={selectionMode ? 'Exit selection' : 'Go back'}
                 >
                     <svg
                         className="w-5 h-5"
