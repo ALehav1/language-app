@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { CardStack } from '../../components/CardStack';
 import { useCardStack } from '../../hooks/useCardStack';
 import { useLessons } from '../../hooks/useLessons';
+import { useVocabulary } from '../../hooks/useVocabulary';
 import { LessonGenerator } from './LessonGenerator';
-import type { CardAction, Language, ContentType } from '../../types';
+import type { CardAction, Language, ContentType, Lesson } from '../../types';
 
 const CONTENT_TYPE_INFO: Record<ContentType | 'all', { label: string; icon: string }> = {
     all: { label: 'All', icon: '📚' },
@@ -28,6 +29,7 @@ export function LessonFeed() {
         const saved = localStorage.getItem(CONTENT_TYPE_STORAGE_KEY);
         return (saved as ContentType | 'all') || 'all';
     });
+    const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
 
     // Persist filter changes to localStorage
     useEffect(() => {
@@ -60,8 +62,11 @@ export function LessonFeed() {
 
     const handleCardAction = (action: CardAction) => {
         if (action.type === 'start') {
-            // Go directly to the exercise
-            navigate(`/exercise/${action.lessonId}`);
+            // Show preview modal instead of going directly to exercise
+            const lesson = activeLessons.find(l => l.id === action.lessonId);
+            if (lesson) {
+                setSelectedLesson(lesson);
+            }
             return;
         }
         handleAction(action);
@@ -133,7 +138,11 @@ export function LessonFeed() {
                     <CardStack
                         lessons={activeLessons}
                         onAction={handleCardAction}
-                        emptyMessage="All caught up! Check back later for new lessons."
+                        emptyMessage={
+                            contentFilter !== 'all'
+                                ? `No ${CONTENT_TYPE_INFO[contentFilter].label.toLowerCase()} lessons yet. Tap + to create one!`
+                                : "All caught up! Check back later for new lessons."
+                        }
                     />
                 )}
             </main>
@@ -155,6 +164,131 @@ export function LessonFeed() {
                 onLessonCreated={refetch}
                 defaultLanguage={languageFilter === 'all' ? 'arabic' : languageFilter}
             />
+
+            {/* Lesson Preview Modal */}
+            {selectedLesson && (
+                <LessonPreviewModal
+                    lesson={selectedLesson}
+                    onClose={() => setSelectedLesson(null)}
+                    onStart={() => {
+                        navigate(`/exercise/${selectedLesson.id}`);
+                        setSelectedLesson(null);
+                    }}
+                />
+            )}
+        </div>
+    );
+}
+
+/** Preview modal that shows lesson info and vocabulary WITHOUT translations */
+function LessonPreviewModal({
+    lesson,
+    onClose,
+    onStart
+}: {
+    lesson: Lesson;
+    onClose: () => void;
+    onStart: () => void;
+}) {
+    const { vocabulary, loading } = useVocabulary({ lessonId: lesson.id });
+    const isArabic = lesson.language === 'arabic';
+    const contentType = lesson.contentType || 'word';
+
+    const contentTypeLabel = contentType === 'word' ? 'Words'
+        : contentType === 'phrase' ? 'Phrases'
+        : contentType === 'dialog' ? 'Dialog Lines'
+        : 'Passages';
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="glass-card w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col animate-card-enter">
+                {/* Header */}
+                <div className="p-6 pb-4">
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 text-white/50 hover:text-white"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+
+                    {/* Badges */}
+                    <div className="flex gap-2 mb-3">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            isArabic ? 'bg-teal-500/20 text-teal-400' : 'bg-amber-500/20 text-amber-400'
+                        }`}>
+                            {isArabic ? 'العربية' : 'Español'}
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-white/70">
+                            {CONTENT_TYPE_INFO[contentType]?.icon} {CONTENT_TYPE_INFO[contentType]?.label}
+                        </span>
+                    </div>
+
+                    <h2 className="text-2xl font-bold text-white mb-2">{lesson.title}</h2>
+                    <p className="text-white/60 text-sm">{lesson.description}</p>
+
+                    {/* Stats */}
+                    <div className="flex gap-4 mt-4">
+                        <div className="flex-1 bg-white/5 rounded-xl p-3 text-center">
+                            <div className="text-xl font-bold text-white">{lesson.vocabCount}</div>
+                            <div className="text-white/50 text-xs">{contentTypeLabel}</div>
+                        </div>
+                        <div className="flex-1 bg-white/5 rounded-xl p-3 text-center">
+                            <div className="text-xl font-bold text-white">{lesson.estimatedMinutes}</div>
+                            <div className="text-white/50 text-xs">Minutes</div>
+                        </div>
+                        <div className="flex-1 bg-white/5 rounded-xl p-3 text-center">
+                            <div className="text-xl font-bold text-white capitalize">{lesson.difficulty}</div>
+                            <div className="text-white/50 text-xs">Level</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Vocabulary Preview - NO TRANSLATIONS */}
+                <div className="flex-1 overflow-y-auto px-6 pb-4">
+                    <h3 className="text-white/70 font-semibold mb-3 text-sm">
+                        {contentTypeLabel} to Practice
+                    </h3>
+                    {loading ? (
+                        <div className="text-white/50 text-center py-4">Loading...</div>
+                    ) : (
+                        <div className="space-y-2">
+                            {vocabulary.map((item, idx) => (
+                                <div
+                                    key={item.id}
+                                    className="bg-white/5 rounded-xl p-3 flex items-center gap-3"
+                                >
+                                    <span className="text-white/30 text-sm w-6">{idx + 1}.</span>
+                                    <div className="flex-1">
+                                        <span
+                                            className={`text-lg text-white ${isArabic ? 'font-arabic' : ''}`}
+                                            dir={isArabic ? 'rtl' : 'ltr'}
+                                        >
+                                            {item.word}
+                                        </span>
+                                        {item.transliteration && (
+                                            <span className="text-white/40 text-sm ml-2">
+                                                ({item.transliteration})
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Start Button */}
+                <div className="p-6 pt-4 border-t border-white/10">
+                    <button
+                        onClick={onStart}
+                        className="w-full py-4 bg-white text-surface-300 font-bold rounded-xl text-lg hover:bg-white/90 transition-all"
+                    >
+                        Start Lesson
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }

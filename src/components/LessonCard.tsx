@@ -2,6 +2,14 @@ import { useRef, useState, type TouchEvent, type MouseEvent } from 'react';
 import { Card } from './Card';
 import { SwipeIndicator } from './SwipeIndicator';
 import type { Lesson, SwipeDirection, CardAction } from '../types/lesson';
+import type { ContentType } from '../types';
+
+const CONTENT_TYPE_LABELS: Record<ContentType, { label: string; icon: string }> = {
+    word: { label: 'Words', icon: 'Aa' },
+    phrase: { label: 'Phrases', icon: '""' },
+    dialog: { label: 'Dialog', icon: '' },
+    paragraph: { label: 'Reading', icon: '' },
+};
 
 interface LessonCardProps {
     lesson: Lesson;
@@ -129,9 +137,14 @@ export function LessonCard({ lesson, stackIndex, onAction, isActive }: LessonCar
 
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
-                        {lesson.language === 'arabic' ? 'العربية' : 'Español'}
-                    </span>
+                    <div className="flex gap-2">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+                            {lesson.language === 'arabic' ? 'العربية' : 'Español'}
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-white/60">
+                            {CONTENT_TYPE_LABELS[lesson.contentType || 'word'].icon} {CONTENT_TYPE_LABELS[lesson.contentType || 'word'].label}
+                        </span>
+                    </div>
                     <span className="text-white/50 text-sm">
                         {lesson.estimatedMinutes} min
                     </span>
@@ -149,7 +162,7 @@ export function LessonCard({ lesson, stackIndex, onAction, isActive }: LessonCar
                 <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/10">
                     <div className="flex items-center gap-2">
                         <span className="text-white/50 text-sm">
-                            {lesson.vocabCount} words
+                            {lesson.vocabCount} {CONTENT_TYPE_LABELS[lesson.contentType || 'word'].label.toLowerCase()}
                         </span>
                         <div className={`px-3 py-1 rounded-full text-xs ${lesson.difficulty === 'new' ? 'bg-emerald-500/20 text-emerald-400' :
                                 lesson.difficulty === 'learning' ? 'bg-amber-500/20 text-amber-400' :

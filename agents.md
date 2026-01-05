@@ -23,11 +23,12 @@ Last Updated: January 4, 2026
 - Status: Phase 5 Complete - Streamlined Flow, Persistent Preferences
 - Working features:
   - Lesson feed with swipeable card stack + "Start Lesson" button
+  - **Content type badge** on each lesson card showing type (Aa Words, "" Phrases, etc.)
   - **Content type filtering** (All/Words/Phrases/Dialog/Paragraphs)
   - Language filtering (All/Arabic/Spanish) - **persists to localStorage**
   - **Filter preferences remembered** - defaults to last used language
   - Swipe gestures: left (dismiss), right (save), down (later), tap (start)
-  - **Direct lesson start** - clicking "Start Lesson" goes straight to exercise
+  - **Lesson preview modal** - clicking "Start Lesson" shows preview with vocabulary (no translations) then starts exercise
   - **AI lesson generation** via OpenAI - syncs with current language filter
   - **Supabase integration** - all data persisted to database
   - **Exercise flow** with prompting, validation, and feedback
@@ -96,7 +97,7 @@ Last Updated: January 4, 2026
 ## Key Files
 
 ### Features
-- `src/features/lessons/LessonFeed.tsx` - Main lesson discovery with persistent filters
+- `src/features/lessons/LessonFeed.tsx` - Main lesson discovery with persistent filters + LessonPreviewModal
 - `src/features/lessons/LessonGenerator.tsx` - AI lesson creation (syncs with current language)
 - `src/features/exercises/ExerciseView.tsx` - Exercise flow with desktop sidebars + resume
 - `src/features/exercises/ExercisePrompt.tsx` - Adaptive content display
@@ -169,6 +170,32 @@ CREATE TYPE content_type AS ENUM ('word', 'phrase', 'dialog', 'paragraph');
 - Semantic equivalence checking
 - Accepts minor typos
 - Returns `{ correct: boolean, feedback: string }`
+
+## Known Issues & Investigation Notes
+
+### Mystery Modal (January 4, 2026)
+**Status:** Unresolved - needs investigation
+
+A modal was observed in production (`language-bgnnugyzz-alehav1s-projects.vercel.app`) showing:
+- "Words You'll Learn" header
+- Numbered list of vocabulary items WITH translations visible (e.g., "مرحبا (marhaba) Hello")
+- Stats: "7 Words | 5 Minutes | New Level"
+- Appeared when clicking "Start Lesson"
+
+**Search conducted (no matches found):**
+- All `.tsx` files in `src/`
+- Patterns: "Words You'll Learn", "You'll", modal patterns, "selectedLesson", "preview", "detail"
+- Git history (4 commits, all on main)
+- Mock files, test files, fixtures - none in src
+- `agents.md` documented "Direct lesson start" (no modal)
+
+**Resolution:**
+- Created new `LessonPreviewModal` in `LessonFeed.tsx` that explicitly hides translations
+- Original modal source remains unknown (possibly cached deployment, uncommitted code, or external source)
+
+**If found later:** Document location and update this section.
+
+---
 
 ## Code Patterns
 
