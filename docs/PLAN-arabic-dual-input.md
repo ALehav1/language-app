@@ -1,7 +1,8 @@
 # Feature: Arabic Transliteration + Translation Input
 
-**Status:** Planning
+**Status:** IMPLEMENTED
 **Created:** January 4, 2026
+**Implemented:** January 4, 2026
 
 ---
 
@@ -252,15 +253,15 @@ function validateTransliteration(user: string, correct: string): boolean {
 ## Task Breakdown
 
 ```
-[ ] 1. Update AnswerResult type with transliteration fields
-[ ] 2. Add validateTransliteration() utility function
-[ ] 3. Modify AnswerInput.tsx for dual input mode
-[ ] 4. Update useExercise.submitAnswer to accept & validate transliteration
-[ ] 5. Update ExerciseView to pass requireTransliteration prop
-[ ] 6. Modify ExerciseFeedback to show dual results
-[ ] 7. Handle null transliteration fallback
-[ ] 8. Test with existing Arabic lessons
-[ ] 9. Clear/handle old localStorage progress format
+[x] 1. Update AnswerResult type with transliteration fields
+[x] 2. Add validateTransliteration() utility function
+[x] 3. Modify AnswerInput.tsx for dual input mode
+[x] 4. Update useExercise.submitAnswer to accept & validate transliteration
+[x] 5. Update ExerciseView to pass requireTransliteration prop
+[x] 6. Modify ExerciseFeedback to show dual results
+[x] 7. Handle null transliteration fallback (skips dual mode if no transliteration)
+[ ] 8. Test with existing Arabic lessons (manual testing)
+[ ] 9. Clear/handle old localStorage progress format (handled gracefully - old format still works)
 ```
 
 ---
