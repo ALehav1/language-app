@@ -167,17 +167,28 @@ export async function evaluateAnswer(
   language: Language
 ): Promise<{ correct: boolean; feedback: string }> {
   const prompt = `
-    Target Word: "${correctAnswer}"
-    User Input: "${userAnswer}"
+    Expected Translation: "${correctAnswer}"
+    User Answer: "${userAnswer}"
     Language: ${language}
-    
-    Is the user input a correct translation or semantically equivalent? 
-    Accept minor typos.
-    
+
+    Is the user's answer a valid translation? Be GENEROUS - accept:
+    - Minor typos and spelling variations
+    - Synonyms and semantically equivalent words
+    - Alternative meanings (e.g., "salaam" = both "peace" AND "hello")
+    - Greetings used interchangeably (hello/hi/hey, goodbye/bye)
+    - Different but correct translations for the same word
+
+    IMPORTANT: Many words have multiple valid translations:
+    - سلام (salaam) = "peace" OR "hello" (greeting derived from peace)
+    - שלום (shalom) = "peace" OR "hello" OR "goodbye"
+    - Greetings often derive from words with other meanings
+
+    Mark correct if the user's answer is ANY valid translation of the word.
+
     Return ONLY JSON:
     {
       "correct": boolean,
-      "feedback": "Short explanation (max 10 words)"
+      "feedback": "Brief explanation (max 10 words)"
     }
   `;
 
