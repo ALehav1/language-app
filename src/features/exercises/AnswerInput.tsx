@@ -137,7 +137,7 @@ export function AnswerInput({
                     rounded-xl flex items-center justify-center gap-2
                     transition-all duration-200
                     ${canSubmit && !disabled && !isLoading
-                        ? 'btn-primary text-white'
+                        ? 'btn-primary'
                         : 'bg-white/20 text-white/40 cursor-not-allowed'
                     }
                 `}
