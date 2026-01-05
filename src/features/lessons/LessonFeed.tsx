@@ -53,11 +53,9 @@ export function LessonFeed() {
         },
     });
 
-    // Update card stack when lessons change
+    // Update card stack when lessons change (including when filtered to empty)
     useEffect(() => {
-        if (lessons.length > 0) {
-            resetWithLessons(lessons);
-        }
+        resetWithLessons(lessons);
     }, [lessons, resetWithLessons]);
 
     const handleCardAction = (action: CardAction) => {
