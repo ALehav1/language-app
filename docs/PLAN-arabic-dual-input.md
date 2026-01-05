@@ -1,8 +1,9 @@
 # Feature: Arabic Transliteration + Translation Input
 
-**Status:** IMPLEMENTED
+**Status:** COMPLETE
 **Created:** January 4, 2026
 **Implemented:** January 4, 2026
+**Deployed:** January 4, 2026
 
 ---
 
@@ -260,22 +261,22 @@ function validateTransliteration(user: string, correct: string): boolean {
 [x] 5. Update ExerciseView to pass requireTransliteration prop
 [x] 6. Modify ExerciseFeedback to show dual results
 [x] 7. Handle null transliteration fallback (skips dual mode if no transliteration)
-[ ] 8. Test with existing Arabic lessons (manual testing)
-[ ] 9. Clear/handle old localStorage progress format (handled gracefully - old format still works)
+[x] 8. Test with existing Arabic lessons (manual testing)
+[x] 9. Clear/handle old localStorage progress format (handled gracefully - old format still works)
 ```
 
 ---
 
-## Files to Modify
+## Files Modified
 
-| File | Change |
-|------|--------|
-| `src/types/lesson.ts` | Add transliteration fields to AnswerResult |
-| `src/features/exercises/AnswerInput.tsx` | Dual input mode |
-| `src/hooks/useExercise.ts` | Accept & validate transliteration |
-| `src/features/exercises/ExerciseView.tsx` | Pass requireTransliteration prop |
-| `src/features/exercises/ExerciseFeedback.tsx` | Show dual results |
-| `src/utils/` (new file?) | validateTransliteration function |
+| File | Change | Status |
+|------|--------|--------|
+| `src/types/lesson.ts` | Add transliteration fields to AnswerResult | Done |
+| `src/features/exercises/AnswerInput.tsx` | Dual input mode | Done |
+| `src/hooks/useExercise.ts` | Accept & validate transliteration | Done |
+| `src/features/exercises/ExerciseView.tsx` | Pass requireTransliteration prop | Done |
+| `src/features/exercises/ExerciseFeedback.tsx` | Show dual results | Done |
+| `src/utils/transliteration.ts` | validateTransliteration function (NEW) | Done |
 
 ---
 

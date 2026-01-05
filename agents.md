@@ -20,7 +20,7 @@ Last Updated: January 4, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 5 Complete - Streamlined Flow, Persistent Preferences
+- Status: Phase 6 Complete - Arabic Dual-Input, Actionable Empty States
 - Working features:
   - Lesson feed with swipeable card stack + "Start Lesson" button
   - **Content type badge** on each lesson card showing type (Aa Words, "" Phrases, etc.)
@@ -29,9 +29,12 @@ Last Updated: January 4, 2026
   - **Filter preferences remembered** - defaults to last used language
   - Swipe gestures: left (dismiss), right (save), down (later), tap (start)
   - **Lesson preview modal** - clicking "Start Lesson" shows preview with vocabulary (no translations) then starts exercise
+  - **Actionable empty states** - "Create Lesson" button when filtering to content types with no lessons
   - **AI lesson generation** via OpenAI - syncs with current language filter
   - **Supabase integration** - all data persisted to database
   - **Exercise flow** with prompting, validation, and feedback
+  - **Arabic dual-input mode** - type BOTH transliteration AND translation for Arabic exercises
+  - **Transliteration validation** - fuzzy matching with Levenshtein distance for typo tolerance
   - **Semantic answer matching** via OpenAI (accepts synonyms/typos)
   - **Skip question** functionality during exercises
   - **Resume lessons** - progress saved to localStorage for 24 hours
@@ -87,6 +90,10 @@ Last Updated: January 4, 2026
 14. Desktop 3-column layout
 15. Persistent language/content type preferences
 16. Generator syncs with current language filter
+17. Lesson preview modal (vocabulary without translations)
+18. Arabic dual-input mode (transliteration + translation)
+19. Transliteration validation with fuzzy matching
+20. Actionable empty states with "Create Lesson" button
 
 ### Remaining (P2)
 1. Audio playback with speed toggle
@@ -117,6 +124,7 @@ Last Updated: January 4, 2026
 
 ### Utils
 - `src/utils/arabicLetters.ts` - Arabic letter breakdown generator (28 letters + diacritics)
+- `src/utils/transliteration.ts` - Transliteration validation with Levenshtein distance
 
 ### Types
 - `src/types/database.ts` - All database types including ContentType
@@ -242,6 +250,21 @@ load exercise → check localStorage → has progress? → show resume prompt
                                                            ↓
                                               [Resume] or [Start Over]
 ```
+
+### Arabic Dual-Input Flow
+```
+Arabic word shown → User types:
+                    1. Transliteration (e.g., "marhaba")
+                    2. Translation (e.g., "hello")
+                 → Both validated separately
+                 → Overall correct = both correct
+                 → Feedback shows both results
+```
+
+**Transliteration validation:**
+- Normalizes input (lowercase, apostrophe variants)
+- Uses Levenshtein distance for fuzzy matching
+- Tolerance scales with word length (1-3 characters)
 
 ## Migrations
 

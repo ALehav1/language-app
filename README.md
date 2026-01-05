@@ -3,7 +3,7 @@
 AI-powered language learning for Arabic (novice) and Spanish (intermediate) that teaches how native speakers actually talk.
 
 **Last Updated**: January 4, 2026
-**Status**: Phase 5 Complete - Streamlined Flow, Persistent Preferences
+**Status**: Phase 6 Complete - Arabic Dual-Input, Actionable Empty States
 
 ---
 
@@ -12,7 +12,8 @@ AI-powered language learning for Arabic (novice) and Spanish (intermediate) that
 ```
 src/
 ├── utils/
-│   └── arabicLetters.ts          # Arabic letter breakdown generator
+│   ├── arabicLetters.ts          # Arabic letter breakdown generator
+│   └── transliteration.ts        # Transliteration validation with fuzzy matching
 ├── features/
 │   ├── lessons/
 │   │   ├── LessonFeed.tsx        # Main feed with language + content type filters
@@ -199,17 +200,19 @@ Create lessons for different learning styles:
 - **Letter breakdown** for Arabic words with vowel diacritics
 
 ### Exercise Flow
-1. Tap **Start Lesson** on any lesson card - goes directly to exercise
-2. See content in target language with adaptive sizing
-3. Type the English translation
-4. Get immediate feedback with **detailed word breakdown**:
+1. Tap **Start Lesson** on any lesson card - shows preview modal with vocabulary (no translations)
+2. Click **Start Lesson** in preview to begin exercise
+3. See content in target language with adaptive sizing
+4. **For Arabic**: Type BOTH pronunciation (transliteration) AND English translation
+5. **For Spanish**: Type the English translation only
+6. Get immediate feedback with **detailed word breakdown**:
    - Word + translation + pronunciation
    - **Hebrew Connection** (Arabic only) - shows cognate or explains why none exists
    - **Letter Breakdown** (Arabic only) - each letter with name, diacritics, and combined sound
-5. **Save items** by tapping the heart icon
-6. **Skip questions** if needed
-7. **Resume later** - progress auto-saved for 24 hours
-8. See final score at completion
+7. **Save items** by tapping the heart icon
+8. **Skip questions** if needed
+9. **Resume later** - progress auto-saved for 24 hours
+10. See final score at completion
 
 ### Desktop Layout
 On larger screens (1024px+), exercises show:
@@ -315,11 +318,21 @@ Test at these breakpoints IN ORDER:
 
 ## Completed Features
 
-- Lesson discovery with swipeable cards
+### Phase 6 (Current)
+- **Arabic dual-input mode**: Type BOTH transliteration AND translation for Arabic exercises
+- **Transliteration validation**: Fuzzy matching with Levenshtein distance for typo tolerance
+- **Lesson preview modal**: Shows vocabulary list (without translations) before starting
+- **Actionable empty states**: "Create Lesson" button when filtering to content types with no lessons
+
+### Phase 5
 - Language + content type filtering (persists to localStorage)
+- Generator syncs with current language filter
+- Persistent user preferences
+
+### Phase 1-4
+- Lesson discovery with swipeable cards
 - Content types: words, phrases, dialogs, paragraphs
-- Direct lesson start (no preview modal)
-- AI lesson generation via OpenAI (syncs with current language)
+- AI lesson generation via OpenAI
 - Exercise flow with prompting, validation, and feedback
 - Semantic answer matching via OpenAI
 - Arabic support: script, transliteration, Hebrew cognates, letter breakdown with diacritics
@@ -332,7 +345,6 @@ Test at these breakpoints IN ORDER:
 - Supabase integration for all data
 - Spaced repetition mastery tracking
 - Mobile-first UI with 48x48px touch targets
-- Persistent user preferences
 
 ---
 
