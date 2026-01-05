@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useExercise } from '../../hooks/useExercise';
 import { useVocabulary } from '../../hooks/useVocabulary';
 import { useLessonProgress } from '../../hooks/useLessonProgress';
-import { useSavedVocabulary } from '../../hooks/useSavedVocabulary';
+import { useSavedWords } from '../../hooks/useSavedWords';
 import { ExercisePrompt } from './ExercisePrompt';
 import { AnswerInput } from './AnswerInput';
 import { ExerciseFeedback } from './ExerciseFeedback';
@@ -33,7 +33,7 @@ export function ExerciseView() {
         fromSavedWords: isSavedPractice,  // Fetch from saved_words table for practice
     });
     const { saveProgress, updateVocabularyMastery } = useLessonProgress();
-    const { saveItem, isItemSaved } = useSavedVocabulary();
+    const { saveWord, markForReview, isMarkedForReview } = useSavedWords();
 
     const {
         phase,
@@ -70,9 +70,34 @@ export function ExerciseView() {
                     answers: results,
                 });
 
-                // Update mastery levels for each item
+                // Update mastery levels for each item AND auto-save to vocabulary
                 for (const result of results) {
                     await updateVocabularyMastery(result.itemId, result.correct);
+                    
+                    // Auto-save Arabic words to saved_words with 'solid' status
+                    const item = vocabItems.find(v => v.id === result.itemId);
+                    if (item && item.language === 'arabic') {
+                        await saveWord(
+                            {
+                                word: item.word,
+                                translation: item.translation,
+                                pronunciation_standard: item.transliteration,
+                                letter_breakdown: item.letter_breakdown || undefined,
+                                hebrew_cognate: item.hebrew_cognate || undefined,
+                                status: 'solid',  // Auto-saved as solid (practiced)
+                                times_practiced: 1,
+                                times_correct: result.correct ? 1 : 0,
+                            },
+                            {
+                                content_type: item.content_type || 'word',
+                                full_text: item.word,
+                                full_transliteration: item.transliteration,
+                                full_translation: item.translation,
+                                lesson_id: lessonId,
+                                vocabulary_item_id: item.id,
+                            }
+                        );
+                    }
                 }
             }
         },
@@ -444,8 +469,24 @@ export function ExerciseView() {
                                     item={currentItem}
                                     onContinue={continueToNext}
                                     isLastQuestion={currentIndex === totalItems - 1}
-                                    onSave={() => saveItem(currentItem.id, currentItem)}
-                                    isSaved={isItemSaved(currentItem.id)}
+                                    onSave={() => markForReview(
+                                        {
+                                            word: currentItem.word,
+                                            translation: currentItem.translation,
+                                            pronunciation_standard: currentItem.transliteration,
+                                            letter_breakdown: currentItem.letter_breakdown || undefined,
+                                            hebrew_cognate: currentItem.hebrew_cognate || undefined,
+                                        },
+                                        {
+                                            content_type: currentItem.content_type || 'word',
+                                            full_text: currentItem.word,
+                                            full_transliteration: currentItem.transliteration,
+                                            full_translation: currentItem.translation,
+                                            lesson_id: lessonId,
+                                            vocabulary_item_id: currentItem.id,
+                                        }
+                                    )}
+                                    isSaved={isMarkedForReview(currentItem.word)}
                                 />
                             )}
                         </div>

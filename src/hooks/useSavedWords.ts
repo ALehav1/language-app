@@ -94,6 +94,9 @@ export function useSavedWords(options?: {
             letter_breakdown?: LetterBreakdown[];
             hebrew_cognate?: HebrewCognate;
             topic?: string;
+            status?: WordStatus;  // Default: 'solid' (auto-saved from practice)
+            times_practiced?: number;
+            times_correct?: number;
         },
         context?: {
             content_type: 'word' | 'phrase' | 'dialog' | 'paragraph' | 'lookup';
@@ -127,7 +130,8 @@ export function useSavedWords(options?: {
                 if (error) throw error;
                 savedWord = data;
             } else {
-                // Insert new word
+                // Insert new word - default to 'solid' (auto-saved from practice)
+                // Heart button will change to 'needs_review' for priority words
                 const { data, error } = await supabase
                     .from('saved_words')
                     .insert({
@@ -140,10 +144,10 @@ export function useSavedWords(options?: {
                         hebrew_cognate: wordData.hebrew_cognate || null,
                         topic: wordData.topic || null,
                         tags: null,
-                        status: 'needs_review',
-                        times_practiced: 0,
-                        times_correct: 0,
-                        last_practiced: null,
+                        status: wordData.status || 'solid',  // Default to solid (practiced)
+                        times_practiced: wordData.times_practiced || 1,
+                        times_correct: wordData.times_correct || 0,
+                        last_practiced: new Date().toISOString(),
                         next_review: null,
                     })
                     .select()
@@ -257,9 +261,55 @@ export function useSavedWords(options?: {
         }
     }, [words]);
 
+    // Mark a word for additional review (heart button)
+    // If word exists, change status to needs_review
+    // If word doesn't exist, save it with needs_review status
+    const markForReview = useCallback(async (
+        wordData: {
+            word: string;
+            translation: string;
+            pronunciation_standard?: string;
+            pronunciation_egyptian?: string;
+            letter_breakdown?: LetterBreakdown[];
+            hebrew_cognate?: HebrewCognate;
+        },
+        context?: {
+            content_type: 'word' | 'phrase' | 'dialog' | 'paragraph' | 'lookup';
+            full_text: string;
+            full_transliteration?: string;
+            full_translation: string;
+            lesson_id?: string;
+            vocabulary_item_id?: string;
+        }
+    ): Promise<void> => {
+        try {
+            // Check if word already exists
+            const { data: existing } = await supabase
+                .from('saved_words')
+                .select('id, status')
+                .eq('word', wordData.word)
+                .single();
+
+            if (existing) {
+                // Word exists - mark for review
+                await updateStatus(existing.id, 'needs_review');
+            } else {
+                // Save new word with needs_review status
+                await saveWord({ ...wordData, status: 'needs_review' }, context);
+            }
+        } catch (err) {
+            console.error('Error marking for review:', err);
+        }
+    }, [updateStatus, saveWord]);
+
     // Check if a word is already saved
     const isWordSaved = useCallback((arabicWord: string): boolean => {
         return words.some(w => w.word === arabicWord);
+    }, [words]);
+
+    // Check if a word is marked for review
+    const isMarkedForReview = useCallback((arabicWord: string): boolean => {
+        return words.some(w => w.word === arabicWord && w.status === 'needs_review');
     }, [words]);
 
     // Get unique topics for filtering
@@ -280,7 +330,9 @@ export function useSavedWords(options?: {
         updateStatus,
         removeWord,
         recordPractice,
+        markForReview,
         isWordSaved,
+        isMarkedForReview,
         refetch: fetchWords,
         topics,
         counts,
