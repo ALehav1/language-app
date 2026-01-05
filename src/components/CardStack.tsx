@@ -1,5 +1,4 @@
 import { LessonCard } from './LessonCard';
-import { ActionButtons } from './ActionButtons';
 import type { Lesson, CardAction } from '../types/lesson';
 
 interface CardStackProps {
@@ -12,7 +11,6 @@ const MAX_VISIBLE_CARDS = 3;
 
 export function CardStack({ lessons, onAction, onCreateLesson }: CardStackProps) {
     const visibleLessons = lessons.slice(0, MAX_VISIBLE_CARDS);
-    const currentLesson = lessons[0];
 
     if (lessons.length === 0) {
         return (
@@ -42,15 +40,9 @@ export function CardStack({ lessons, onAction, onCreateLesson }: CardStackProps)
         );
     }
 
-    const handleButtonAction = (type: 'dismiss' | 'save') => {
-        if (currentLesson) {
-            onAction({ type, lessonId: currentLesson.id, timestamp: Date.now() });
-        }
-    };
-
     return (
         <div className="flex flex-col h-full">
-            {/* Card Stack Area */}
+            {/* Card Stack Area - Start Lesson button is on the card itself */}
             <div className="relative flex-1 min-h-[320px] pt-4">
                 {visibleLessons.map((lesson, index) => (
                     <LessonCard
@@ -62,14 +54,6 @@ export function CardStack({ lessons, onAction, onCreateLesson }: CardStackProps)
                     />
                 ))}
             </div>
-
-            {/* Action Buttons - Skip and Save only */}
-            <ActionButtons
-                onDismiss={() => handleButtonAction('dismiss')}
-                onSave={() => handleButtonAction('save')}
-                disabled={lessons.length === 0}
-            />
-
         </div>
     );
 }
