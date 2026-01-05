@@ -210,12 +210,12 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                     </button>
                 )}
 
-                {/* Continue button */}
+                {/* Next button */}
                 <button
                     onClick={onContinue}
                     className="flex-1 touch-btn py-4 text-lg font-semibold rounded-xl btn-primary"
                 >
-                    {isLastQuestion ? 'See Results' : 'Continue'}
+                    {isLastQuestion ? 'See Results' : 'Next'}
                 </button>
             </div>
         </div>
