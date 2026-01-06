@@ -119,9 +119,9 @@ export function MyVocabularyView() {
             <header className="sticky top-0 z-40 bg-surface-300/95 backdrop-blur-sm border-b border-white/10">
                 <div className="flex items-center gap-4 p-4">
                     <button
-                        onClick={() => selectionMode ? setSelectionMode(false) : navigate(-1)}
+                        onClick={() => selectionMode ? setSelectionMode(false) : navigate('/')}
                         className="touch-btn w-10 h-10 bg-white/10 text-white/70 flex items-center justify-center rounded-xl"
-                        aria-label={selectionMode ? 'Exit selection' : 'Go back'}
+                        aria-label={selectionMode ? 'Exit selection' : 'Back to menu'}
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

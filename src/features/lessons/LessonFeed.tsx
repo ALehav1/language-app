@@ -73,26 +73,33 @@ export function LessonFeed() {
 
     return (
         <div className="min-h-screen flex flex-col">
-            {/* Simple Header */}
+            {/* Header with back button, title, and filter */}
             <header className="px-4 pt-4 pb-2">
                 <div className="flex items-center justify-between">
                     <button
-                        onClick={() => setMenuOpen(true)}
-                        className="touch-btn w-12 h-12 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center rounded-xl"
-                        aria-label="Open settings"
+                        onClick={() => navigate('/')}
+                        className="touch-btn w-10 h-10 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center rounded-xl"
+                        aria-label="Back to menu"
                     >
-                        {/* Sliders/filter icon - better signals popup menu than hamburger */}
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <div className="text-center">
+                    <div className="text-center flex-1">
                         <h1 className="text-lg font-bold text-white">{currentTypeLabel}</h1>
                         <span className="text-white/50 text-xs">
                             {languageFilter === 'arabic' ? 'العربية' : 'Español'}
                         </span>
                     </div>
-                    <div className="w-12" /> {/* Spacer for centering */}
+                    <button
+                        onClick={() => setMenuOpen(true)}
+                        className="touch-btn w-10 h-10 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center rounded-xl"
+                        aria-label="Filter settings"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        </svg>
+                    </button>
                 </div>
             </header>
 
