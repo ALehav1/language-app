@@ -97,7 +97,8 @@ export async function generateLessonContent(
   language: Language,
   level: MasteryLevel,
   contentType: ContentType = 'word',
-  arabicDialect: ArabicDialect = 'standard'
+  arabicDialect: ArabicDialect = 'standard',
+  excludeWords: string[] = []  // Words the user has already practiced - avoid these
 ): Promise<AIContent> {
   const isArabic = language === 'arabic';
   const itemCount = CONTENT_TYPE_COUNTS[contentType];
@@ -169,9 +170,17 @@ export async function generateLessonContent(
       'Modern Standard Arabic: Use formal/classical pronunciation and vocabulary.'}
     ` : '';
 
+  // Instruction to avoid already-practiced words
+  const excludeInstruction = excludeWords.length > 0 ? `
+    IMPORTANT: The user has already practiced these words. DO NOT include them:
+    ${excludeWords.slice(0, 50).join(', ')}
+    Generate NEW vocabulary the user hasn't seen yet.
+    ` : '';
+
   const prompt = `
     Create a language lesson for ${language} (${level} level) about "${topic}".
     ${dialectInstruction}
+    ${excludeInstruction}
     CONTENT TYPE: ${contentType.toUpperCase()}
     ${CONTENT_TYPE_INSTRUCTIONS[contentType]}
 
@@ -254,14 +263,18 @@ export async function evaluateAnswer(
 }
 
 /**
- * Example sentence showing the word in context.
+ * Example sentence showing the word in context - with both MSA and Egyptian versions.
  */
 export interface ExampleSentence {
-  arabic: string;           // Full Arabic sentence with harakat
-  transliteration: string;  // How to pronounce it
-  english: string;          // English translation
-  word_highlighted: string; // The target word in the sentence (for highlighting)
-  explanation?: string;     // Grammar/usage note if helpful
+  // MSA (formal) version
+  arabic_msa: string;              // MSA sentence with harakat
+  transliteration_msa: string;     // MSA pronunciation
+  // Egyptian (spoken) version - THIS IS THE PRIMARY VERSION
+  arabic_egyptian: string;         // Egyptian Arabic sentence
+  transliteration_egyptian: string; // Egyptian pronunciation
+  // Shared
+  english: string;                 // English translation
+  explanation?: string;            // Usage note - when to use Egyptian vs MSA
 }
 
 /**
@@ -279,12 +292,17 @@ export interface LookupResult {
     name: string;
     sound: string;
   }>;
+  letter_breakdown_egyptian?: Array<{  // Egyptian word letter breakdown
+    letter: string;
+    name: string;
+    sound: string;
+  }>;
   hebrew_cognate?: {
     root: string;
     meaning: string;
     notes?: string;
   };
-  example_sentences: ExampleSentence[];  // 2-3 example sentences showing usage
+  example_sentences: ExampleSentence[];  // 2-3 example sentences with MSA + Egyptian versions
 }
 
 /**
@@ -319,23 +337,30 @@ export async function lookupWord(input: string): Promise<LookupResult> {
     
     6. Hebrew cognate ONLY if genuine shared Semitic root exists
     
-    7. Provide 2-3 EXAMPLE SENTENCES showing the word in real context:
-       - Each sentence should be simple and useful for a learner
-       - Include Arabic (with harakat), transliteration, and English translation
-       - Add a brief explanation of any grammar or usage notes
-       - Show the word in different contexts (question, statement, etc.)
+    7. Provide 2-3 EXAMPLE SENTENCES showing the word in EVERYDAY SPOKEN context:
+       - CRITICAL: Provide BOTH MSA and Egyptian Arabic versions of EACH sentence
+       - Egyptian version should use the ACTUAL words Egyptians use in daily speech
+       - For "work": MSA uses عَمَل but Egyptian uses شُغْل - the WHOLE sentence changes!
+       - Focus on practical, everyday situations (not formal/literary)
+       - Include transliteration for both versions
+       - Add explanation noting key differences between MSA and Egyptian
     
     Return ONLY valid JSON:
     {
       "detected_language": "arabic" | "english",
-      "arabic_word": "Arabic word WITH harakat (e.g., عَمَل not عمل)",
-      "arabic_word_egyptian": "Egyptian Arabic word if different (e.g., شُغْل)",
+      "arabic_word": "MSA word WITH harakat (e.g., عَمَل not عمل)",
+      "arabic_word_egyptian": "Egyptian word if different (e.g., شُغْل) - REQUIRED if different!",
       "translation": "English translation",
       "pronunciation_standard": "MSA transliteration",
-      "pronunciation_egyptian": "Egyptian transliteration (of Egyptian word if different)",
+      "pronunciation_egyptian": "Egyptian transliteration (of Egyptian word)",
       "letter_breakdown": [
         { "letter": "عَ", "name": "Ayn with fatha", "sound": "a" },
         { "letter": "مَ", "name": "Meem with fatha", "sound": "ma" },
+        { "letter": "ل", "name": "Lam", "sound": "l" }
+      ],
+      "letter_breakdown_egyptian": [
+        { "letter": "شُ", "name": "Sheen with damma", "sound": "shu" },
+        { "letter": "غْ", "name": "Ghayn with sukun", "sound": "gh" },
         { "letter": "ل", "name": "Lam", "sound": "l" }
       ],
       "hebrew_cognate": {
@@ -345,11 +370,12 @@ export async function lookupWord(input: string): Promise<LookupResult> {
       }, // OMIT if no genuine cognate
       "example_sentences": [
         {
-          "arabic": "أَنَا أُحِبُّ العَمَلَ",
-          "transliteration": "ana uhibbu al-'amala",
+          "arabic_msa": "أَنَا أُحِبُّ العَمَلَ",
+          "transliteration_msa": "ana uhibbu al-'amala",
+          "arabic_egyptian": "أَنَا بَحِبّ الشُغْل",
+          "transliteration_egyptian": "ana bahibb el-shoghl",
           "english": "I love work",
-          "word_highlighted": "العَمَلَ",
-          "explanation": "The word takes the accusative case (-a ending) because it's the object"
+          "explanation": "Egyptian uses بَحِبّ (bahibb) instead of أُحِبُّ, and شُغْل (shoghl) instead of عَمَل"
         }
       ]
     }

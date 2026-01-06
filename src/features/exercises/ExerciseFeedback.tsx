@@ -222,28 +222,47 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                     </div>
                 )}
 
-                {/* 3. Example Sentences */}
+                {/* 3. Example Sentences - Egyptian (spoken) first, then MSA */}
                 {isArabic && enhancedData?.example_sentences && enhancedData.example_sentences.length > 0 && (
                     <div className="glass-card p-4">
                         <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-3">Example Sentences</div>
                         <div className="space-y-4">
                             {enhancedData.example_sentences.map((sentence, idx) => (
-                                <div key={idx} className="bg-white/5 rounded-xl p-3 space-y-2">
-                                    {/* Arabic sentence */}
-                                    <div className="text-xl font-arabic text-white text-right" dir="rtl">
-                                        {sentence.arabic}
+                                <div key={idx} className="bg-white/5 rounded-xl p-3 space-y-3">
+                                    {/* Egyptian (spoken) - PRIMARY */}
+                                    <div className="border-l-2 border-amber-500/50 pl-3">
+                                        <div className="text-amber-400/60 text-xs font-bold uppercase tracking-wider mb-1">
+                                            🇪🇬 Egyptian (Spoken)
+                                        </div>
+                                        <div className="text-xl font-arabic text-white text-right" dir="rtl">
+                                            {sentence.arabic_egyptian}
+                                        </div>
+                                        <div className="text-sm text-amber-400/80 italic">
+                                            {sentence.transliteration_egyptian}
+                                        </div>
                                     </div>
-                                    {/* Transliteration */}
-                                    <div className="text-sm text-teal-400/80 italic">
-                                        {sentence.transliteration}
+                                    
+                                    {/* MSA (formal) */}
+                                    <div className="border-l-2 border-teal-500/30 pl-3 opacity-70">
+                                        <div className="text-teal-400/60 text-xs font-bold uppercase tracking-wider mb-1">
+                                            📖 MSA (Formal)
+                                        </div>
+                                        <div className="text-lg font-arabic text-white/80 text-right" dir="rtl">
+                                            {sentence.arabic_msa}
+                                        </div>
+                                        <div className="text-sm text-teal-400/60 italic">
+                                            {sentence.transliteration_msa}
+                                        </div>
                                     </div>
+                                    
                                     {/* English translation */}
-                                    <div className="text-white/80">
+                                    <div className="text-white/80 pt-1">
                                         {sentence.english}
                                     </div>
+                                    
                                     {/* Explanation if present */}
                                     {sentence.explanation && (
-                                        <div className="text-xs text-white/40 border-t border-white/10 pt-2 mt-2">
+                                        <div className="text-xs text-white/40 border-t border-white/10 pt-2">
                                             💡 {sentence.explanation}
                                         </div>
                                     )}

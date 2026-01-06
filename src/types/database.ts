@@ -18,13 +18,17 @@ export interface LetterBreakdown {
   sound: string;
 }
 
-/** Example sentence showing word in context */
+/** Example sentence showing word in context - with both MSA and Egyptian versions */
 export interface ExampleSentence {
-  arabic: string;           // Full Arabic sentence with harakat
-  transliteration: string;  // How to pronounce it
-  english: string;          // English translation
-  word_highlighted: string; // The target word in the sentence
-  explanation?: string;     // Grammar/usage note
+  // MSA (formal) version
+  arabic_msa: string;              // MSA sentence with harakat
+  transliteration_msa: string;     // MSA pronunciation
+  // Egyptian (spoken) version - PRIMARY for everyday use
+  arabic_egyptian: string;         // Egyptian Arabic sentence
+  transliteration_egyptian: string; // Egyptian pronunciation
+  // Shared
+  english: string;                 // English translation
+  explanation?: string;            // Usage note - when to use Egyptian vs MSA
 }
 
 export interface VocabularyItem {

@@ -63,11 +63,21 @@ export function LessonGenerator({
 
         setIsGenerating(true);
         setError(null);
-        setStatus('Asking AI to create lesson...');
+        setStatus('Fetching your vocabulary...');
 
         try {
-            // 1. Generate Content
-            const content = await generateLessonContent(topic, language, level, contentType, arabicDialect);
+            // 0. Fetch user's saved words to exclude from new lessons
+            const { data: savedWords } = await supabase
+                .from('saved_words')
+                .select('word')
+                .limit(100);
+            
+            const excludeWords = savedWords?.map(w => w.word) || [];
+            
+            setStatus('Asking AI to create lesson...');
+
+            // 1. Generate Content (excluding already-practiced words)
+            const content = await generateLessonContent(topic, language, level, contentType, arabicDialect, excludeWords);
 
             setStatus('Saving to database...');
 
