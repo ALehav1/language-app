@@ -207,25 +207,26 @@ Create lessons for different learning styles:
 - **Paragraphs**: Reading passages (2 passages)
 
 ### AI Lesson Generation
-- Open menu and tap **Create Lesson** button
+- Open menu and tap **+** next to any content type
 - **Defaults to your current language filter** (syncs automatically)
-- Select content type (Words, Phrases, Dialog, Paragraphs)
 - Enter a topic (e.g., "At the grocery store")
-- Select language and difficulty level
+- Select difficulty level (Beginner/Intermediate/Advanced)
+- **Select dialect** (Standard MSA or Egyptian Arabic)
 - AI generates appropriate content with translations
-- **Hebrew cognates** for Arabic (only genuine Semitic connections)
+- **Goes directly to exercise** after generation (no intermediate screen)
+- **Hebrew cognates** for Arabic (static lookup table with 150+ mappings)
 - **Letter breakdown** for Arabic words with vowel diacritics
 
 ### Exercise Flow
 1. Tap **Start Lesson** on any lesson card - goes directly to exercise
-2. See content in target language with "Write in English" instruction
-3. **For Arabic**: Type BOTH pronunciation (transliteration) AND English translation
-4. **For Spanish**: Type the English translation only
-5. Get immediate feedback with **detailed word breakdown**:
+2. Or create a new lesson - goes directly to exercise after AI generates
+3. See content in target language with "Write in English" instruction
+4. **For Arabic**: Type BOTH pronunciation (transliteration) AND English translation
+5. **For Spanish**: Type the English translation only
+6. Get immediate feedback with **detailed word breakdown**:
    - Word + translation + pronunciation
    - **Hebrew Connection** (Arabic only) - shows cognate or explains why none exists
    - **Letter Breakdown** (Arabic only) - horizontal cards, RTL order with proper RTL wrapping
-6. **Save items** by tapping the heart icon
 7. **Skip questions** if needed
 8. **Resume later** - progress auto-saved for 24 hours
 9. See final score at completion

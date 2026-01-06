@@ -49,9 +49,11 @@ Last Updated: January 6, 2026 (Phase 15 Complete)
     - Mark as learned or delete
   - Lesson feed with card stack + "Start Lesson" button
   - **Direct lesson start** - clicking "Start Lesson" goes directly to exercise
+  - **Direct to exercise after creation** - AI generates lesson → goes straight to exercise (no intermediate screen)
+  - **Dialect selector** - choose Standard MSA or Egyptian Arabic when creating lessons
   - **Content type badge** on each lesson card
   - **Filter preferences remembered** - persists to localStorage
-  - **AI lesson generation** via OpenAI - syncs with current filters
+  - **AI lesson generation** via OpenAI - syncs with current filters, respects dialect choice
   - **Supabase integration** - all data persisted to database
   - **Exercise flow** with prompting, validation, and feedback
   - **Arabic dual-input mode** - type BOTH transliteration AND translation
