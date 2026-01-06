@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { SavedWord, WordContext, SavedWordWithContexts, WordStatus, LetterBreakdown, HebrewCognate } from '../types';
+import type { SavedWord, WordContext, SavedWordWithContexts, WordStatus, LetterBreakdown, HebrewCognate, ExampleSentence } from '../types';
 
 /**
  * Hook for managing saved Arabic vocabulary words.
@@ -93,6 +93,7 @@ export function useSavedWords(options?: {
             pronunciation_egyptian?: string;
             letter_breakdown?: LetterBreakdown[];
             hebrew_cognate?: HebrewCognate;
+            example_sentences?: ExampleSentence[];
             topic?: string;
             status?: WordStatus;  // Default: 'active' (still practicing)
             times_practiced?: number;
@@ -141,6 +142,7 @@ export function useSavedWords(options?: {
                         pronunciation_egyptian: wordData.pronunciation_egyptian || null,
                         letter_breakdown: wordData.letter_breakdown || null,
                         hebrew_cognate: wordData.hebrew_cognate || null,
+                        example_sentences: wordData.example_sentences || null,
                         topic: wordData.topic || null,
                         tags: null,
                         status: wordData.status || 'active',  // Default to active (practicing)
@@ -278,6 +280,7 @@ export function useSavedWords(options?: {
             pronunciation_egyptian?: string;
             letter_breakdown?: LetterBreakdown[];
             hebrew_cognate?: HebrewCognate;
+            example_sentences?: ExampleSentence[];
         },
         context?: {
             content_type: 'word' | 'phrase' | 'dialog' | 'paragraph' | 'lookup';

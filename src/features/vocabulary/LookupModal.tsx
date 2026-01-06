@@ -55,6 +55,7 @@ export function LookupModal({ isOpen, onClose }: LookupModalProps) {
                     pronunciation_egyptian: result.pronunciation_egyptian,
                     letter_breakdown: result.letter_breakdown,
                     hebrew_cognate: result.hebrew_cognate,
+                    example_sentences: result.example_sentences,
                 },
                 {
                     content_type: 'lookup',

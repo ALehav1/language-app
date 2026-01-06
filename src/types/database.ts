@@ -18,6 +18,15 @@ export interface LetterBreakdown {
   sound: string;
 }
 
+/** Example sentence showing word in context */
+export interface ExampleSentence {
+  arabic: string;           // Full Arabic sentence with harakat
+  transliteration: string;  // How to pronounce it
+  english: string;          // English translation
+  word_highlighted: string; // The target word in the sentence
+  explanation?: string;     // Grammar/usage note
+}
+
 export interface VocabularyItem {
   id: string;
   word: string;
@@ -86,6 +95,7 @@ export interface SavedWord {
   // Learning metadata
   letter_breakdown: LetterBreakdown[] | null;
   hebrew_cognate: HebrewCognate | null;
+  example_sentences: ExampleSentence[] | null;  // Example sentences showing usage
   
   // Organization
   topic: string | null;

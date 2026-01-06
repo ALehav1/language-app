@@ -222,7 +222,38 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                     </div>
                 )}
 
-                {/* 3. Arabic Letter Breakdown - Each word on its own line, RTL */}
+                {/* 3. Example Sentences */}
+                {isArabic && enhancedData?.example_sentences && enhancedData.example_sentences.length > 0 && (
+                    <div className="glass-card p-4">
+                        <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-3">Example Sentences</div>
+                        <div className="space-y-4">
+                            {enhancedData.example_sentences.map((sentence, idx) => (
+                                <div key={idx} className="bg-white/5 rounded-xl p-3 space-y-2">
+                                    {/* Arabic sentence */}
+                                    <div className="text-xl font-arabic text-white text-right" dir="rtl">
+                                        {sentence.arabic}
+                                    </div>
+                                    {/* Transliteration */}
+                                    <div className="text-sm text-teal-400/80 italic">
+                                        {sentence.transliteration}
+                                    </div>
+                                    {/* English translation */}
+                                    <div className="text-white/80">
+                                        {sentence.english}
+                                    </div>
+                                    {/* Explanation if present */}
+                                    {sentence.explanation && (
+                                        <div className="text-xs text-white/40 border-t border-white/10 pt-2 mt-2">
+                                            💡 {sentence.explanation}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 4. Arabic Letter Breakdown - Each word on its own line, RTL */}
                 {isArabic && wordBreakdowns.length > 0 && (
                     <div className="glass-card p-4">
                         <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider mb-3">Letter Breakdown</div>
