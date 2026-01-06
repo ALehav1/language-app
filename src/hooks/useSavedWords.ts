@@ -84,7 +84,7 @@ export function useSavedWords(options?: {
         fetchWords();
     }, [fetchWords]);
 
-    // Save a new word with context
+    // Save a new word with context and optional memory aids
     const saveWord = useCallback(async (
         wordData: {
             word: string;
@@ -98,6 +98,8 @@ export function useSavedWords(options?: {
             status?: WordStatus;  // Default: 'active' (still practicing)
             times_practiced?: number;
             times_correct?: number;
+            memory_note?: string;      // Optional memory note
+            memory_image_url?: string; // Optional memory image
         },
         context?: {
             content_type: 'word' | 'phrase' | 'dialog' | 'paragraph' | 'lookup';
@@ -150,6 +152,8 @@ export function useSavedWords(options?: {
                         times_correct: wordData.times_correct || 0,
                         last_practiced: new Date().toISOString(),
                         next_review: null,
+                        memory_note: wordData.memory_note || null,
+                        memory_image_url: wordData.memory_image_url || null,
                     })
                     .select()
                     .single();
