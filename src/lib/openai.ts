@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import type { Language, MasteryLevel, ContentType, ArabicDialect } from '../types/database';
+import { findHebrewCognate } from '../utils/hebrewCognates';
 
 // Initialize client (dangerouslyAllowBrowser for P1 demo, backend proxy recommended for prod)
 export const openai = new OpenAI({
@@ -397,5 +398,23 @@ export async function lookupWord(input: string): Promise<LookupResult> {
     })
   );
 
-  return JSON.parse(response.choices[0].message.content || '{}');
+  const result = JSON.parse(response.choices[0].message.content || '{}') as LookupResult;
+  
+  // Override AI's hebrew_cognate with static lookup table (more reliable)
+  const arabicWord = result.arabic_word || result.arabic_word_egyptian || input;
+  const staticCognate = findHebrewCognate(arabicWord);
+  
+  if (staticCognate) {
+    // Use static lookup - always more reliable than AI
+    result.hebrew_cognate = staticCognate;
+    console.log('[lookupWord] Found static Hebrew cognate for:', arabicWord, staticCognate);
+  } else if (!result.hebrew_cognate) {
+    // No static match and AI didn't find one either - that's fine
+    console.log('[lookupWord] No Hebrew cognate found for:', arabicWord);
+  } else {
+    // AI found one but we don't have it in static table - keep AI's but log it
+    console.log('[lookupWord] Using AI Hebrew cognate (not in static table):', arabicWord, result.hebrew_cognate);
+  }
+  
+  return result;
 }
