@@ -3,24 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { lookupWord, analyzePassage, type LookupResult, type PassageResult, type PassageWord } from '../../lib/openai';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { useSavedSentences } from '../../hooks/useSavedSentences';
+import { useSavedPassages } from '../../hooks/useSavedPassages';
 import { WordDetailCard } from '../../components/WordDetailCard';
 import { findHebrewCognate } from '../../utils/hebrewCognates';
 
 /**
- * LookupView - Full-page lookup for translating Arabic text.
- * Phase 15: Handles both single words and pasted passages.
+ * LookupView - Full-page lookup for translating Arabic/English text.
  * 
  * Features:
- * - Paste any Arabic or English text
- * - Get full translation + transliteration
+ * - Paste any Arabic or English text (auto-detects language)
  * - For passages: sentence-by-sentence, word-by-word breakdown
  * - Save individual words to My Words
  * - Save sentences to My Sentences
+ * - Save full passages to My Passages
  */
 export function LookupView() {
     const navigate = useNavigate();
     const { saveWord, isWordSaved } = useSavedWords();
     const { saveSentence, isSentenceSaved } = useSavedSentences();
+    const { savePassage, isPassageSaved } = useSavedPassages();
     
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -29,6 +30,7 @@ export function LookupView() {
     const [passageResult, setPassageResult] = useState<PassageResult | null>(null);
     const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
     const [savedSentences, setSavedSentences] = useState<Set<string>>(new Set());
+    const [passageSaved, setPassageSaved] = useState(false);
     const [mode, setMode] = useState<'word' | 'passage'>('word');
 
     // Detect if input looks like a passage (multiple words/sentences)
@@ -127,6 +129,25 @@ export function LookupView() {
         }
     };
 
+    // Handle save passage
+    const handleSavePassage = async () => {
+        if (!passageResult || !passageResult.original_text) return;
+        
+        try {
+            await savePassage({
+                original_text: passageResult.original_text,
+                source_language: passageResult.detected_language || 'arabic',
+                full_translation: passageResult.full_translation,
+                full_transliteration: passageResult.full_transliteration,
+                sentence_count: passageResult.sentences?.length || 1,
+                source: 'lookup',
+            });
+            setPassageSaved(true);
+        } catch (err) {
+            console.error('[LookupView] Failed to save passage:', err);
+        }
+    };
+
     // Check if current word is saved
     const isCurrentWordSaved = result ? (savedWords.has(result.arabic_word) || isWordSaved(result.arabic_word)) : false;
     
@@ -135,6 +156,9 @@ export function LookupView() {
     
     // Check if a sentence is saved
     const isSentenceAlreadySaved = (arabicText: string) => savedSentences.has(arabicText) || isSentenceSaved(arabicText);
+    
+    // Check if current passage is saved
+    const isCurrentPassageSaved = passageResult?.original_text ? (passageSaved || isPassageSaved(passageResult.original_text)) : false;
 
     return (
         <div className="min-h-screen bg-surface-300 p-4 pb-24">
@@ -266,9 +290,33 @@ export function LookupView() {
             {/* Passage Results */}
             {passageResult && mode === 'passage' && (
                 <div className="space-y-6">
+                    {/* Detected language badge + Save Passage button */}
+                    <div className="flex items-center justify-between">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            passageResult.detected_language === 'english'
+                                ? 'bg-blue-500/20 text-blue-300'
+                                : 'bg-teal-500/20 text-teal-300'
+                        }`}>
+                            {passageResult.detected_language === 'english' ? '🇺🇸 English → Arabic' : '🇪🇬 Arabic → English'}
+                        </span>
+                        <button
+                            onClick={handleSavePassage}
+                            disabled={isCurrentPassageSaved}
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                                isCurrentPassageSaved
+                                    ? 'bg-green-500/20 text-green-400 cursor-default'
+                                    : 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30'
+                            }`}
+                        >
+                            {isCurrentPassageSaved ? '✓ Passage Saved' : '📄 Save Passage'}
+                        </button>
+                    </div>
+
                     {/* Full translation summary */}
                     <div className="glass-card p-4">
-                        <div className="text-xs text-white/40 mb-2">📝 Full Translation</div>
+                        <div className="text-xs text-white/40 mb-2">
+                            {passageResult.detected_language === 'english' ? '📝 Arabic Translation' : '📝 English Translation'}
+                        </div>
                         <div className="text-white text-lg mb-2">
                             {passageResult.full_translation}
                         </div>

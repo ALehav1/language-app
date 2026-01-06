@@ -448,17 +448,25 @@ export interface PassageSentence {
  * Result from analyzing a passage.
  */
 export interface PassageResult {
+  detected_language?: 'arabic' | 'english';
+  original_text?: string;
   full_translation: string;
   full_transliteration: string;
   sentences: PassageSentence[];
 }
 
 /**
- * Analyze a passage of Arabic text - sentence by sentence, word by word.
- * For pasting longer text and getting full breakdown.
+ * Analyze a passage - works with both Arabic and English input.
+ * For Arabic: breaks down sentence by sentence, word by word.
+ * For English: translates to Arabic and provides full breakdown.
  */
 export async function analyzePassage(text: string): Promise<PassageResult> {
-  const prompt = `
+  // Detect if input is primarily Arabic or English
+  const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
+  const latinChars = (text.match(/[a-zA-Z]/g) || []).length;
+  const isArabicInput = arabicChars > latinChars;
+  
+  const prompt = isArabicInput ? `
     Analyze this Arabic passage and break it down sentence by sentence, word by word.
     
     Text: "${text}"
@@ -486,6 +494,8 @@ export async function analyzePassage(text: string): Promise<PassageResult> {
     
     Return ONLY valid JSON:
     {
+      "detected_language": "arabic",
+      "original_text": "${text}",
       "full_translation": "Complete English translation",
       "full_transliteration": "Full transliteration of the passage",
       "sentences": [
@@ -495,6 +505,62 @@ export async function analyzePassage(text: string): Promise<PassageResult> {
           "transliteration_msa": "MSA transliteration",
           "transliteration_egyptian": "Egyptian transliteration",
           "translation": "English translation",
+          "explanation": "Grammar/dialect notes (optional)",
+          "words": [
+            {
+              "arabic": "كَلِمَة",
+              "arabic_egyptian": "كِلْمَة",
+              "transliteration": "kalima",
+              "transliteration_egyptian": "kilma",
+              "translation": "word",
+              "part_of_speech": "noun"
+            }
+          ]
+        }
+      ]
+    }
+  ` : `
+    Translate this English passage to Arabic and break it down sentence by sentence, word by word.
+    
+    English Text: "${text}"
+    
+    REQUIREMENTS:
+    1. Translate the entire passage to Arabic
+    2. Split into sentences (matching the English structure)
+    3. For EACH sentence provide:
+       - MSA version with full vowel diacritics (harakat)
+       - Egyptian Arabic version (how Egyptians would ACTUALLY say it - use real Egyptian vocabulary!)
+       - Transliteration for both
+       - The original English
+       - Word-by-word breakdown of the Arabic
+    
+    4. For EACH word in the breakdown:
+       - Arabic with diacritics
+       - Egyptian variant if different
+       - Transliteration
+       - English translation
+       - Part of speech (noun, verb, particle, etc.)
+    
+    5. Egyptian Arabic MUST use ACTUAL Egyptian words, not just pronunciation variants:
+       - "want" → MSA: أُرِيد, Egyptian: عَايِز
+       - "what" → MSA: مَاذَا, Egyptian: إيه
+       - "now" → MSA: الآن, Egyptian: دِلْوَقْتِي
+       - "work" → MSA: عَمَل, Egyptian: شُغْل
+       - "good" → MSA: جَيِّد, Egyptian: كْوَيِّس
+    
+    Return ONLY valid JSON:
+    {
+      "detected_language": "english",
+      "original_text": "${text}",
+      "full_translation": "Complete Arabic translation (Egyptian version)",
+      "full_transliteration": "Full transliteration of the Arabic",
+      "sentences": [
+        {
+          "arabic_msa": "MSA sentence with harakat",
+          "arabic_egyptian": "Egyptian version",
+          "transliteration_msa": "MSA transliteration",
+          "transliteration_egyptian": "Egyptian transliteration",
+          "translation": "Original English sentence",
           "explanation": "Grammar/dialect notes (optional)",
           "words": [
             {

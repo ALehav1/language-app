@@ -16,6 +16,7 @@ export function MainMenu() {
     const navigate = useNavigate();
     const [wordCount, setWordCount] = useState(0);
     const [sentenceCount, setSentenceCount] = useState(0);
+    const [passageCount, setPassageCount] = useState(0);
     const [lessonCount, setLessonCount] = useState(0);
 
     // Fetch counts for badges
@@ -28,7 +29,7 @@ export function MainMenu() {
                 .eq('status', 'active');
             setWordCount(words || 0);
 
-            // Get sentence count (will be 0 until table exists)
+            // Get sentence count
             try {
                 const { count: sentences } = await supabase
                     .from('saved_sentences')
@@ -36,8 +37,18 @@ export function MainMenu() {
                     .eq('status', 'active');
                 setSentenceCount(sentences || 0);
             } catch {
-                // Table doesn't exist yet
                 setSentenceCount(0);
+            }
+
+            // Get passage count
+            try {
+                const { count: passages } = await supabase
+                    .from('saved_passages')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'active');
+                setPassageCount(passages || 0);
+            } catch {
+                setPassageCount(0);
             }
 
             // Get lesson count
@@ -82,7 +93,7 @@ export function MainMenu() {
             id: 'sentences',
             path: '/sentences',
             label: 'My Sentences',
-            description: 'Spoken Arabic phrases',
+            description: 'Spoken phrases',
             count: sentenceCount,
             icon: (
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,6 +102,20 @@ export function MainMenu() {
             ),
             color: 'from-purple-500/20 to-purple-600/10 border-purple-500/30',
             iconColor: 'text-purple-400',
+        },
+        {
+            id: 'passages',
+            path: '/passages',
+            label: 'My Passages',
+            description: 'Full texts & dialogs',
+            count: passageCount,
+            icon: (
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            ),
+            color: 'from-rose-500/20 to-rose-600/10 border-rose-500/30',
+            iconColor: 'text-rose-400',
         },
         {
             id: 'lookup',
@@ -104,7 +129,7 @@ export function MainMenu() {
             ),
             color: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',
             iconColor: 'text-blue-400',
-            highlight: true, // Make this one stand out
+            highlight: true, // Make this one stand out - full width
         },
     ];
 
