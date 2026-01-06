@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { LookupModal } from './LookupModal';
 import { WordDetailCard } from '../../components/WordDetailCard';
+import { findHebrewCognate } from '../../utils/hebrewCognates';
 import type { SavedWordWithContexts, WordStatus } from '../../types';
 
 type SortOption = 'recent' | 'alphabetical' | 'alphabetical-en';
@@ -415,13 +416,14 @@ export function MyVocabularyView() {
                         </div>
 
                         {/* Unified WordDetailCard - same as exercise feedback */}
+                        {/* Use static Hebrew cognate lookup as fallback if not in database */}
                         <WordDetailCard
                             word={selectedWord.word}
                             translation={selectedWord.translation}
                             language="arabic"
                             pronunciationStandard={selectedWord.pronunciation_standard || undefined}
                             pronunciationEgyptian={selectedWord.pronunciation_egyptian || undefined}
-                            hebrewCognate={selectedWord.hebrew_cognate}
+                            hebrewCognate={selectedWord.hebrew_cognate || findHebrewCognate(selectedWord.word) || undefined}
                             exampleSentences={selectedWord.example_sentences || undefined}
                         />
 
