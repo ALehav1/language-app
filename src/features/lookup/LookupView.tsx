@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+// Dialect preference storage key
+const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
 import { lookupWord, analyzePassage, type LookupResult, type PassageResult, type PassageWord } from '../../lib/openai';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { useSavedSentences } from '../../hooks/useSavedSentences';
@@ -32,6 +35,17 @@ export function LookupView() {
     const [savedSentences, setSavedSentences] = useState<Set<string>>(new Set());
     const [passageSaved, setPassageSaved] = useState(false);
     const [mode, setMode] = useState<'word' | 'passage'>('word');
+    
+    // Dialect preference: 'egyptian' (default) or 'standard'
+    const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
+        const saved = localStorage.getItem(DIALECT_PREFERENCE_KEY);
+        return (saved === 'standard') ? 'standard' : 'egyptian';
+    });
+    
+    // Persist dialect preference
+    useEffect(() => {
+        localStorage.setItem(DIALECT_PREFERENCE_KEY, dialectPreference);
+    }, [dialectPreference]);
 
     // Detect if input looks like a passage (multiple words/sentences)
     const isPassageInput = (text: string): boolean => {
@@ -312,18 +326,40 @@ export function LookupView() {
                         </button>
                     </div>
 
-                    {/* Full translation summary */}
-                    <div className="glass-card p-4">
-                        <div className="text-xs text-white/40 mb-2">
-                            {passageResult.detected_language === 'english' ? '📝 Arabic Translation' : '📝 English Translation'}
-                        </div>
-                        <div className="text-white text-lg mb-2">
-                            {passageResult.full_translation}
-                        </div>
-                        <div className="text-white/60 text-sm">
-                            {passageResult.full_transliteration}
-                        </div>
+                    {/* Dialect toggle */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-white/40">Show first:</span>
+                        <button
+                            onClick={() => setDialectPreference('egyptian')}
+                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                dialectPreference === 'egyptian'
+                                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
+                                    : 'bg-white/5 text-white/50 hover:bg-white/10'
+                            }`}
+                        >
+                            🇪🇬 Egyptian
+                        </button>
+                        <button
+                            onClick={() => setDialectPreference('standard')}
+                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                dialectPreference === 'standard'
+                                    ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
+                                    : 'bg-white/5 text-white/50 hover:bg-white/10'
+                            }`}
+                        >
+                            📖 MSA
+                        </button>
                     </div>
+
+                    {/* English translation (only for Arabic input) */}
+                    {passageResult.detected_language === 'arabic' && (
+                        <div className="glass-card p-4">
+                            <div className="text-xs text-white/40 mb-2">📝 English Translation</div>
+                            <div className="text-white text-lg">
+                                {passageResult.full_translation}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Sentence by sentence breakdown */}
                     {passageResult.sentences?.map((sentence, sentenceIdx) => (
@@ -351,27 +387,54 @@ export function LookupView() {
                                 </button>
                             </div>
 
-                            {/* Egyptian Arabic (primary) */}
-                            <div>
-                                <div className="text-xs text-amber-400/60 mb-1">🇪🇬 Egyptian</div>
-                                <div className="text-xl font-arabic text-white" dir="rtl">
-                                    {sentence.arabic_egyptian}
-                                </div>
-                                <div className="text-amber-300">
-                                    {sentence.transliteration_egyptian}
-                                </div>
-                            </div>
-
-                            {/* MSA version */}
-                            <div className="bg-white/5 rounded-lg p-3">
-                                <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
-                                <div className="text-lg font-arabic text-white/80" dir="rtl">
-                                    {sentence.arabic_msa}
-                                </div>
-                                <div className="text-teal-300/70 text-sm">
-                                    {sentence.transliteration_msa}
-                                </div>
-                            </div>
+                            {/* Primary dialect (based on preference) */}
+                            {dialectPreference === 'egyptian' ? (
+                                <>
+                                    {/* Egyptian first */}
+                                    <div>
+                                        <div className="text-xs text-amber-400/60 mb-1">🇪🇬 Egyptian (Spoken)</div>
+                                        <div className="text-xl font-arabic text-white" dir="rtl">
+                                            {sentence.arabic_egyptian}
+                                        </div>
+                                        <div className="text-amber-300">
+                                            {sentence.transliteration_egyptian}
+                                        </div>
+                                    </div>
+                                    {/* MSA as reference */}
+                                    <div className="bg-white/5 rounded-lg p-3">
+                                        <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
+                                        <div className="text-lg font-arabic text-white/70" dir="rtl">
+                                            {sentence.arabic_msa}
+                                        </div>
+                                        <div className="text-teal-300/60 text-sm">
+                                            {sentence.transliteration_msa}
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    {/* MSA first */}
+                                    <div>
+                                        <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
+                                        <div className="text-xl font-arabic text-white" dir="rtl">
+                                            {sentence.arabic_msa}
+                                        </div>
+                                        <div className="text-teal-300">
+                                            {sentence.transliteration_msa}
+                                        </div>
+                                    </div>
+                                    {/* Egyptian as reference */}
+                                    <div className="bg-white/5 rounded-lg p-3">
+                                        <div className="text-xs text-amber-400/60 mb-1">🇪🇬 Egyptian (Spoken)</div>
+                                        <div className="text-lg font-arabic text-white/70" dir="rtl">
+                                            {sentence.arabic_egyptian}
+                                        </div>
+                                        <div className="text-amber-300/60 text-sm">
+                                            {sentence.transliteration_egyptian}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
 
                             {/* Translation */}
                             <div className="text-white">
@@ -391,6 +454,13 @@ export function LookupView() {
                                 <div className="flex flex-wrap gap-2">
                                     {sentence.words?.map((word, wordIdx) => {
                                         const wordSaved = isWordAlreadySaved(word.arabic);
+                                        // Show preferred dialect first
+                                        const primaryArabic = dialectPreference === 'egyptian' 
+                                            ? (word.arabic_egyptian || word.arabic)
+                                            : (word.arabic || word.arabic_egyptian);
+                                        const primaryTranslit = dialectPreference === 'egyptian'
+                                            ? (word.transliteration_egyptian || word.transliteration)
+                                            : (word.transliteration || word.transliteration_egyptian);
                                         return (
                                             <button
                                                 key={wordIdx}
@@ -403,10 +473,10 @@ export function LookupView() {
                                                 }`}
                                             >
                                                 <div className="text-white font-arabic" dir="rtl">
-                                                    {word.arabic_egyptian || word.arabic}
+                                                    {primaryArabic}
                                                 </div>
                                                 <div className="text-white/60 text-xs">
-                                                    {word.transliteration_egyptian || word.transliteration}
+                                                    {primaryTranslit}
                                                 </div>
                                                 <div className="text-white/80 text-sm">
                                                     {word.translation}
