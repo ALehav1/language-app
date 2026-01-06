@@ -3,7 +3,7 @@
 AI-powered language learning for Arabic (novice) and Spanish (intermediate) that teaches how native speakers actually talk.
 
 **Last Updated**: January 6, 2026
-**Status**: Phase 15 In Progress - Unified Word Display & Navigation Redesign
+**Status**: Phase 15 Complete - Navigation Redesign + Lookup Enhancement
 
 ---
 
@@ -11,42 +11,47 @@ AI-powered language learning for Arabic (novice) and Spanish (intermediate) that
 
 ```
 src/
-├── utils/
-│   ├── arabicLetters.ts          # Arabic letter breakdown generator
-│   └── transliteration.ts        # Transliteration validation with fuzzy matching
 ├── features/
+│   ├── home/
+│   │   └── MainMenu.tsx          # Home screen with 5 navigation tiles
 │   ├── lessons/
-│   │   ├── LessonFeed.tsx        # Main feed with language + content type filters
+│   │   ├── LessonFeed.tsx        # Lesson discovery with filters
 │   │   └── LessonGenerator.tsx   # AI lesson generation modal
 │   ├── exercises/
 │   │   ├── ExerciseView.tsx      # Exercise flow with desktop sidebars
-│   │   ├── ExercisePrompt.tsx    # Content display (word/phrase/dialog/paragraph)
-│   │   ├── AnswerInput.tsx       # Answer submission
-│   │   └── ExerciseFeedback.tsx  # Result display with save button
-│   └── vocabulary/
-│       ├── MyVocabularyView.tsx    # Browse saved words with status filters
-│       └── LookupModal.tsx         # Look up any word with full breakdown
+│   │   ├── ExercisePrompt.tsx    # Content display
+│   │   └── ExerciseFeedback.tsx  # Result display
+│   ├── vocabulary/
+│   │   └── MyVocabularyView.tsx  # Browse saved words with filters
+│   ├── sentences/
+│   │   └── MySentencesView.tsx   # Browse saved spoken phrases
+│   ├── passages/
+│   │   └── MyPassagesView.tsx    # Browse saved full texts
+│   └── lookup/
+│       └── LookupView.tsx        # Translate any text with breakdown
 ├── components/                    # Shared UI components
 │   ├── Card.tsx                   # Base glassmorphism card
 │   ├── LessonCard.tsx             # Swipeable lesson with Start button
 │   ├── CardStack.tsx              # Deck management
-│   ├── SwipeIndicator.tsx         # Swipe feedback overlay
-│   └── ActionButtons.tsx          # Alternative controls
-├── hooks/                         # Custom business logic
-│   ├── useCardStack.ts            # Deck state & persistence
+│   └── WordDetailCard.tsx         # Unified word display component
+├── hooks/
 │   ├── useExercise.ts             # Exercise session + resume
 │   ├── useLessons.ts              # Fetch lessons with filters
 │   ├── useVocabulary.ts           # Fetch vocabulary from Supabase
 │   ├── useLessonProgress.ts       # Save progress & update mastery
-│   ├── useSavedVocabulary.ts      # Legacy: Save/remove vocabulary items
-│   └── useSavedWords.ts           # New: Full word management with status
-├── types/
-│   ├── database.ts                # Supabase schema types
-│   └── lesson.ts                  # UI state types
+│   ├── useSavedWords.ts           # Save/remove vocabulary words
+│   ├── useSavedSentences.ts       # Save/remove sentences
+│   └── useSavedPassages.ts        # Save/remove full passages
 ├── lib/
 │   ├── supabase.ts                # Supabase client
-│   └── openai.ts                  # OpenAI client + content generation
-└── utils/                         # Helper functions
+│   └── openai.ts                  # OpenAI + content generation + passage analysis
+├── utils/
+│   ├── arabicLetters.ts           # Arabic letter breakdown generator
+│   ├── transliteration.ts         # Transliteration validation
+│   └── hebrewCognates.ts          # Static Hebrew cognate lookup (150+ mappings)
+└── types/
+    ├── database.ts                # Supabase schema types
+    └── lesson.ts                  # UI state types
 ```
 
 ## Architecture Overview
@@ -328,10 +333,15 @@ For "work": Instead of just عَمَل (amal), you see:
 
 | Path | Component | Description |
 |------|-----------|-------------|
-| `/` | `LessonFeed` | Main lesson discovery with card stack |
+| `/` | `MainMenu` | Home screen with 5 navigation options |
+| `/lessons` | `LessonFeed` | Browse & create lessons |
 | `/exercise/:lessonId` | `ExerciseView` | Translation exercise flow |
 | `/exercise/saved?ids=...` | `ExerciseView` | Practice selected saved words |
-| `/saved` | `MyVocabularyView` | Browse, filter, and practice saved vocabulary |
+| `/words` | `MyVocabularyView` | Browse, filter, and practice saved vocabulary |
+| `/saved` | `MyVocabularyView` | Legacy route (redirects to /words) |
+| `/sentences` | `MySentencesView` | Browse and review saved sentences |
+| `/passages` | `MyPassagesView` | Browse and review saved passages |
+| `/lookup` | `LookupView` | Translate any Arabic or English text |
 
 ---
 
@@ -364,9 +374,10 @@ Test at these breakpoints IN ORDER:
 - **AI-generated lessons** appropriate to your level
 - **Semantic answer validation** - accepts synonyms and minor typos
 - **Spaced repetition** tracking what you know vs struggle with
-- **Hebrew cognates** for Arabic (only genuine Semitic connections)
+- **Hebrew cognates** for Arabic - static lookup table with 150+ Semitic root mappings
 - **Letter breakdown** for Arabic - horizontal, right-to-left display matching word order
-- **Save content** for later review
+- **Lookup any text** - paste Arabic OR English, get full translation + word-by-word breakdown
+- **Save vocabulary, sentences, and passages** for later review
 - **Resume lessons** - continue where you left off
 - **Desktop-optimized** with 3-column layout
 - **NO gamification** - no streaks, points, badges
@@ -376,22 +387,43 @@ Test at these breakpoints IN ORDER:
 
 ## Completed Features
 
-### Phase 15 (In Progress)
-- **Unified Word Display**:
-  - **Shared WordDetailCard component**: Same rich display in exercise feedback AND My Vocabulary
-  - **Auto-fetch enhanced data**: If example sentences/Hebrew cognate missing, fetches from OpenAI
-  - **Improved Hebrew cognate detection**: Explicit Semitic root examples (כ-ת-ב, ע-מ-ל, etc.)
-  - **Heart button removed**: Words auto-save, no confusing one-way toggle
+### Phase 15 (Complete)
 
-- **Planned - Passage Lookup**:
-  - Paste any Arabic text and get full translation + transliteration
-  - Word-by-word breakdown with ability to save individual words
-  - Save entire sentences for spoken Arabic practice
+- **Navigation Redesign**:
+  - **MainMenu home screen** with 5 clear navigation tiles:
+    - Lessons (teal) - Browse & create lessons
+    - My Words (amber) - Saved vocabulary
+    - My Sentences (purple) - Spoken Arabic phrases
+    - My Passages (rose) - Full texts & dialogs
+    - Lookup (blue, full-width) - Translate anything
+  - Removed clunky resume flow - clean navigation
 
-- **Planned - Navigation Redesign**:
-  - Main menu with clear options: Lessons, My Words, My Sentences
-  - Remove clunky resume flow
-  - Saved Sentences view for practicing spoken Arabic phrases
+- **Static Hebrew Cognate Table**:
+  - **150+ Arabic-Hebrew mappings** based on Semitic roots
+  - Much more reliable than AI inference
+  - Examples: مكتب→כתב (write), سلام→שלום (peace), بيت→בית (house)
+  - Located in `src/utils/hebrewCognates.ts`
+
+- **Lookup with Auto-Detection**:
+  - Paste Arabic OR English text
+  - Auto-detects language (Arabic chars vs Latin chars)
+  - Arabic → English translation with word breakdown
+  - English → Arabic translation with Egyptian + MSA versions
+  - Sentence-by-sentence breakdown for passages
+  - Word-by-word breakdown with tap-to-save
+  - Save individual words, sentences, or full passages
+
+- **My Sentences**:
+  - Save spoken Arabic phrases from Lookup
+  - Egyptian Arabic primary, MSA for reference
+  - Filter by status (active/learned)
+  - Detail modal with full breakdown
+
+- **My Passages**:
+  - Save full texts from Lookup
+  - Shows source language (EN→AR or AR→EN)
+  - Full translation + transliteration
+  - Mark as learned or delete
 
 ### Phase 14
 - **Egyptian Arabic Focus**:

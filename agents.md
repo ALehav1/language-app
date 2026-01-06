@@ -5,60 +5,73 @@ Language Learning App - AI-powered language learning that teaches how native spe
 Target: Non-technical adult learner learning Arabic (novice) and Spanish (intermediate)
 Stack: React + TypeScript + Vite + Tailwind + Supabase + OpenAI
 
-Last Updated: January 6, 2026
+Last Updated: January 6, 2026 (Phase 15 Complete)
 
 ## What Makes This App Different
 - Multiple content types: words, phrases, dialogs, paragraphs
 - AI generates lessons appropriate to your level
 - Semantic answer validation - accepts synonyms and typos
 - Tracks what you know and struggle with using spaced repetition
-- For Arabic: Hebrew cognates + letter breakdown for character learning
-- Save vocabulary items for later review
+- For Arabic: Hebrew cognates (static lookup table) + letter breakdown for character learning
+- Save vocabulary items, sentences, and full passages for later review
+- **Lookup any text** - paste Arabic OR English, get full translation + word-by-word breakdown
 - Resume lessons from where you left off
 - Desktop-optimized with 3-column layout
 - NO gamification - no streaks, points, badges
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 15 In Progress - Unified Word Display & Navigation Redesign
+- Status: Phase 15 Complete - Navigation Redesign + Lookup Enhancement
 - Working features:
-  - **Simplified header** - filter/settings icon + centered title (shows current content type + language)
-  - **Bottom sheet menu** - filter icon opens settings popup (not hamburger - better UX signal):
-    - Drag handle for mobile feel
-    - Colored language buttons (teal for Arabic, amber for Spanish with glow)
-    - Lesson type rows with + button for quick creation
-    - Max-width constrained on desktop
-  - Lesson feed with card stack + "Start Lesson" button (no Skip/Save buttons - just start)
-  - **Direct lesson start** - clicking "Start Lesson" goes directly to exercise (no preview modal)
-  - **Content type badge** on each lesson card showing type (Aa Words, "" Phrases, etc.)
+  - **MainMenu home screen** - 5 clear navigation options:
+    - Lessons (teal) - Browse & create lessons
+    - My Words (amber) - Saved vocabulary
+    - My Sentences (purple) - Spoken Arabic phrases
+    - My Passages (rose) - Full texts & dialogs
+    - Lookup (blue, full-width) - Translate anything
+  - **Lookup with auto-detection** - paste Arabic OR English text:
+    - Auto-detects language (Arabic chars vs Latin chars)
+    - Arabic → English translation with word breakdown
+    - English → Arabic translation with Egyptian + MSA versions
+    - Sentence-by-sentence breakdown for passages
+    - Word-by-word breakdown with tap-to-save
+    - Save individual words, sentences, or full passages
+  - **Static Hebrew cognate table** - 150+ Arabic-Hebrew mappings based on Semitic roots
+    - Much more reliable than AI inference
+    - Includes common words: مكتب→כתב, سلام→שלום, بيت→בית, etc.
+  - **My Sentences** - saved spoken Arabic phrases:
+    - Egyptian Arabic primary, MSA for reference
+    - Filter by status (active/learned)
+    - Detail modal with full breakdown
+  - **My Passages** - saved full texts:
+    - Shows source language (EN→AR or AR→EN)
+    - Full translation + transliteration
+    - Mark as learned or delete
+  - Lesson feed with card stack + "Start Lesson" button
+  - **Direct lesson start** - clicking "Start Lesson" goes directly to exercise
+  - **Content type badge** on each lesson card
   - **Filter preferences remembered** - persists to localStorage
-  - **Actionable empty states** - "Create Lesson" button when no lessons exist
-  - **AI lesson generation** via OpenAI - syncs with current filters (no floating button)
+  - **AI lesson generation** via OpenAI - syncs with current filters
   - **Supabase integration** - all data persisted to database
   - **Exercise flow** with prompting, validation, and feedback
-  - **"Write in English" instructions** - clearer than "Translate"
-  - **Arabic dual-input mode** - type BOTH transliteration AND translation for Arabic exercises
-  - **Transliteration validation** - generous fuzzy matching with Arabic chat numbers (7=h, 5=kh, 3=', etc.)
-  - **Semantic answer matching** via OpenAI (accepts synonyms/typos/alternative meanings)
+  - **Arabic dual-input mode** - type BOTH transliteration AND translation
+  - **Transliteration validation** - generous fuzzy matching with Arabic chat numbers
+  - **Semantic answer matching** via OpenAI
   - **Skip question** functionality during exercises
   - **Resume lessons** - progress saved to localStorage for 24 hours
   - **Segmented progress bar** - each word as colored segment
   - **Desktop 3-column layout** - sidebars with progress + stats
-  - **Auto-save vocabulary** - all practiced Arabic words automatically saved (no heart button needed)
-  - **Saved words view** - browse, filter, practice, remove saved items
-  - **Unified WordDetailCard** - same rich display in both exercise feedback and My Vocabulary:
+  - **Auto-save vocabulary** - all practiced Arabic words automatically saved
+  - **Unified WordDetailCard** - same rich display everywhere:
     - Arabic word with vowels
     - Both dialect pronunciations (MSA + Egyptian)
     - Example sentences (Egyptian first, MSA second)
-    - Hebrew cognate with improved detection
+    - Hebrew cognate from static lookup table
     - Letter breakdown (RTL)
   - **Practice saved words** - select words and practice as custom lesson
-  - **Arabic letter breakdown** - horizontal, right-to-left display matching Arabic reading order
-  - Arabic feedback: transliteration + Hebrew cognate + letter breakdown with diacritics
-  - Hebrew cognates only include genuine Semitic root connections
+  - **Arabic letter breakdown** - horizontal, right-to-left display
   - Progress persistence to Supabase on lesson completion
   - Spaced repetition mastery tracking per vocabulary item
-  - Navigation between all views (lesson feed, exercises, saved words)
   - Loading and error states for async operations
   - Glassmorphism UI with dark theme
   - Touch-friendly design (48px+ targets)
@@ -131,10 +144,15 @@ Last Updated: January 6, 2026
 ## Routes
 | Path | Component | Description |
 |------|-----------|-------------|
-| `/` | `LessonFeed` | Main lesson discovery with card stack |
+| `/` | `MainMenu` | Home screen with 5 navigation options |
+| `/lessons` | `LessonFeed` | Browse & create lessons |
 | `/exercise/:lessonId` | `ExerciseView` | Translation exercise flow |
 | `/exercise/saved?ids=...` | `ExerciseView` | Practice selected saved words |
-| `/saved` | `MyVocabularyView` | Browse, filter, and practice saved vocabulary |
+| `/words` | `MyVocabularyView` | Browse, filter, and practice saved vocabulary |
+| `/saved` | `MyVocabularyView` | Legacy route (redirects to /words) |
+| `/sentences` | `MySentencesView` | Browse and review saved sentences |
+| `/passages` | `MyPassagesView` | Browse and review saved passages |
+| `/lookup` | `LookupView` | Translate any Arabic or English text |
 
 ## Priority Features
 
@@ -189,27 +207,34 @@ Last Updated: January 6, 2026
 ## Key Files
 
 ### Features
-- `src/features/lessons/LessonFeed.tsx` - Main lesson discovery with bottom sheet menu (language, content type, create, saved)
+- `src/features/home/MainMenu.tsx` - Home screen with 5 navigation tiles
+- `src/features/lessons/LessonFeed.tsx` - Lesson discovery with bottom sheet menu
 - `src/features/lessons/LessonGenerator.tsx` - AI lesson creation (syncs with current filters)
 - `src/features/exercises/ExerciseView.tsx` - Exercise flow with desktop sidebars + resume
 - `src/features/exercises/ExercisePrompt.tsx` - Adaptive content display
 - `src/features/exercises/ExerciseFeedback.tsx` - Result display with save button
-- `src/features/vocabulary/SavedVocabularyView.tsx` - Browse, detail modal, selection mode, practice saved words
+- `src/features/vocabulary/MyVocabularyView.tsx` - Browse, detail modal, selection mode, practice saved words
+- `src/features/sentences/MySentencesView.tsx` - Browse and review saved sentences
+- `src/features/passages/MyPassagesView.tsx` - Browse and review saved passages
+- `src/features/lookup/LookupView.tsx` - Translate any text with word-by-word breakdown
 
 ### Hooks
 - `src/hooks/useExercise.ts` - Exercise session state + resume + skip
 - `src/hooks/useLessons.ts` - Fetch lessons with language + content type filters
 - `src/hooks/useVocabulary.ts` - Fetch vocabulary by lessonId or specific itemIds
 - `src/hooks/useLessonProgress.ts` - Save progress + update mastery
-- `src/hooks/useSavedVocabulary.ts` - Save/remove vocabulary items
+- `src/hooks/useSavedWords.ts` - Save/remove vocabulary words
+- `src/hooks/useSavedSentences.ts` - Save/remove sentences
+- `src/hooks/useSavedPassages.ts` - Save/remove full passages
 
 ### Lib
 - `src/lib/supabase.ts` - Supabase client
-- `src/lib/openai.ts` - OpenAI client + content generation + answer validation
+- `src/lib/openai.ts` - OpenAI client + content generation + answer validation + passage analysis
 
 ### Utils
 - `src/utils/arabicLetters.ts` - Arabic letter breakdown generator (28 letters + diacritics)
 - `src/utils/transliteration.ts` - Transliteration validation with Levenshtein distance
+- `src/utils/hebrewCognates.ts` - Static Hebrew cognate lookup table (150+ mappings)
 
 ### Types
 - `src/types/database.ts` - All database types including ContentType
@@ -221,7 +246,10 @@ Last Updated: January 6, 2026
 - `lessons` - Lesson metadata (title, description, language, difficulty, content_type)
 - `vocabulary_items` - Content with translations, hebrew_cognate, letter_breakdown, speaker, context
 - `lesson_progress` - Completed lessons with scores
-- `saved_vocabulary` - User's saved word collection
+- `saved_words` - User's saved vocabulary words
+- `word_contexts` - Source context for saved words
+- `saved_sentences` - User's saved spoken Arabic phrases
+- `saved_passages` - User's saved full text passages
 
 ### Content Type Enum
 ```sql
