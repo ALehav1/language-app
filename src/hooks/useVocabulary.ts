@@ -58,7 +58,7 @@ export function useVocabulary({ lessonId, itemIds, fromSavedWords }: UseVocabula
                     letter_breakdown: row.letter_breakdown,
                     speaker: undefined,
                     context: undefined,
-                    mastery_level: row.status === 'solid' ? 'practiced' : 'learning',
+                    mastery_level: row.status === 'learned' ? 'practiced' : 'learning',
                     last_reviewed: row.last_practiced,
                     next_review: row.next_review,
                     times_practiced: row.times_practiced,

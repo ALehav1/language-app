@@ -33,7 +33,7 @@ export function ExerciseView() {
         fromSavedWords: isSavedPractice,  // Fetch from saved_words table for practice
     });
     const { saveProgress, updateVocabularyMastery } = useLessonProgress();
-    const { saveWord, markForReview, isMarkedForReview } = useSavedWords();
+    const { saveWord, saveAsActive, isWordSaved } = useSavedWords();
 
     const {
         phase,
@@ -74,7 +74,7 @@ export function ExerciseView() {
                 for (const result of results) {
                     await updateVocabularyMastery(result.itemId, result.correct);
                     
-                    // Auto-save Arabic words to saved_words with 'solid' status
+                    // Auto-save Arabic words to saved_words with 'active' status
                     const item = vocabItems.find(v => v.id === result.itemId);
                     if (item && item.language === 'arabic') {
                         await saveWord(
@@ -84,7 +84,7 @@ export function ExerciseView() {
                                 pronunciation_standard: item.transliteration,
                                 letter_breakdown: item.letter_breakdown || undefined,
                                 hebrew_cognate: item.hebrew_cognate || undefined,
-                                status: 'solid',  // Auto-saved as solid (practiced)
+                                status: 'active',  // Auto-saved as active (practicing)
                                 times_practiced: 1,
                                 times_correct: result.correct ? 1 : 0,
                             },
@@ -469,7 +469,7 @@ export function ExerciseView() {
                                     item={currentItem}
                                     onContinue={continueToNext}
                                     isLastQuestion={currentIndex === totalItems - 1}
-                                    onSave={() => markForReview(
+                                    onSave={() => saveAsActive(
                                         {
                                             word: currentItem.word,
                                             translation: currentItem.translation,
@@ -486,7 +486,7 @@ export function ExerciseView() {
                                             vocabulary_item_id: currentItem.id,
                                         }
                                     )}
-                                    isSaved={isMarkedForReview(currentItem.word)}
+                                    isSaved={isWordSaved(currentItem.word)}
                                 />
                             )}
                         </div>

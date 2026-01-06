@@ -42,11 +42,10 @@ export function useSavedVocabulary(): UseSavedVocabularyReturn {
             setLoading(true);
             setError(null);
 
-            // Fetch from new saved_words table
+            // Fetch from new saved_words table (all words - both active and learned)
             const { data: wordsData, error: fetchError } = await supabase
                 .from('saved_words')
                 .select('*')
-                .neq('status', 'retired')
                 .order('created_at', { ascending: false });
 
             if (fetchError) {

@@ -29,7 +29,7 @@ export function MyVocabularyView() {
         loading, 
         error, 
         updateStatus, 
-        removeWord, 
+        deleteWord,
         counts,
         refetch 
     } = useSavedWords({
@@ -86,15 +86,13 @@ export function MyVocabularyView() {
 
     // Status badge component
     const StatusBadge = ({ status }: { status: WordStatus }) => {
-        const styles = {
-            needs_review: 'bg-amber-500/20 text-amber-400',
-            solid: 'bg-green-500/20 text-green-400',
-            retired: 'bg-white/10 text-white/40',
+        const styles: Record<WordStatus, string> = {
+            active: 'bg-amber-500/20 text-amber-400',
+            learned: 'bg-green-500/20 text-green-400',
         };
-        const labels = {
-            needs_review: 'Review',
-            solid: 'Solid',
-            retired: 'Retired',
+        const labels: Record<WordStatus, string> = {
+            active: 'Active',
+            learned: 'Learned',
         };
         return (
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status]}`}>
@@ -140,7 +138,7 @@ export function MyVocabularyView() {
                         </h1>
                         {!selectionMode && (
                             <p className="text-white/50 text-sm">
-                                {counts.total} words • {counts.needsReview} to review
+                                {counts.total} words • {counts.active} active
                             </p>
                         )}
                     </div>
@@ -212,24 +210,24 @@ export function MyVocabularyView() {
                             All ({counts.total})
                         </button>
                         <button
-                            onClick={() => setStatusFilter('needs_review')}
+                            onClick={() => setStatusFilter('active')}
                             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                                statusFilter === 'needs_review'
+                                statusFilter === 'active'
                                     ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
                                     : 'bg-white/10 text-white/70 hover:bg-white/20'
                             }`}
                         >
-                            Review ({counts.needsReview})
+                            Active ({counts.active})
                         </button>
                         <button
-                            onClick={() => setStatusFilter('solid')}
+                            onClick={() => setStatusFilter('learned')}
                             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                                statusFilter === 'solid'
+                                statusFilter === 'learned'
                                     ? 'bg-green-500/30 text-green-300 border border-green-500/50'
                                     : 'bg-white/10 text-white/70 hover:bg-white/20'
                             }`}
                         >
-                            Solid ({counts.solid})
+                            Learned ({counts.learned})
                         </button>
 
                         {/* Sort dropdown */}
@@ -355,16 +353,16 @@ export function MyVocabularyView() {
                                             <button
                                                 onClick={(e) => { 
                                                     e.stopPropagation(); 
-                                                    updateStatus(word.id, word.status === 'solid' ? 'needs_review' : 'solid');
+                                                    updateStatus(word.id, word.status === 'learned' ? 'active' : 'learned');
                                                 }}
                                                 className={`touch-btn w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
-                                                    word.status === 'solid' 
+                                                    word.status === 'learned' 
                                                         ? 'bg-green-500/20 text-green-400' 
                                                         : 'bg-white/5 text-white/30 hover:text-green-400'
                                                 }`}
-                                                aria-label={word.status === 'solid' ? 'Mark for review' : 'Mark as solid'}
+                                                aria-label={word.status === 'learned' ? 'Mark as active' : 'Mark as learned'}
                                             >
-                                                <svg className="w-5 h-5" fill={word.status === 'solid' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-5 h-5" fill={word.status === 'learned' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                 </svg>
                                             </button>
@@ -534,25 +532,26 @@ export function MyVocabularyView() {
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={() => {
-                                    updateStatus(selectedWord.id, selectedWord.status === 'solid' ? 'needs_review' : 'solid');
-                                    setSelectedWord({ ...selectedWord, status: selectedWord.status === 'solid' ? 'needs_review' : 'solid' });
+                                    const newStatus = selectedWord.status === 'learned' ? 'active' : 'learned';
+                                    updateStatus(selectedWord.id, newStatus);
+                                    setSelectedWord({ ...selectedWord, status: newStatus });
                                 }}
                                 className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
-                                    selectedWord.status === 'solid'
+                                    selectedWord.status === 'learned'
                                         ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
                                         : 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
                                 }`}
                             >
-                                {selectedWord.status === 'solid' ? 'Mark for Review' : 'Mark as Solid'}
+                                {selectedWord.status === 'learned' ? 'Mark as Active' : 'Mark as Learned'}
                             </button>
                             <button
                                 onClick={() => {
-                                    removeWord(selectedWord.id);
+                                    deleteWord(selectedWord.id);
                                     setSelectedWord(null);
                                 }}
                                 className="px-4 py-3 bg-red-500/20 text-red-300 rounded-xl font-medium hover:bg-red-500/30"
                             >
-                                Remove
+                                Delete
                             </button>
                         </div>
                     </div>

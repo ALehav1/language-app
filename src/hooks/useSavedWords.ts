@@ -94,7 +94,7 @@ export function useSavedWords(options?: {
             letter_breakdown?: LetterBreakdown[];
             hebrew_cognate?: HebrewCognate;
             topic?: string;
-            status?: WordStatus;  // Default: 'solid' (auto-saved from practice)
+            status?: WordStatus;  // Default: 'active' (still practicing)
             times_practiced?: number;
             times_correct?: number;
         },
@@ -130,8 +130,7 @@ export function useSavedWords(options?: {
                 if (error) throw error;
                 savedWord = data;
             } else {
-                // Insert new word - default to 'solid' (auto-saved from practice)
-                // Heart button will change to 'needs_review' for priority words
+                // Insert new word - default to 'active' (still practicing)
                 const { data, error } = await supabase
                     .from('saved_words')
                     .insert({
@@ -144,7 +143,7 @@ export function useSavedWords(options?: {
                         hebrew_cognate: wordData.hebrew_cognate || null,
                         topic: wordData.topic || null,
                         tags: null,
-                        status: wordData.status || 'solid',  // Default to solid (practiced)
+                        status: wordData.status || 'active',  // Default to active (practicing)
                         times_practiced: wordData.times_practiced || 1,
                         times_correct: wordData.times_correct || 0,
                         last_practiced: new Date().toISOString(),
@@ -209,27 +208,34 @@ export function useSavedWords(options?: {
         }
     }, []);
 
-    // Remove word (set to retired or hard delete)
-    const removeWord = useCallback(async (wordId: string, hardDelete = false) => {
+    // Delete word permanently
+    const deleteWord = useCallback(async (wordId: string) => {
         try {
-            if (hardDelete) {
-                const { error } = await supabase
-                    .from('saved_words')
-                    .delete()
-                    .eq('id', wordId);
+            // Delete contexts first (foreign key constraint)
+            await supabase
+                .from('word_contexts')
+                .delete()
+                .eq('saved_word_id', wordId);
 
-                if (error) throw error;
-            } else {
-                // Soft delete - set to retired
-                await updateStatus(wordId, 'retired');
-            }
+            // Then delete the word
+            const { error } = await supabase
+                .from('saved_words')
+                .delete()
+                .eq('id', wordId);
+
+            if (error) throw error;
 
             // Remove from local state
             setWords(prev => prev.filter(w => w.id !== wordId));
         } catch (err) {
-            console.error('Error removing word:', err);
-            setError(err instanceof Error ? err.message : 'Failed to remove word');
+            console.error('Error deleting word:', err);
+            setError(err instanceof Error ? err.message : 'Failed to delete word');
         }
+    }, []);
+
+    // Archive word (mark as learned)
+    const archiveWord = useCallback(async (wordId: string) => {
+        await updateStatus(wordId, 'learned');
     }, [updateStatus]);
 
     // Update practice stats
@@ -261,10 +267,10 @@ export function useSavedWords(options?: {
         }
     }, [words]);
 
-    // Mark a word for additional review (heart button)
-    // If word exists, change status to needs_review
-    // If word doesn't exist, save it with needs_review status
-    const markForReview = useCallback(async (
+    // Save word as active (heart button during exercises)
+    // If word exists, keep it active
+    // If word doesn't exist, save it with active status
+    const saveAsActive = useCallback(async (
         wordData: {
             word: string;
             translation: string;
@@ -291,14 +297,16 @@ export function useSavedWords(options?: {
                 .single();
 
             if (existing) {
-                // Word exists - mark for review
-                await updateStatus(existing.id, 'needs_review');
+                // Word exists - ensure it's active (not learned)
+                if (existing.status === 'learned') {
+                    await updateStatus(existing.id, 'active');
+                }
             } else {
-                // Save new word with needs_review status
-                await saveWord({ ...wordData, status: 'needs_review' }, context);
+                // Save new word with active status
+                await saveWord({ ...wordData, status: 'active' }, context);
             }
         } catch (err) {
-            console.error('Error marking for review:', err);
+            console.error('Error saving word:', err);
         }
     }, [updateStatus, saveWord]);
 
@@ -307,9 +315,9 @@ export function useSavedWords(options?: {
         return words.some(w => w.word === arabicWord);
     }, [words]);
 
-    // Check if a word is marked for review
-    const isMarkedForReview = useCallback((arabicWord: string): boolean => {
-        return words.some(w => w.word === arabicWord && w.status === 'needs_review');
+    // Check if a word is active (still practicing)
+    const isActive = useCallback((arabicWord: string): boolean => {
+        return words.some(w => w.word === arabicWord && w.status === 'active');
     }, [words]);
 
     // Get unique topics for filtering
@@ -318,8 +326,8 @@ export function useSavedWords(options?: {
     // Get counts by status
     const counts = {
         total: words.length,
-        needsReview: words.filter(w => w.status === 'needs_review').length,
-        solid: words.filter(w => w.status === 'solid').length,
+        active: words.filter(w => w.status === 'active').length,
+        learned: words.filter(w => w.status === 'learned').length,
     };
 
     return {
@@ -328,11 +336,12 @@ export function useSavedWords(options?: {
         error,
         saveWord,
         updateStatus,
-        removeWord,
+        deleteWord,
+        archiveWord,
         recordPractice,
-        markForReview,
+        saveAsActive,
         isWordSaved,
-        isMarkedForReview,
+        isActive,
         refetch: fetchWords,
         topics,
         counts,
