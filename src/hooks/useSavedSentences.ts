@@ -33,6 +33,9 @@ export interface SaveSentenceInput {
     explanation?: string;
     topic?: string;
     source?: string;
+    status?: 'active' | 'learned';  // Default: 'active'
+    memory_note?: string;
+    memory_image_url?: string;
 }
 
 /**
@@ -91,7 +94,9 @@ export function useSavedSentences() {
                 .from('saved_sentences')
                 .insert({
                     ...input,
-                    status: 'active',
+                    status: input.status || 'active',
+                    memory_note: input.memory_note || null,
+                    memory_image_url: input.memory_image_url || null,
                 })
                 .select()
                 .single();

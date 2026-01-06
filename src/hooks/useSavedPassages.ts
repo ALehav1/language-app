@@ -29,6 +29,9 @@ export interface SavePassageInput {
     full_transliteration?: string;
     sentence_count?: number;
     source?: string;
+    status?: 'active' | 'learned';  // Default: 'active'
+    memory_note?: string;
+    memory_image_url?: string;
 }
 
 /**
@@ -89,7 +92,9 @@ export function useSavedPassages() {
                 .insert({
                     ...input,
                     sentence_count: input.sentence_count || 1,
-                    status: 'active',
+                    status: input.status || 'active',
+                    memory_note: input.memory_note || null,
+                    memory_image_url: input.memory_image_url || null,
                 })
                 .select()
                 .single();
