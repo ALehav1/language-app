@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { lookupWord, type LookupResult } from '../../lib/openai';
 import { useSavedWords } from '../../hooks/useSavedWords';
+import { useSavedSentences } from '../../hooks/useSavedSentences';
 import { WordDetailCard } from '../../components/WordDetailCard';
 
 /**
@@ -17,12 +18,14 @@ import { WordDetailCard } from '../../components/WordDetailCard';
 export function LookupView() {
     const navigate = useNavigate();
     const { saveWord, isWordSaved } = useSavedWords();
+    const { saveSentence, isSentenceSaved } = useSavedSentences();
     
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<LookupResult | null>(null);
     const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
+    const [savedSentences, setSavedSentences] = useState<Set<string>>(new Set());
 
     // Handle lookup
     const handleLookup = async () => {
@@ -65,8 +68,29 @@ export function LookupView() {
         }
     };
 
+    // Handle save sentence (from example sentences)
+    const handleSaveSentence = async (sentence: { arabic_msa: string; transliteration_msa: string; arabic_egyptian?: string; transliteration_egyptian?: string; english: string; explanation?: string }) => {
+        try {
+            await saveSentence({
+                arabic_text: sentence.arabic_msa,
+                arabic_egyptian: sentence.arabic_egyptian,
+                transliteration: sentence.transliteration_msa,
+                transliteration_egyptian: sentence.transliteration_egyptian,
+                translation: sentence.english,
+                explanation: sentence.explanation,
+                source: 'lookup',
+            });
+            setSavedSentences(prev => new Set(prev).add(sentence.arabic_msa));
+        } catch (err) {
+            console.error('[LookupView] Failed to save sentence:', err);
+        }
+    };
+
     // Check if current word is saved
     const isCurrentWordSaved = result ? (savedWords.has(result.arabic_word) || isWordSaved(result.arabic_word)) : false;
+    
+    // Check if a sentence is saved
+    const isSentenceAlreadySaved = (arabicText: string) => savedSentences.has(arabicText) || isSentenceSaved(arabicText);
 
     return (
         <div className="min-h-screen bg-surface-300 p-4 pb-24">
@@ -147,7 +171,7 @@ export function LookupView() {
                         exampleSentences={result.example_sentences}
                     />
 
-                    {/* Save buttons */}
+                    {/* Save word button */}
                     <div className="flex gap-3">
                         <button
                             onClick={handleSaveWord}
@@ -162,10 +186,36 @@ export function LookupView() {
                         </button>
                     </div>
 
-                    {/* Coming soon: Save sentence */}
-                    <div className="text-center text-white/30 text-sm">
-                        💡 Save sentences feature coming soon
-                    </div>
+                    {/* Save example sentences */}
+                    {result.example_sentences && result.example_sentences.length > 0 && (
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-white/50">Save Example Sentences</h3>
+                            {result.example_sentences.map((sentence, idx) => {
+                                const isSaved = isSentenceAlreadySaved(sentence.arabic_msa);
+                                return (
+                                    <div key={idx} className="glass-card p-3">
+                                        <div className="text-white font-arabic text-lg mb-1" dir="rtl">
+                                            {sentence.arabic_egyptian || sentence.arabic_msa}
+                                        </div>
+                                        <div className="text-white/60 text-sm mb-2">
+                                            {sentence.english}
+                                        </div>
+                                        <button
+                                            onClick={() => handleSaveSentence(sentence)}
+                                            disabled={isSaved}
+                                            className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
+                                                isSaved
+                                                    ? 'bg-green-500/20 text-green-400 cursor-default'
+                                                    : 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30'
+                                            }`}
+                                        >
+                                            {isSaved ? '✓ Saved' : '💬 Save Sentence'}
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 
