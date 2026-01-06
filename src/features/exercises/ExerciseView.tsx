@@ -7,6 +7,7 @@ import { useSavedWords } from '../../hooks/useSavedWords';
 import { ExercisePrompt } from './ExercisePrompt';
 import { AnswerInput } from './AnswerInput';
 import { ExerciseFeedback } from './ExerciseFeedback';
+import type { SaveDecision } from '../../components/SaveDecisionPanel';
 
 /**
  * Main exercise view container.
@@ -33,7 +34,7 @@ export function ExerciseView() {
         fromSavedWords: isSavedPractice,  // Fetch from saved_words table for practice
     });
     const { saveProgress, updateVocabularyMastery } = useLessonProgress();
-    const { saveWord } = useSavedWords();
+    const { saveWord, isWordSaved } = useSavedWords();
 
     const {
         phase,
@@ -70,34 +71,10 @@ export function ExerciseView() {
                     answers: results,
                 });
 
-                // Update mastery levels for each item AND auto-save to vocabulary
+                // Update mastery levels for each item
+                // Note: Words are now saved per-question via SaveDecisionPanel (not auto-saved here)
                 for (const result of results) {
                     await updateVocabularyMastery(result.itemId, result.correct);
-                    
-                    // Auto-save Arabic words to saved_words with 'active' status
-                    const item = vocabItems.find(v => v.id === result.itemId);
-                    if (item && item.language === 'arabic') {
-                        await saveWord(
-                            {
-                                word: item.word,
-                                translation: item.translation,
-                                pronunciation_standard: item.transliteration,
-                                letter_breakdown: item.letter_breakdown || undefined,
-                                hebrew_cognate: item.hebrew_cognate || undefined,
-                                status: 'active',  // Auto-saved as active (practicing)
-                                times_practiced: 1,
-                                times_correct: result.correct ? 1 : 0,
-                            },
-                            {
-                                content_type: item.content_type || 'word',
-                                full_text: item.word,
-                                full_transliteration: item.transliteration,
-                                full_translation: item.translation,
-                                lesson_id: lessonId,
-                                vocabulary_item_id: item.id,
-                            }
-                        );
-                    }
                 }
             }
         },
@@ -136,6 +113,42 @@ export function ExerciseView() {
     const confirmExit = useCallback(() => {
         navigate(isSavedPractice ? '/saved' : '/');
     }, [navigate, isSavedPractice]);
+
+    // Handle save decision from ExerciseFeedback and continue to next
+    const handleFeedbackContinue = useCallback(async (
+        saveDecision?: { decision: SaveDecision; memoryAid?: { note?: string; imageUrl?: string } }
+    ) => {
+        // Save word if user chose practice or archive (not discard)
+        if (saveDecision && currentItem && currentItem.language === 'arabic') {
+            const { decision, memoryAid } = saveDecision;
+            if (decision !== 'discard') {
+                await saveWord(
+                    {
+                        word: currentItem.word,
+                        translation: currentItem.translation,
+                        pronunciation_standard: currentItem.transliteration,
+                        letter_breakdown: currentItem.letter_breakdown || undefined,
+                        hebrew_cognate: currentItem.hebrew_cognate || undefined,
+                        status: decision === 'practice' ? 'active' : 'learned',
+                        times_practiced: 1,
+                        times_correct: lastAnswer?.correct ? 1 : 0,
+                        memory_note: memoryAid?.note,
+                        memory_image_url: memoryAid?.imageUrl,
+                    },
+                    {
+                        content_type: currentItem.content_type || 'word',
+                        full_text: currentItem.word,
+                        full_transliteration: currentItem.transliteration,
+                        full_translation: currentItem.translation,
+                        lesson_id: lessonId,
+                        vocabulary_item_id: currentItem.id,
+                    }
+                );
+            }
+        }
+        // Continue to next question
+        continueToNext();
+    }, [currentItem, lastAnswer, lessonId, saveWord, continueToNext]);
 
     // Loading state with skeleton
     if (loading) {
@@ -467,8 +480,9 @@ export function ExerciseView() {
                                 <ExerciseFeedback
                                     result={lastAnswer}
                                     item={currentItem}
-                                    onContinue={continueToNext}
+                                    onContinue={handleFeedbackContinue}
                                     isLastQuestion={currentIndex === totalItems - 1}
+                                    isWordAlreadySaved={isWordSaved(currentItem.word)}
                                 />
                             )}
                         </div>

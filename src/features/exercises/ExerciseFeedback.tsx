@@ -2,13 +2,14 @@ import { useMemo, useState, useEffect } from 'react';
 import type { AnswerResult, VocabularyItem } from '../../types';
 import { generateArabicBreakdownByWord, type WordBreakdown } from '../../utils/arabicLetters';
 import { lookupWord, type LookupResult } from '../../lib/openai';
+import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecisionPanel';
 
 interface ExerciseFeedbackProps {
     result: AnswerResult;
     item: VocabularyItem; // Need the item for details
-    onContinue: () => void;
+    onContinue: (saveDecision?: { decision: SaveDecision; memoryAid?: { note?: string; imageUrl?: string } }) => void;
     isLastQuestion: boolean;
-    // Note: onSave and isSaved removed - words auto-save now
+    isWordAlreadySaved?: boolean; // Check if word is already in saved_words
 }
 
 /**
@@ -19,7 +20,7 @@ interface ExerciseFeedbackProps {
  * - Arabic Letter Breakdown (if available)
  * - Hebrew Cognate (if available)
  */
-export function ExerciseFeedback({ result, item, onContinue, isLastQuestion }: ExerciseFeedbackProps) {
+export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, isWordAlreadySaved = false }: ExerciseFeedbackProps) {
     const { correct, userAnswer, correctAnswer } = result;
     const isArabic = item.language === 'arabic';
 
@@ -299,15 +300,31 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion }: E
                 )}
             </div>
 
-            {/* Action buttons - words auto-save, so just Next button */}
-            <div className="flex gap-3 pt-4">
-                <button
-                    onClick={onContinue}
-                    className="flex-1 touch-btn py-4 text-lg font-semibold rounded-xl btn-primary"
-                >
-                    {isLastQuestion ? 'See Results' : 'Next'}
-                </button>
-            </div>
+            {/* Save Decision Panel for Arabic words */}
+            {isArabic && (
+                <div className="glass-card p-4">
+                    <SaveDecisionPanel
+                        primaryText={item.word}
+                        translation={item.translation}
+                        onDecision={(decision, memoryAid) => {
+                            onContinue({ decision, memoryAid });
+                        }}
+                        alreadySaved={isWordAlreadySaved}
+                    />
+                </div>
+            )}
+
+            {/* Simple Next button for non-Arabic (Spanish) */}
+            {!isArabic && (
+                <div className="flex gap-3 pt-4">
+                    <button
+                        onClick={() => onContinue()}
+                        className="flex-1 touch-btn py-4 text-lg font-semibold rounded-xl btn-primary"
+                    >
+                        {isLastQuestion ? 'See Results' : 'Next'}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
