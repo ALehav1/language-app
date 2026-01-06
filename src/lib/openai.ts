@@ -611,23 +611,31 @@ export async function analyzePassage(text: string): Promise<PassageResult> {
  * 
  * @param word - The word or phrase to illustrate
  * @param translation - The English translation/meaning
- * @param context - Optional additional context (e.g., "office supplies", "greeting")
+ * @param customPrompt - Optional custom prompt from user (replaces auto-generated prompt)
  * @returns Base64 image data or null if generation fails
  */
 export async function generateMemoryImage(
   word: string,
   translation: string,
-  context?: string
+  customPrompt?: string
 ): Promise<string | null> {
   console.log('[OpenAI] Generating memory image for:', word, '->', translation);
   
-  // Build a prompt for a memorable, simple illustration
-  const contextHint = context ? ` Related to: ${context}.` : '';
-  const prompt = `Create a simple, memorable cartoon illustration representing "${translation}".${contextHint} 
+  // Use custom prompt if provided, otherwise generate default
+  let prompt: string;
+  if (customPrompt && customPrompt.trim()) {
+    // User provided custom prompt - wrap it with style guidelines
+    prompt = `Create a simple, memorable cartoon illustration: ${customPrompt.trim()}
+Style: Flat design, vibrant colors, minimal details, easy to remember at a glance.
+No text or words in the image. Clean white or simple gradient background.`;
+  } else {
+    // Default auto-generated prompt
+    prompt = `Create a simple, memorable cartoon illustration representing "${translation}".
 Style: Flat design, vibrant colors, minimal details, easy to remember at a glance. 
 The image should be iconic and immediately evoke the concept of "${translation}".
 No text or words in the image. Clean white or simple gradient background.
 Think: app icon or emoji style, but more detailed.`;
+  }
 
   try {
     const response = await withRetry(() =>

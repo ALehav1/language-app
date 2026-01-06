@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSavedPassages, type SavedPassage } from '../../hooks/useSavedPassages';
-import { generateMemoryImage } from '../../lib/openai';
+import { MemoryAidEditor } from '../../components/MemoryAidEditor';
 
 // Shared dialect preference key
 const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
@@ -15,11 +15,6 @@ export function MyPassagesView() {
     const { passages, loading, counts, deletePassage, updateStatus, updateMemoryAids } = useSavedPassages();
     const [selectedPassage, setSelectedPassage] = useState<SavedPassage | null>(null);
     const [filter, setFilter] = useState<'all' | 'active' | 'learned'>('all');
-    
-    // Memory aids state
-    const [editingNote, setEditingNote] = useState(false);
-    const [noteText, setNoteText] = useState('');
-    const [generatingImage, setGeneratingImage] = useState(false);
     
     // Dialect preference (shared with Lookup and Sentences)
     const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
@@ -283,92 +278,21 @@ export function MyPassagesView() {
 
                             {/* Memory Aids Section */}
                             <div className="glass-card p-3">
-                                <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-3">
-                                    🧠 Memory Aids
-                                </div>
-                                
-                                {/* Memory Image */}
-                                <div className="mb-3">
-                                    {selectedPassage.memory_image_url ? (
-                                        <img 
-                                            src={selectedPassage.memory_image_url} 
-                                            alt="Memory aid"
-                                            className="w-full h-32 object-cover rounded-lg"
-                                        />
-                                    ) : (
-                                        <button
-                                            onClick={async () => {
-                                                setGeneratingImage(true);
-                                                try {
-                                                    const imageData = await generateMemoryImage(
-                                                        selectedPassage.original_text.slice(0, 100),
-                                                        selectedPassage.full_translation.slice(0, 100)
-                                                    );
-                                                    if (imageData) {
-                                                        const dataUrl = `data:image/png;base64,${imageData}`;
-                                                        await updateMemoryAids(selectedPassage.id, { memory_image_url: dataUrl });
-                                                        setSelectedPassage({ ...selectedPassage, memory_image_url: dataUrl });
-                                                    }
-                                                } catch (err) {
-                                                    console.error('Failed to generate image:', err);
-                                                    alert('Failed to generate image.');
-                                                } finally {
-                                                    setGeneratingImage(false);
-                                                }
-                                            }}
-                                            disabled={generatingImage}
-                                            className="w-full py-3 border-2 border-dashed border-white/20 rounded-lg text-white/50 hover:border-purple-500/50 hover:text-purple-300 transition-colors text-sm"
-                                        >
-                                            {generatingImage ? '⏳ Generating...' : '🎨 Generate Visual'}
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Memory Note */}
-                                {editingNote ? (
-                                    <div className="space-y-2">
-                                        <textarea
-                                            value={noteText}
-                                            onChange={(e) => setNoteText(e.target.value)}
-                                            placeholder="Add a note to help remember..."
-                                            className="w-full p-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 resize-none text-sm"
-                                            rows={2}
-                                            autoFocus
-                                        />
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={async () => {
-                                                    await updateMemoryAids(selectedPassage.id, { memory_note: noteText || undefined });
-                                                    setSelectedPassage({ ...selectedPassage, memory_note: noteText || undefined });
-                                                    setEditingNote(false);
-                                                }}
-                                                className="flex-1 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg text-xs"
-                                            >
-                                                Save
-                                            </button>
-                                            <button
-                                                onClick={() => setEditingNote(false)}
-                                                className="px-3 py-1.5 bg-white/10 text-white/50 rounded-lg text-xs"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => {
-                                            setNoteText(selectedPassage.memory_note || '');
-                                            setEditingNote(true);
-                                        }}
-                                        className="w-full text-left p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-                                    >
-                                        {selectedPassage.memory_note ? (
-                                            <div className="text-white/80 text-sm">{selectedPassage.memory_note}</div>
-                                        ) : (
-                                            <div className="text-white/40 text-sm italic">+ Add a memory note...</div>
-                                        )}
-                                    </button>
-                                )}
+                                <MemoryAidEditor
+                                    primaryText={selectedPassage.original_text.slice(0, 100)}
+                                    translation={selectedPassage.full_translation.slice(0, 100)}
+                                    currentImageUrl={selectedPassage.memory_image_url}
+                                    currentNote={selectedPassage.memory_note}
+                                    onImageGenerated={async (imageUrl) => {
+                                        await updateMemoryAids(selectedPassage.id, { memory_image_url: imageUrl });
+                                        setSelectedPassage({ ...selectedPassage, memory_image_url: imageUrl });
+                                    }}
+                                    onNoteChanged={async (note) => {
+                                        await updateMemoryAids(selectedPassage.id, { memory_note: note || undefined });
+                                        setSelectedPassage({ ...selectedPassage, memory_note: note });
+                                    }}
+                                    compact
+                                />
                             </div>
                         </div>
 
