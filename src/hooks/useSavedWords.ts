@@ -323,6 +323,32 @@ export function useSavedWords(options?: {
         return words.some(w => w.word === arabicWord && w.status === 'active');
     }, [words]);
 
+    // Update memory aids (note and/or image)
+    const updateMemoryAids = useCallback(async (
+        wordId: string,
+        updates: { memory_note?: string; memory_image_url?: string }
+    ) => {
+        try {
+            const { error } = await supabase
+                .from('saved_words')
+                .update({
+                    ...updates,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', wordId);
+
+            if (error) throw error;
+
+            // Optimistic update
+            setWords(prev => prev.map(w => 
+                w.id === wordId ? { ...w, ...updates } : w
+            ));
+        } catch (err) {
+            console.error('Error updating memory aids:', err);
+            setError(err instanceof Error ? err.message : 'Failed to update memory aids');
+        }
+    }, []);
+
     // Get unique topics for filtering
     const topics = [...new Set(words.map(w => w.topic).filter(Boolean))] as string[];
 
@@ -345,6 +371,7 @@ export function useSavedWords(options?: {
         saveAsActive,
         isWordSaved,
         isActive,
+        updateMemoryAids,
         refetch: fetchWords,
         topics,
         counts,

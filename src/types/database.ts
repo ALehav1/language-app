@@ -112,6 +112,10 @@ export interface SavedWord {
   last_practiced: string | null;
   next_review: string | null;
   
+  // Memory aids (Phase 16)
+  memory_note: string | null;           // User's personal note to help remember
+  memory_image_url: string | null;      // AI-generated visual aid URL
+  
   // Timestamps
   created_at: string;
   updated_at: string;

@@ -4,6 +4,8 @@ import { useSavedWords } from '../../hooks/useSavedWords';
 import { LookupModal } from './LookupModal';
 import { WordDetailCard } from '../../components/WordDetailCard';
 import { findHebrewCognate } from '../../utils/hebrewCognates';
+import { generateMemoryImage } from '../../lib/openai';
+import { supabase } from '../../lib/supabase';
 import type { SavedWordWithContexts, WordStatus } from '../../types';
 
 type SortOption = 'recent' | 'alphabetical' | 'alphabetical-en';
@@ -23,6 +25,11 @@ export function MyVocabularyView() {
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [showLookup, setShowLookup] = useState(false);
+    
+    // Memory aids state
+    const [editingNote, setEditingNote] = useState(false);
+    const [noteText, setNoteText] = useState('');
+    const [generatingImage, setGeneratingImage] = useState(false);
 
     // Fetch words with filters
     const { 
@@ -31,6 +38,7 @@ export function MyVocabularyView() {
         error, 
         updateStatus, 
         deleteWord,
+        updateMemoryAids,
         counts,
         refetch 
     } = useSavedWords({
@@ -301,9 +309,15 @@ export function MyVocabularyView() {
                                     )}
 
                                     <div className="flex-1 min-w-0">
-                                        {/* Status badge */}
+                                        {/* Status badge + memory indicator */}
                                         <div className="flex items-center gap-2 mb-2">
                                             <StatusBadge status={word.status} />
+                                            {word.memory_image_url && (
+                                                <span className="text-xs" title="Has memory visual">🖼️</span>
+                                            )}
+                                            {word.memory_note && (
+                                                <span className="text-xs" title="Has memory note">📝</span>
+                                            )}
                                             {word.topic && (
                                                 <span className="px-2 py-0.5 rounded-full text-xs bg-white/10 text-white/50">
                                                     {word.topic}
@@ -452,6 +466,139 @@ export function MyVocabularyView() {
                                 </div>
                             </div>
                         )}
+
+                        {/* Memory Aids Section */}
+                        <div className="glass-card p-4 mt-4">
+                            <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-3">
+                                🧠 Memory Aids
+                            </div>
+                            
+                            {/* Memory Image */}
+                            <div className="mb-4">
+                                {selectedWord.memory_image_url ? (
+                                    <div className="relative">
+                                        <img 
+                                            src={selectedWord.memory_image_url} 
+                                            alt={`Memory aid for ${selectedWord.translation}`}
+                                            className="w-full h-48 object-cover rounded-lg"
+                                        />
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm('Generate a new image? This will replace the current one.')) return;
+                                                setGeneratingImage(true);
+                                                try {
+                                                    const imageData = await generateMemoryImage(selectedWord.word, selectedWord.translation);
+                                                    if (imageData) {
+                                                        // Upload to Supabase Storage
+                                                        const fileName = `${selectedWord.id}-${Date.now()}.png`;
+                                                        const { error } = await supabase.storage
+                                                            .from('memory-images')
+                                                            .upload(fileName, Buffer.from(imageData, 'base64'), {
+                                                                contentType: 'image/png',
+                                                                upsert: true
+                                                            });
+                                                        if (error) throw error;
+                                                        const { data: urlData } = supabase.storage.from('memory-images').getPublicUrl(fileName);
+                                                        await updateMemoryAids(selectedWord.id, { memory_image_url: urlData.publicUrl });
+                                                        setSelectedWord({ ...selectedWord, memory_image_url: urlData.publicUrl });
+                                                    }
+                                                } catch (err) {
+                                                    console.error('Failed to generate image:', err);
+                                                    alert('Failed to generate image. Please try again.');
+                                                } finally {
+                                                    setGeneratingImage(false);
+                                                }
+                                            }}
+                                            disabled={generatingImage}
+                                            className="absolute top-2 right-2 px-2 py-1 bg-black/50 text-white/80 text-xs rounded hover:bg-black/70"
+                                        >
+                                            {generatingImage ? '...' : '🔄'}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={async () => {
+                                            setGeneratingImage(true);
+                                            try {
+                                                const imageData = await generateMemoryImage(selectedWord.word, selectedWord.translation);
+                                                if (imageData) {
+                                                    // For now, store as data URL (Supabase Storage setup needed for production)
+                                                    const dataUrl = `data:image/png;base64,${imageData}`;
+                                                    await updateMemoryAids(selectedWord.id, { memory_image_url: dataUrl });
+                                                    setSelectedWord({ ...selectedWord, memory_image_url: dataUrl });
+                                                }
+                                            } catch (err) {
+                                                console.error('Failed to generate image:', err);
+                                                alert('Failed to generate image. Please try again.');
+                                            } finally {
+                                                setGeneratingImage(false);
+                                            }
+                                        }}
+                                        disabled={generatingImage}
+                                        className="w-full py-4 border-2 border-dashed border-white/20 rounded-lg text-white/50 hover:border-purple-500/50 hover:text-purple-300 transition-colors"
+                                    >
+                                        {generatingImage ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <span className="animate-spin">⏳</span> Generating...
+                                            </span>
+                                        ) : (
+                                            '🎨 Generate Visual'
+                                        )}
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Memory Note */}
+                            <div>
+                                {editingNote ? (
+                                    <div className="space-y-2">
+                                        <textarea
+                                            value={noteText}
+                                            onChange={(e) => setNoteText(e.target.value)}
+                                            placeholder="Add a note to help you remember this word..."
+                                            className="w-full p-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 resize-none"
+                                            rows={3}
+                                            autoFocus
+                                        />
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={async () => {
+                                                    await updateMemoryAids(selectedWord.id, { memory_note: noteText || undefined });
+                                                    setSelectedWord({ ...selectedWord, memory_note: noteText || null });
+                                                    setEditingNote(false);
+                                                }}
+                                                className="flex-1 py-2 bg-purple-500/20 text-purple-300 rounded-lg text-sm hover:bg-purple-500/30"
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setNoteText(selectedWord.memory_note || '');
+                                                    setEditingNote(false);
+                                                }}
+                                                className="px-4 py-2 bg-white/10 text-white/50 rounded-lg text-sm hover:bg-white/20"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            setNoteText(selectedWord.memory_note || '');
+                                            setEditingNote(true);
+                                        }}
+                                        className="w-full text-left p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                                    >
+                                        {selectedWord.memory_note ? (
+                                            <div className="text-white/80 text-sm">{selectedWord.memory_note}</div>
+                                        ) : (
+                                            <div className="text-white/40 text-sm italic">+ Add a memory note...</div>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
 
                         {/* Action buttons */}
                         <div className="flex gap-3 mt-6">
