@@ -130,9 +130,14 @@ export function LessonFeed() {
 
             {/* AI Lesson Generator */}
             <LessonGenerator
-                onLessonCreated={() => {
-                    refetch();
+                onLessonCreated={(lessonId) => {
                     setGeneratorOpen(false);
+                    // Navigate directly to exercise if lessonId provided
+                    if (lessonId) {
+                        navigate(`/exercise/${lessonId}`);
+                    } else {
+                        refetch();
+                    }
                 }}
                 defaultLanguage={languageFilter}
                 defaultContentType={contentFilter}

@@ -4,7 +4,7 @@ import { generateLessonContent } from '../../lib/openai';
 import type { Language, MasteryLevel, ContentType, ArabicDialect } from '../../types';
 
 interface LessonGeneratorProps {
-    onLessonCreated: () => void;
+    onLessonCreated: (lessonId?: string) => void;
     defaultLanguage?: Language;
     defaultContentType?: ContentType;
     externalOpen?: boolean;
@@ -129,10 +129,10 @@ export function LessonGenerator({
 
             if (vocabError) throw new Error(vocabError.message);
 
-            // Success
+            // Success - pass the lesson ID so we can navigate directly to exercise
             setIsOpen(false);
             setTopic('');
-            onLessonCreated();
+            onLessonCreated(lessonData.id);
 
         } catch (err) {
             console.error('Generation failed:', err);
