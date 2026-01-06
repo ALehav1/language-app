@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { lookupWord, type LookupResult } from '../../lib/openai';
+import { lookupWord, analyzePassage, type LookupResult, type PassageResult, type PassageWord } from '../../lib/openai';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { useSavedSentences } from '../../hooks/useSavedSentences';
 import { WordDetailCard } from '../../components/WordDetailCard';
+import { findHebrewCognate } from '../../utils/hebrewCognates';
 
 /**
  * LookupView - Full-page lookup for translating Arabic text.
@@ -12,8 +13,9 @@ import { WordDetailCard } from '../../components/WordDetailCard';
  * Features:
  * - Paste any Arabic or English text
  * - Get full translation + transliteration
+ * - For passages: sentence-by-sentence, word-by-word breakdown
  * - Save individual words to My Words
- * - Save sentences to My Sentences (coming soon)
+ * - Save sentences to My Sentences
  */
 export function LookupView() {
     const navigate = useNavigate();
@@ -24,25 +26,47 @@ export function LookupView() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<LookupResult | null>(null);
+    const [passageResult, setPassageResult] = useState<PassageResult | null>(null);
     const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
     const [savedSentences, setSavedSentences] = useState<Set<string>>(new Set());
+    const [mode, setMode] = useState<'word' | 'passage'>('word');
 
-    // Handle lookup
+    // Detect if input looks like a passage (multiple words/sentences)
+    const isPassageInput = (text: string): boolean => {
+        const trimmed = text.trim();
+        // Check for multiple sentences (periods, question marks) or many words
+        const hasMultipleSentences = /[.؟!،]/.test(trimmed);
+        const wordCount = trimmed.split(/\s+/).length;
+        return hasMultipleSentences || wordCount > 4;
+    };
+
+    // Handle lookup - auto-detect word vs passage
     const handleLookup = async () => {
         if (!input.trim()) return;
         
         setIsLoading(true);
         setError(null);
         setResult(null);
+        setPassageResult(null);
+
+        const isPassage = isPassageInput(input);
+        setMode(isPassage ? 'passage' : 'word');
 
         try {
-            console.log('[LookupView] Looking up:', input);
-            const data = await lookupWord(input.trim());
-            console.log('[LookupView] Result:', data);
-            setResult(data);
+            if (isPassage) {
+                console.log('[LookupView] Analyzing passage:', input);
+                const data = await analyzePassage(input.trim());
+                console.log('[LookupView] Passage result:', data);
+                setPassageResult(data);
+            } else {
+                console.log('[LookupView] Looking up word:', input);
+                const data = await lookupWord(input.trim());
+                console.log('[LookupView] Word result:', data);
+                setResult(data);
+            }
         } catch (err) {
             console.error('[LookupView] Error:', err);
-            setError('Failed to look up. Please try again.');
+            setError('Failed to analyze. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -68,7 +92,7 @@ export function LookupView() {
         }
     };
 
-    // Handle save sentence (from example sentences)
+    // Handle save sentence (from example sentences or passage)
     const handleSaveSentence = async (sentence: { arabic_msa: string; transliteration_msa: string; arabic_egyptian?: string; transliteration_egyptian?: string; english: string; explanation?: string }) => {
         try {
             await saveSentence({
@@ -86,8 +110,28 @@ export function LookupView() {
         }
     };
 
+    // Handle save word from passage breakdown
+    const handleSavePassageWord = async (word: PassageWord) => {
+        try {
+            const cognate = findHebrewCognate(word.arabic);
+            await saveWord({
+                word: word.arabic,
+                translation: word.translation,
+                pronunciation_standard: word.transliteration,
+                pronunciation_egyptian: word.transliteration_egyptian,
+                hebrew_cognate: cognate || undefined,
+            });
+            setSavedWords(prev => new Set(prev).add(word.arabic));
+        } catch (err) {
+            console.error('[LookupView] Failed to save word from passage:', err);
+        }
+    };
+
     // Check if current word is saved
     const isCurrentWordSaved = result ? (savedWords.has(result.arabic_word) || isWordSaved(result.arabic_word)) : false;
+    
+    // Check if a word is saved (for passage words)
+    const isWordAlreadySaved = (arabicWord: string) => savedWords.has(arabicWord) || isWordSaved(arabicWord);
     
     // Check if a sentence is saved
     const isSentenceAlreadySaved = (arabicText: string) => savedSentences.has(arabicText) || isSentenceSaved(arabicText);
@@ -219,8 +263,129 @@ export function LookupView() {
                 </div>
             )}
 
+            {/* Passage Results */}
+            {passageResult && mode === 'passage' && (
+                <div className="space-y-6">
+                    {/* Full translation summary */}
+                    <div className="glass-card p-4">
+                        <div className="text-xs text-white/40 mb-2">📝 Full Translation</div>
+                        <div className="text-white text-lg mb-2">
+                            {passageResult.full_translation}
+                        </div>
+                        <div className="text-white/60 text-sm">
+                            {passageResult.full_transliteration}
+                        </div>
+                    </div>
+
+                    {/* Sentence by sentence breakdown */}
+                    {passageResult.sentences?.map((sentence, sentenceIdx) => (
+                        <div key={sentenceIdx} className="glass-card p-4 space-y-4">
+                            {/* Sentence header */}
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-white/40">Sentence {sentenceIdx + 1}</span>
+                                <button
+                                    onClick={() => handleSaveSentence({
+                                        arabic_msa: sentence.arabic_msa,
+                                        arabic_egyptian: sentence.arabic_egyptian,
+                                        transliteration_msa: sentence.transliteration_msa,
+                                        transliteration_egyptian: sentence.transliteration_egyptian,
+                                        english: sentence.translation,
+                                        explanation: sentence.explanation,
+                                    })}
+                                    disabled={isSentenceAlreadySaved(sentence.arabic_msa)}
+                                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                        isSentenceAlreadySaved(sentence.arabic_msa)
+                                            ? 'bg-green-500/20 text-green-400'
+                                            : 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30'
+                                    }`}
+                                >
+                                    {isSentenceAlreadySaved(sentence.arabic_msa) ? '✓ Saved' : '💬 Save'}
+                                </button>
+                            </div>
+
+                            {/* Egyptian Arabic (primary) */}
+                            <div>
+                                <div className="text-xs text-amber-400/60 mb-1">🇪🇬 Egyptian</div>
+                                <div className="text-xl font-arabic text-white" dir="rtl">
+                                    {sentence.arabic_egyptian}
+                                </div>
+                                <div className="text-amber-300">
+                                    {sentence.transliteration_egyptian}
+                                </div>
+                            </div>
+
+                            {/* MSA version */}
+                            <div className="bg-white/5 rounded-lg p-3">
+                                <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
+                                <div className="text-lg font-arabic text-white/80" dir="rtl">
+                                    {sentence.arabic_msa}
+                                </div>
+                                <div className="text-teal-300/70 text-sm">
+                                    {sentence.transliteration_msa}
+                                </div>
+                            </div>
+
+                            {/* Translation */}
+                            <div className="text-white">
+                                {sentence.translation}
+                            </div>
+
+                            {/* Explanation */}
+                            {sentence.explanation && (
+                                <div className="text-white/50 text-sm italic">
+                                    💡 {sentence.explanation}
+                                </div>
+                            )}
+
+                            {/* Word-by-word breakdown */}
+                            <div>
+                                <div className="text-xs text-white/40 mb-2">Word Breakdown</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {sentence.words?.map((word, wordIdx) => {
+                                        const wordSaved = isWordAlreadySaved(word.arabic);
+                                        return (
+                                            <button
+                                                key={wordIdx}
+                                                onClick={() => !wordSaved && handleSavePassageWord(word)}
+                                                disabled={wordSaved}
+                                                className={`group relative px-3 py-2 rounded-lg text-left transition-colors ${
+                                                    wordSaved
+                                                        ? 'bg-green-500/10 border border-green-500/30'
+                                                        : 'bg-white/10 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/30'
+                                                }`}
+                                            >
+                                                <div className="text-white font-arabic" dir="rtl">
+                                                    {word.arabic_egyptian || word.arabic}
+                                                </div>
+                                                <div className="text-white/60 text-xs">
+                                                    {word.transliteration_egyptian || word.transliteration}
+                                                </div>
+                                                <div className="text-white/80 text-sm">
+                                                    {word.translation}
+                                                </div>
+                                                {word.part_of_speech && (
+                                                    <div className="text-white/30 text-xs">
+                                                        {word.part_of_speech}
+                                                    </div>
+                                                )}
+                                                {/* Save indicator */}
+                                                {wordSaved ? (
+                                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center text-[10px]">✓</div>
+                                                ) : (
+                                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">+</div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {/* Empty state */}
-            {!result && !isLoading && !error && (
+            {!result && !passageResult && !isLoading && !error && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                     <div className="text-5xl mb-4">🔍</div>
                     <h2 className="text-lg font-semibold text-white/70 mb-2">

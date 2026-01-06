@@ -418,3 +418,123 @@ export async function lookupWord(input: string): Promise<LookupResult> {
   
   return result;
 }
+
+/**
+ * Word breakdown for passage analysis.
+ */
+export interface PassageWord {
+  arabic: string;           // Arabic word with diacritics
+  arabic_egyptian?: string; // Egyptian variant if different
+  transliteration: string;
+  transliteration_egyptian?: string;
+  translation: string;
+  part_of_speech?: string;  // noun, verb, adjective, etc.
+}
+
+/**
+ * Sentence breakdown for passage analysis.
+ */
+export interface PassageSentence {
+  arabic_msa: string;
+  arabic_egyptian: string;
+  transliteration_msa: string;
+  transliteration_egyptian: string;
+  translation: string;
+  words: PassageWord[];
+  explanation?: string;
+}
+
+/**
+ * Result from analyzing a passage.
+ */
+export interface PassageResult {
+  full_translation: string;
+  full_transliteration: string;
+  sentences: PassageSentence[];
+}
+
+/**
+ * Analyze a passage of Arabic text - sentence by sentence, word by word.
+ * For pasting longer text and getting full breakdown.
+ */
+export async function analyzePassage(text: string): Promise<PassageResult> {
+  const prompt = `
+    Analyze this Arabic passage and break it down sentence by sentence, word by word.
+    
+    Text: "${text}"
+    
+    REQUIREMENTS:
+    1. Split into sentences (or treat as one sentence if short)
+    2. For EACH sentence provide:
+       - MSA version with full vowel diacritics (harakat)
+       - Egyptian Arabic version (how Egyptians would actually say it)
+       - Transliteration for both
+       - English translation
+       - Word-by-word breakdown
+    
+    3. For EACH word in the breakdown:
+       - Arabic with diacritics
+       - Egyptian variant if different
+       - Transliteration
+       - Translation
+       - Part of speech (noun, verb, particle, etc.)
+    
+    4. Egyptian Arabic should use ACTUAL Egyptian words, not just pronunciation variants:
+       - "want" → MSA: أُرِيد, Egyptian: عَايِز
+       - "what" → MSA: مَاذَا, Egyptian: إيه
+       - "now" → MSA: الآن, Egyptian: دِلْوَقْتِي
+    
+    Return ONLY valid JSON:
+    {
+      "full_translation": "Complete English translation",
+      "full_transliteration": "Full transliteration of the passage",
+      "sentences": [
+        {
+          "arabic_msa": "MSA sentence with harakat",
+          "arabic_egyptian": "Egyptian version",
+          "transliteration_msa": "MSA transliteration",
+          "transliteration_egyptian": "Egyptian transliteration",
+          "translation": "English translation",
+          "explanation": "Grammar/dialect notes (optional)",
+          "words": [
+            {
+              "arabic": "كَلِمَة",
+              "arabic_egyptian": "كِلْمَة",
+              "transliteration": "kalima",
+              "transliteration_egyptian": "kilma",
+              "translation": "word",
+              "part_of_speech": "noun"
+            }
+          ]
+        }
+      ]
+    }
+  `;
+
+  const response = await withRetry(() =>
+    openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" }
+    })
+  );
+
+  const result = JSON.parse(response.choices[0].message.content || '{}') as PassageResult;
+  
+  // Apply static Hebrew cognate lookup to each word
+  if (result.sentences) {
+    for (const sentence of result.sentences) {
+      if (sentence.words) {
+        for (const word of sentence.words) {
+          // We could add hebrew_cognate to words here if needed
+          const cognate = findHebrewCognate(word.arabic);
+          if (cognate) {
+            (word as PassageWord & { hebrew_cognate?: typeof cognate }).hebrew_cognate = cognate;
+          }
+        }
+      }
+    }
+  }
+  
+  return result;
+}
