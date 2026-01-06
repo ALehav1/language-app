@@ -43,10 +43,17 @@ Last Updated: January 6, 2026 (Phase 15 Complete)
     - Egyptian Arabic primary, MSA for reference
     - Filter by status (active/learned)
     - Detail modal with full breakdown
+    - Dialect toggle (Egyptian/MSA) - shared preference
   - **My Passages** - saved full texts:
     - Shows source language (EN→AR or AR→EN)
     - Full translation + transliteration
     - Mark as learned or delete
+    - Dialect toggle (Egyptian/MSA) - shared preference
+  - **Dialect preference system**:
+    - Toggle between 🇪🇬 Egyptian and 📖 MSA
+    - Shared across Lookup, Sentences, Passages
+    - Persists to localStorage
+    - Default: Egyptian (spoken Arabic focus)
   - Lesson feed with card stack + "Start Lesson" button
   - **Direct lesson start** - clicking "Start Lesson" goes directly to exercise
   - **Direct to exercise after creation** - AI generates lesson → goes straight to exercise (no intermediate screen)
