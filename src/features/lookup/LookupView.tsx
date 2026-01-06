@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-// Dialect preference storage key
-const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
 import { lookupWord, analyzePassage, type LookupResult, type PassageResult, type PassageWord } from '../../lib/openai';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { useSavedSentences } from '../../hooks/useSavedSentences';
 import { useSavedPassages } from '../../hooks/useSavedPassages';
 import { WordDetailCard } from '../../components/WordDetailCard';
+import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecisionPanel';
 import { findHebrewCognate } from '../../utils/hebrewCognates';
+
+// Dialect preference storage key
+const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
 
 /**
  * LookupView - Full-page lookup for translating Arabic/English text.
@@ -88,9 +89,12 @@ export function LookupView() {
         }
     };
 
-    // Handle save word
-    const handleSaveWord = async () => {
-        if (!result) return;
+    // Handle save word with explicit decision (Practice/Archive/Skip)
+    const handleWordDecision = async (
+        decision: SaveDecision,
+        memoryAid?: { note?: string; imageUrl?: string }
+    ) => {
+        if (!result || decision === 'discard') return;
         
         try {
             await saveWord({
@@ -101,6 +105,9 @@ export function LookupView() {
                 letter_breakdown: result.letter_breakdown,
                 hebrew_cognate: result.hebrew_cognate,
                 example_sentences: result.example_sentences,
+                status: decision === 'practice' ? 'active' : 'learned', // archive = learned
+                memory_note: memoryAid?.note,
+                memory_image_url: memoryAid?.imageUrl,
             });
             setSavedWords(prev => new Set(prev).add(result.arabic_word));
         } catch (err) {
@@ -253,19 +260,14 @@ export function LookupView() {
                         exampleSentences={result.example_sentences}
                     />
 
-                    {/* Save word button */}
-                    <div className="flex gap-3">
-                        <button
-                            onClick={handleSaveWord}
-                            disabled={isCurrentWordSaved}
-                            className={`flex-1 py-4 rounded-xl font-semibold transition-colors ${
-                                isCurrentWordSaved
-                                    ? 'bg-green-500/20 text-green-400 cursor-default'
-                                    : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
-                            }`}
-                        >
-                            {isCurrentWordSaved ? '✓ Saved to My Words' : 'Save to My Words'}
-                        </button>
+                    {/* Save decision panel */}
+                    <div className="glass-card p-4">
+                        <SaveDecisionPanel
+                            primaryText={result.arabic_word}
+                            translation={result.translation}
+                            onDecision={handleWordDecision}
+                            alreadySaved={isCurrentWordSaved}
+                        />
                     </div>
 
                     {/* Save example sentences */}
