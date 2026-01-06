@@ -8,8 +8,7 @@ interface ExerciseFeedbackProps {
     item: VocabularyItem; // Need the item for details
     onContinue: () => void;
     isLastQuestion: boolean;
-    onSave?: () => void;
-    isSaved?: boolean;
+    // Note: onSave and isSaved removed - words auto-save now
 }
 
 /**
@@ -20,7 +19,7 @@ interface ExerciseFeedbackProps {
  * - Arabic Letter Breakdown (if available)
  * - Hebrew Cognate (if available)
  */
-export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onSave, isSaved = false }: ExerciseFeedbackProps) {
+export function ExerciseFeedback({ result, item, onContinue, isLastQuestion }: ExerciseFeedbackProps) {
     const { correct, userAnswer, correctAnswer } = result;
     const isArabic = item.language === 'arabic';
 
@@ -300,30 +299,8 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, onS
                 )}
             </div>
 
-            {/* Action buttons */}
+            {/* Action buttons - words auto-save, so just Next button */}
             <div className="flex gap-3 pt-4">
-                {/* Save button */}
-                {onSave && (
-                    <button
-                        onClick={onSave}
-                        className={`
-                            touch-btn w-14 h-14 rounded-xl
-                            flex items-center justify-center
-                            transition-all duration-200
-                            ${isSaved
-                                ? 'bg-green-500/20 text-green-400'
-                                : 'bg-white/10 text-white/50 hover:text-white hover:bg-white/20'
-                            }
-                        `}
-                        aria-label={isSaved ? 'Saved' : 'Save word'}
-                    >
-                        <svg className={`w-6 h-6 ${isSaved ? 'heart-pop' : ''}`} fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                    </button>
-                )}
-
-                {/* Next button */}
                 <button
                     onClick={onContinue}
                     className="flex-1 touch-btn py-4 text-lg font-semibold rounded-xl btn-primary"

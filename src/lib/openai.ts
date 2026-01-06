@@ -335,7 +335,15 @@ export async function lookupWord(input: string): Promise<LookupResult> {
        - سُكُون (sukun) = no vowel
        - شَدَّة (shadda) = doubled consonant
     
-    6. Hebrew cognate ONLY if genuine shared Semitic root exists
+    6. Hebrew cognate - CHECK CAREFULLY for shared Semitic roots! Common examples:
+       - כ-ת-ב (k-t-b) = write: Arabic كَتَبَ (kataba), مَكْتَب (maktab), Hebrew כתב (katav), מכתב (michtav)
+       - ע-מ-ל (ayin-m-l) = work/labor: Arabic عَمَل ('amal), Hebrew עמל (amal)
+       - ש-ל-ם (sh-l-m) = peace/complete: Arabic سَلَام (salaam), Hebrew שלום (shalom)
+       - ב-י-ת (b-y-t) = house: Arabic بَيْت (bayt), Hebrew בית (bayit)
+       - א-כ-ל (alef-k-l) = eat: Arabic أَكَلَ (akala), Hebrew אכל (achal)
+       - ק-ר-א (q-r-alef) = read/call: Arabic قَرَأَ (qara'a), Hebrew קרא (kara)
+       - ס-פ-ר (s-p-r) = book/count: Arabic سِفْر (sifr), Hebrew ספר (sefer)
+       Include hebrew_cognate if ANY genuine Semitic root connection exists!
     
     7. Provide 2-3 EXAMPLE SENTENCES showing the word in EVERYDAY SPOKEN context:
        - CRITICAL: Provide BOTH MSA and Egyptian Arabic versions of EACH sentence

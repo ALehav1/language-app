@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSavedWords } from '../../hooks/useSavedWords';
-import { generateArabicBreakdownByWord } from '../../utils/arabicLetters';
 import { LookupModal } from './LookupModal';
+import { WordDetailCard } from '../../components/WordDetailCard';
 import type { SavedWordWithContexts, WordStatus } from '../../types';
 
 type SortOption = 'recent' | 'alphabetical' | 'alphabetical-en';
@@ -51,11 +51,6 @@ export function MyVocabularyView() {
         }
     }, [words, sortBy]);
 
-    // Word breakdown for detail modal
-    const wordBreakdowns = useMemo(() => {
-        if (!selectedWord) return [];
-        return generateArabicBreakdownByWord(selectedWord.word);
-    }, [selectedWord]);
 
     // Selection handlers
     const toggleSelection = (id: string) => {
@@ -388,7 +383,7 @@ export function MyVocabularyView() {
                 </div>
             )}
 
-            {/* Word Detail Modal */}
+            {/* Word Detail Modal - Uses shared WordDetailCard for consistent display */}
             {selectedWord && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
@@ -398,7 +393,7 @@ export function MyVocabularyView() {
                         className="w-full max-w-md bg-surface-300 rounded-2xl p-6 max-h-[85vh] overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Header */}
+                        {/* Header with status badge and close button */}
                         <div className="flex items-start justify-between mb-4">
                             <div>
                                 <StatusBadge status={selectedWord.status} />
@@ -419,114 +414,42 @@ export function MyVocabularyView() {
                             </button>
                         </div>
 
-                        <div className="space-y-4">
-                            {/* Word + Translation */}
-                            <div className="glass-card p-4">
-                                <div className="text-center mb-3">
-                                    <span className="text-4xl font-bold text-white font-arabic" dir="rtl">
-                                        {selectedWord.word}
-                                    </span>
+                        {/* Unified WordDetailCard - same as exercise feedback */}
+                        <WordDetailCard
+                            word={selectedWord.word}
+                            translation={selectedWord.translation}
+                            language="arabic"
+                            pronunciationStandard={selectedWord.pronunciation_standard || undefined}
+                            pronunciationEgyptian={selectedWord.pronunciation_egyptian || undefined}
+                            hebrewCognate={selectedWord.hebrew_cognate}
+                            exampleSentences={selectedWord.example_sentences || undefined}
+                        />
+
+                        {/* Source Contexts - unique to vocabulary view */}
+                        {selectedWord.contexts && selectedWord.contexts.length > 0 && (
+                            <div className="glass-card p-4 mt-4">
+                                <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-3">
+                                    Found In
                                 </div>
-                                <div className="text-center text-xl text-white/80 mb-3">
-                                    {selectedWord.translation}
-                                </div>
-                                
-                                {/* Pronunciations */}
-                                <div className="flex flex-col gap-2 text-center">
-                                    {selectedWord.pronunciation_standard && (
-                                        <div className="text-white/60">
-                                            <span className="text-white/40 text-sm">Standard (MSA):</span>{' '}
-                                            <span className="font-medium">{selectedWord.pronunciation_standard}</span>
+                                <div className="space-y-3">
+                                    {selectedWord.contexts.map((ctx, idx) => (
+                                        <div key={idx} className="bg-white/5 rounded-lg p-3">
+                                            <div className="text-white font-arabic text-lg mb-1" dir="rtl">
+                                                {ctx.full_text}
+                                            </div>
+                                            {ctx.full_transliteration && (
+                                                <div className="text-white/50 text-sm italic mb-1">
+                                                    {ctx.full_transliteration}
+                                                </div>
+                                            )}
+                                            <div className="text-white/70 text-sm">
+                                                {ctx.full_translation}
+                                            </div>
                                         </div>
-                                    )}
-                                    {selectedWord.pronunciation_egyptian && (
-                                        <div className="text-white/60">
-                                            <span className="text-white/40 text-sm">Egyptian:</span>{' '}
-                                            <span className="font-medium">{selectedWord.pronunciation_egyptian}</span>
-                                        </div>
-                                    )}
+                                    ))}
                                 </div>
                             </div>
-
-                            {/* Hebrew Cognate */}
-                            {selectedWord.hebrew_cognate && (
-                                <div className="glass-card p-4 border-l-4 border-l-blue-500/50">
-                                    <div className="text-blue-300 text-xs font-bold uppercase tracking-wider mb-2">
-                                        Hebrew Connection
-                                    </div>
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <div className="text-2xl font-hebrew text-white mb-1">
-                                                {selectedWord.hebrew_cognate.root}
-                                            </div>
-                                            <div className="text-sm text-white/60">
-                                                {selectedWord.hebrew_cognate.meaning}
-                                            </div>
-                                        </div>
-                                        {selectedWord.hebrew_cognate.notes && (
-                                            <div className="text-xs text-white/40 max-w-[150px] text-right italic">
-                                                "{selectedWord.hebrew_cognate.notes}"
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Letter Breakdown */}
-                            {wordBreakdowns.length > 0 && (
-                                <div className="glass-card p-4">
-                                    <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider mb-3">
-                                        Letter Breakdown
-                                    </div>
-                                    <div className="space-y-4">
-                                        {wordBreakdowns.map((wb, wIdx) => (
-                                            <div key={wIdx} className="space-y-2">
-                                                {wordBreakdowns.length > 1 && (
-                                                    <div className="text-center text-white/60 text-sm font-arabic" dir="rtl">
-                                                        {wb.word}
-                                                    </div>
-                                                )}
-                                                <div className="flex flex-wrap justify-center gap-2" dir="rtl">
-                                                    {wb.letters.map((l, idx) => (
-                                                        <div key={idx} className="flex flex-col items-center gap-1 p-2 bg-white/5 rounded-xl min-w-[55px]">
-                                                            <span className="text-2xl font-arabic text-white">{l.letter}</span>
-                                                            <span className="text-[9px] text-white/50 text-center leading-tight">{l.name}</span>
-                                                            <span className="text-xs text-teal-400/80 font-mono">/{l.sound}/</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Source Contexts */}
-                            {selectedWord.contexts && selectedWord.contexts.length > 0 && (
-                                <div className="glass-card p-4">
-                                    <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-3">
-                                        Found In
-                                    </div>
-                                    <div className="space-y-3">
-                                        {selectedWord.contexts.map((ctx, idx) => (
-                                            <div key={idx} className="bg-white/5 rounded-lg p-3">
-                                                <div className="text-white font-arabic text-lg mb-1" dir="rtl">
-                                                    {ctx.full_text}
-                                                </div>
-                                                {ctx.full_transliteration && (
-                                                    <div className="text-white/50 text-sm italic mb-1">
-                                                        {ctx.full_transliteration}
-                                                    </div>
-                                                )}
-                                                <div className="text-white/70 text-sm">
-                                                    {ctx.full_translation}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        )}
 
                         {/* Action buttons */}
                         <div className="flex gap-3 mt-6">

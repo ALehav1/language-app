@@ -33,7 +33,7 @@ export function ExerciseView() {
         fromSavedWords: isSavedPractice,  // Fetch from saved_words table for practice
     });
     const { saveProgress, updateVocabularyMastery } = useLessonProgress();
-    const { saveWord, saveAsActive, isWordSaved } = useSavedWords();
+    const { saveWord } = useSavedWords();
 
     const {
         phase,
@@ -469,24 +469,6 @@ export function ExerciseView() {
                                     item={currentItem}
                                     onContinue={continueToNext}
                                     isLastQuestion={currentIndex === totalItems - 1}
-                                    onSave={() => saveAsActive(
-                                        {
-                                            word: currentItem.word,
-                                            translation: currentItem.translation,
-                                            pronunciation_standard: currentItem.transliteration,
-                                            letter_breakdown: currentItem.letter_breakdown || undefined,
-                                            hebrew_cognate: currentItem.hebrew_cognate || undefined,
-                                        },
-                                        {
-                                            content_type: currentItem.content_type || 'word',
-                                            full_text: currentItem.word,
-                                            full_transliteration: currentItem.transliteration,
-                                            full_translation: currentItem.translation,
-                                            lesson_id: lessonId,
-                                            vocabulary_item_id: currentItem.id,
-                                        }
-                                    )}
-                                    isSaved={isWordSaved(currentItem.word)}
                                 />
                             )}
                         </div>
