@@ -13,6 +13,8 @@ export interface SavedPassage {
     sentence_count: number;
     source?: string;
     status: 'active' | 'learned';
+    memory_note?: string | null;
+    memory_image_url?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -147,6 +149,29 @@ export function useSavedPassages() {
         return passages.some(p => p.original_text === originalText);
     }, [passages]);
 
+    // Update memory aids (note and/or image)
+    const updateMemoryAids = useCallback(async (
+        id: string,
+        updates: { memory_note?: string; memory_image_url?: string }
+    ): Promise<boolean> => {
+        try {
+            const { error: updateError } = await supabase
+                .from('saved_passages')
+                .update({ ...updates, updated_at: new Date().toISOString() })
+                .eq('id', id);
+            
+            if (updateError) throw updateError;
+            
+            setPassages(prev => prev.map(p => 
+                p.id === id ? { ...p, ...updates } : p
+            ));
+            return true;
+        } catch (err) {
+            console.error('[useSavedPassages] Update memory aids error:', err);
+            return false;
+        }
+    }, []);
+
     // Get counts by status
     const counts = {
         total: passages.length,
@@ -162,6 +187,7 @@ export function useSavedPassages() {
         savePassage,
         deletePassage,
         updateStatus,
+        updateMemoryAids,
         isPassageSaved,
         refetch: fetchPassages,
     };

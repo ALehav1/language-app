@@ -15,6 +15,8 @@ export interface SavedSentence {
     topic?: string;
     source?: string;
     status: 'active' | 'learned';
+    memory_note?: string | null;
+    memory_image_url?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -149,6 +151,29 @@ export function useSavedSentences() {
         return sentences.some(s => s.arabic_text === arabicText);
     }, [sentences]);
 
+    // Update memory aids (note and/or image)
+    const updateMemoryAids = useCallback(async (
+        id: string,
+        updates: { memory_note?: string; memory_image_url?: string }
+    ): Promise<boolean> => {
+        try {
+            const { error: updateError } = await supabase
+                .from('saved_sentences')
+                .update({ ...updates, updated_at: new Date().toISOString() })
+                .eq('id', id);
+            
+            if (updateError) throw updateError;
+            
+            setSentences(prev => prev.map(s => 
+                s.id === id ? { ...s, ...updates } : s
+            ));
+            return true;
+        } catch (err) {
+            console.error('[useSavedSentences] Update memory aids error:', err);
+            return false;
+        }
+    }, []);
+
     // Get counts by status
     const counts = {
         total: sentences.length,
@@ -164,6 +189,7 @@ export function useSavedSentences() {
         saveSentence,
         deleteSentence,
         updateStatus,
+        updateMemoryAids,
         isSentenceSaved,
         refetch: fetchSentences,
     };
