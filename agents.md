@@ -5,7 +5,7 @@ Language Learning App - AI-powered language learning that teaches how native spe
 Target: Non-technical adult learner learning Arabic (novice) and Spanish (intermediate)
 Stack: React + TypeScript + Vite + Tailwind + Supabase + OpenAI
 
-Last Updated: January 6, 2026 (Phase 15 Complete)
+Last Updated: January 6, 2026 (Phase 16 Complete)
 
 ## What Makes This App Different
 - Multiple content types: words, phrases, dialogs, paragraphs
@@ -21,7 +21,7 @@ Last Updated: January 6, 2026 (Phase 15 Complete)
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 15 Complete - Navigation Redesign + Lookup Enhancement
+- Status: Phase 16 Complete - Dialect Preference + Memory Aids
 - Working features:
   - **MainMenu home screen** - 5 clear navigation options:
     - Lessons (teal) - Browse & create lessons
@@ -136,6 +136,14 @@ Last Updated: January 6, 2026 (Phase 15 Complete)
     - New lessons avoid words you've already practiced
     - AI excludes up to 50 saved words when generating lessons
     - Ensures fresh content every time
+  - **Dialect Preference + Memory Aids** (Phase 16):
+    - Global dialect toggle (🇪🇬 Egyptian / 📖 MSA) shared across Lookup, Sentences, Passages
+    - Preferred dialect shown first and larger, other as reference
+    - Persists to localStorage, default: Egyptian
+    - **Memory Aids** for words, sentences, and passages:
+      - 🎨 Generate Visual - DALL-E creates cartoon/flat style illustrations
+      - 📝 Memory Note - personal notes to aid recall
+      - 🖼️ 📝 indicators in list views show items with memory aids
 - Known limitations:
   - Card swipe state stored in localStorage, not Supabase
   - No audio playback yet
@@ -206,6 +214,8 @@ Last Updated: January 6, 2026 (Phase 15 Complete)
 38. Action button labels (Skip, Later, Save)
 39. Saved Words back navigation uses browser history
 40. Consistent empty state for all content types
+41. Dialect preference toggle (Egyptian/MSA) across Lookup, Sentences, Passages
+42. Memory Aids: DALL-E visuals + personal notes for words/sentences/passages
 
 ### Remaining (P2)
 1. Audio playback with speed toggle
