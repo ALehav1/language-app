@@ -2,8 +2,8 @@
 
 AI-powered language learning for Arabic (novice) and Spanish (intermediate) that teaches how native speakers actually talk.
 
-**Last Updated**: January 5, 2026
-**Status**: Phase 10 Complete - Bug Fixes & UX Improvements
+**Last Updated**: January 6, 2026
+**Status**: Phase 14 Complete - Egyptian Arabic Focus & Word Deduplication
 
 ---
 
@@ -24,7 +24,8 @@ src/
 │   │   ├── AnswerInput.tsx       # Answer submission
 │   │   └── ExerciseFeedback.tsx  # Result display with save button
 │   └── vocabulary/
-│       └── SavedVocabularyView.tsx # Browse saved words
+│       ├── MyVocabularyView.tsx    # Browse saved words with status filters
+│       └── LookupModal.tsx         # Look up any word with full breakdown
 ├── components/                    # Shared UI components
 │   ├── Card.tsx                   # Base glassmorphism card
 │   ├── LessonCard.tsx             # Swipeable lesson with Start button
@@ -37,7 +38,8 @@ src/
 │   ├── useLessons.ts              # Fetch lessons with filters
 │   ├── useVocabulary.ts           # Fetch vocabulary from Supabase
 │   ├── useLessonProgress.ts       # Save progress & update mastery
-│   └── useSavedVocabulary.ts      # Save/remove vocabulary items
+│   ├── useSavedVocabulary.ts      # Legacy: Save/remove vocabulary items
+│   └── useSavedWords.ts           # New: Full word management with status
 ├── types/
 │   ├── database.ts                # Supabase schema types
 │   └── lesson.ts                  # UI state types
@@ -244,25 +246,59 @@ On larger screens (1024px+), exercises show:
 - Accepts minor typos and synonyms
 - Falls back to exact match if API fails
 
-### Saved Vocabulary
-- Tap heart icon during exercises to save words
-- Access via menu → Saved Words
-- Filter by language (All/Arabic/Spanish)
-- **Tap any word** to see full details:
-  - Word + translation + pronunciation
-  - Hebrew connection (Arabic only)
-  - Letter breakdown (Arabic only, RTL display)
-- **Practice mode**:
-  - Tap "Practice" button to enter selection mode
-  - Select individual words or "Select All"
-  - Tap "Practice X words" to start custom exercise
-  - Works just like regular lessons
-- Remove items from collection
+### My Vocabulary (Phase 13-14)
 
-### Spaced Repetition
-- Mastery levels: `new` → `learning` → `practiced` → `mastered`
-- Progress tracked per vocabulary item
-- Next review time calculated based on mastery
+**Word Status Model** (simplified):
+- **Active**: Words you're still practicing (default for all saved/practiced words)
+- **Learned**: Archived words you know well (for reference)
+
+**Features**:
+- All practiced Arabic words **auto-save** to your vocabulary
+- Access via bottom navigation → **My Words** tab
+- Filter by status: All / Active / Learned
+- Search by word or translation
+- Sort by recent or alphabetical
+
+**Word Details** (tap any word):
+- Arabic word with vowels (harakat)
+- **Both dialect pronunciations**: Standard MSA + Egyptian Arabic
+- **Example sentences** with both MSA and Egyptian versions
+- Hebrew cognate (if genuine Semitic connection exists)
+- Letter breakdown (RTL display)
+- Source contexts (where you learned the word)
+
+**Actions**:
+- **Mark as Learned**: Archive words you know well
+- **Mark as Active**: Bring archived words back to practice
+- **Delete**: Permanently remove a word
+
+**Lookup Mode** (+ button):
+- Type any word (English or Arabic)
+- Get full breakdown with example sentences
+- Save directly to your vocabulary
+
+**Practice Mode**:
+- Tap "Practice" to enter selection mode
+- Select words and practice as custom lesson
+
+### Egyptian Arabic Focus (Phase 14)
+
+**Example Sentences** now show BOTH versions:
+- 🇪🇬 **Egyptian (Spoken)** - displayed first, larger, amber-colored
+- 📖 **MSA (Formal)** - displayed second, smaller, teal-colored
+
+For "work": Instead of just عَمَل (amal), you see:
+- Egyptian: أَنَا بَحِبّ الشُغْل (ana bahibb el-shoghl)
+- MSA: أَنَا أُحِبُّ العَمَلَ (ana uhibbu al-'amala)
+
+**Why this matters**: Egyptian Arabic is what you'll hear in everyday conversation. MSA is for formal writing and news. Learning both helps you understand real spoken Arabic.
+
+### Word Deduplication (Phase 14)
+
+**New lessons avoid words you've already practiced**:
+- When generating a lesson, the AI checks your saved vocabulary
+- Excludes up to 50 already-practiced words
+- Ensures you always see fresh content
 
 ---
 
@@ -274,14 +310,17 @@ On larger screens (1024px+), exercises show:
 - `Language`: `'arabic' | 'spanish'`
 - `ContentType`: `'word' | 'phrase' | 'dialog' | 'paragraph'`
 - `MasteryLevel`: `'new' | 'learning' | 'practiced' | 'mastered'`
+- `WordStatus`: `'active' | 'learned'` (simplified in Phase 13)
 - `HebrewCognate`: `{ root?, meaning?, notes? }`
 - `LetterBreakdown`: `{ letter, name, sound }`
+- `ExampleSentence`: `{ arabic_msa, transliteration_msa, arabic_egyptian, transliteration_egyptian, english, explanation? }`
 
 **Database Tables**:
 - `DbLesson`: Lesson metadata with content_type
 - `DbVocabularyItem`: Content with translations, cognates, letter breakdown
 - `LessonProgress`: Completed lessons and scores
-- `SavedVocabulary`: User's saved content collection
+- `saved_words`: User's saved vocabulary with status, pronunciations, example sentences
+- `word_contexts`: Source contexts for each saved word
 
 ---
 
@@ -292,7 +331,7 @@ On larger screens (1024px+), exercises show:
 | `/` | `LessonFeed` | Main lesson discovery with card stack |
 | `/exercise/:lessonId` | `ExerciseView` | Translation exercise flow |
 | `/exercise/saved?ids=...` | `ExerciseView` | Practice selected saved words |
-| `/saved` | `SavedVocabularyView` | Browse and practice saved vocabulary |
+| `/saved` | `MyVocabularyView` | Browse, filter, and practice saved vocabulary |
 
 ---
 
@@ -337,13 +376,33 @@ Test at these breakpoints IN ORDER:
 
 ## Completed Features
 
-### Phase 12 (Current)
+### Phase 14 (Current)
+- **Egyptian Arabic Focus**:
+  - **Example sentences show BOTH dialects**: Egyptian (spoken) first, MSA (formal) second
+  - **Egyptian displayed prominently**: Larger text, amber color, 🇪🇬 flag indicator
+  - **MSA shown for reference**: Smaller text, teal color, 📖 book indicator
+  - **Real Egyptian vocabulary**: Uses actual Egyptian words (شُغْل not عَمَل for "work")
+  - **Letter breakdown for Egyptian**: Separate breakdown for Egyptian word variant
+  - **Grammar explanations**: Notes on differences between dialects
+
+- **Word Deduplication**:
+  - **Lessons avoid repeated words**: AI excludes your saved vocabulary when generating new lessons
+  - **Fresh content always**: Up to 50 already-practiced words excluded from new lessons
+
+### Phase 13
+- **Unified Word Tracking**:
+  - **Simplified status model**: `active` (practicing) vs `learned` (archived)
+  - **All practiced words auto-save**: Arabic words automatically added to vocabulary
+  - **Delete functionality**: Permanently remove words from vocabulary
+  - **Filter icon in header**: Clearer signal for opening settings menu
+  - **Dynamic dialect pronunciations**: Fetched from OpenAI during exercise feedback
+
+### Phase 12
 - **My Vocabulary Overhaul**:
   - **New database schema**: `saved_words` and `word_contexts` tables for word-centric data model
   - **Dialect pronunciations**: Each word stores both Standard MSA and Egyptian Arabic pronunciations
   - **Bottom navigation**: Lessons + My Words tabs (vocabulary now prominent)
-  - **My Vocabulary screen**: Search, filter by status (needs_review/solid), sort (recent/A-Z)
-  - **Status tracking**: Words progress through needs_review → solid → retired
+  - **My Vocabulary screen**: Search, filter by status, sort (recent/A-Z)
   - **Word detail modal**: Full breakdown with letter breakdown, Hebrew cognate, source contexts
   - **Selection mode**: Select any saved words for custom practice sessions
   - **Lookup Mode**: Type any word (English or Arabic) to get full breakdown

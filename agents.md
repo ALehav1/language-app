@@ -5,7 +5,7 @@ Language Learning App - AI-powered language learning that teaches how native spe
 Target: Non-technical adult learner learning Arabic (novice) and Spanish (intermediate)
 Stack: React + TypeScript + Vite + Tailwind + Supabase + OpenAI
 
-Last Updated: January 5, 2026
+Last Updated: January 6, 2026
 
 ## What Makes This App Different
 - Multiple content types: words, phrases, dialogs, paragraphs
@@ -20,7 +20,7 @@ Last Updated: January 5, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 13 Complete - Unified Word Tracking & UX Cleanup
+- Status: Phase 14 Complete - Egyptian Arabic Focus & Word Deduplication
 - Working features:
   - **Simplified header** - filter/settings icon + centered title (shows current content type + language)
   - **Bottom sheet menu** - filter icon opens settings popup (not hamburger - better UX signal):
@@ -86,20 +86,29 @@ Last Updated: January 5, 2026
     - Dialect pronunciations: Standard MSA + Egyptian Arabic for each word
     - **Bottom navigation** - Lessons + My Words tabs (vocabulary now prominent)
     - **My Vocabulary screen** - search, filter by status, sort options
-    - Status tracking: needs_review → solid → retired
+    - Status tracking: active → learned (simplified in Phase 13)
     - Word detail modal with full breakdown and source contexts
     - Selection mode for custom practice sessions
     - **Lookup Mode** - type any word (English/Arabic) for full breakdown
     - Floating + button to add words via lookup
     - Save words directly from lookup results
   - **Unified word tracking** (Phase 13):
-    - All practiced Arabic words auto-save to `saved_words` with 'solid' status
-    - Heart button = mark for additional review (changes to 'needs_review')
-    - Removed confusing 'Later' option from lesson cards (only Skip/Save remain)
-    - Removed Skip/Save buttons from lesson feed (Start Lesson is the only action)
+    - Simplified status model: `active` (practicing) vs `learned` (archived)
+    - All practiced Arabic words auto-save to `saved_words` with 'active' status
+    - Delete functionality for permanently removing words
     - Changed hamburger icon to filter/sliders icon (better signals popup menu)
     - Exercise feedback fetches both dialect pronunciations + Hebrew cognates dynamically
-    - Fixed lesson resume timing issue (waits for vocabItems to load)
+  - **Egyptian Arabic focus** (Phase 14):
+    - Example sentences show BOTH dialects: Egyptian (spoken) first, MSA (formal) second
+    - Egyptian displayed prominently with 🇪🇬 flag, amber color
+    - MSA shown for reference with 📖 book icon, teal color
+    - Real Egyptian vocabulary (شُغْل not عَمَل for "work")
+    - Letter breakdown for Egyptian word variant
+    - Grammar explanations noting dialect differences
+  - **Word deduplication** (Phase 14):
+    - New lessons avoid words you've already practiced
+    - AI excludes up to 50 saved words when generating lessons
+    - Ensures fresh content every time
 - Known limitations:
   - Card swipe state stored in localStorage, not Supabase
   - No audio playback yet
@@ -120,7 +129,7 @@ Last Updated: January 5, 2026
 | `/` | `LessonFeed` | Main lesson discovery with card stack |
 | `/exercise/:lessonId` | `ExerciseView` | Translation exercise flow |
 | `/exercise/saved?ids=...` | `ExerciseView` | Practice selected saved words |
-| `/saved` | `SavedVocabularyView` | Browse and practice saved vocabulary |
+| `/saved` | `MyVocabularyView` | Browse, filter, and practice saved vocabulary |
 
 ## Priority Features
 
