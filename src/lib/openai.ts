@@ -254,6 +254,17 @@ export async function evaluateAnswer(
 }
 
 /**
+ * Example sentence showing the word in context.
+ */
+export interface ExampleSentence {
+  arabic: string;           // Full Arabic sentence with harakat
+  transliteration: string;  // How to pronounce it
+  english: string;          // English translation
+  word_highlighted: string; // The target word in the sentence (for highlighting)
+  explanation?: string;     // Grammar/usage note if helpful
+}
+
+/**
  * Lookup result for a word or phrase.
  */
 export interface LookupResult {
@@ -273,6 +284,7 @@ export interface LookupResult {
     meaning: string;
     notes?: string;
   };
+  example_sentences: ExampleSentence[];  // 2-3 example sentences showing usage
 }
 
 /**
@@ -307,6 +319,12 @@ export async function lookupWord(input: string): Promise<LookupResult> {
     
     6. Hebrew cognate ONLY if genuine shared Semitic root exists
     
+    7. Provide 2-3 EXAMPLE SENTENCES showing the word in real context:
+       - Each sentence should be simple and useful for a learner
+       - Include Arabic (with harakat), transliteration, and English translation
+       - Add a brief explanation of any grammar or usage notes
+       - Show the word in different contexts (question, statement, etc.)
+    
     Return ONLY valid JSON:
     {
       "detected_language": "arabic" | "english",
@@ -324,7 +342,16 @@ export async function lookupWord(input: string): Promise<LookupResult> {
         "root": "Hebrew root if exists",
         "meaning": "meaning",
         "notes": "connection notes"
-      } // OMIT if no genuine cognate
+      }, // OMIT if no genuine cognate
+      "example_sentences": [
+        {
+          "arabic": "أَنَا أُحِبُّ العَمَلَ",
+          "transliteration": "ana uhibbu al-'amala",
+          "english": "I love work",
+          "word_highlighted": "العَمَلَ",
+          "explanation": "The word takes the accusative case (-a ending) because it's the object"
+        }
+      ]
     }
   `;
 
