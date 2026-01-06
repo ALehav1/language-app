@@ -3,7 +3,7 @@
 AI-powered language learning for Arabic (novice) and Spanish (intermediate) that teaches how native speakers actually talk.
 
 **Last Updated**: January 6, 2026
-**Status**: Phase 14 Complete - Egyptian Arabic Focus & Word Deduplication
+**Status**: Phase 15 In Progress - Unified Word Display & Navigation Redesign
 
 ---
 
@@ -376,7 +376,24 @@ Test at these breakpoints IN ORDER:
 
 ## Completed Features
 
-### Phase 14 (Current)
+### Phase 15 (In Progress)
+- **Unified Word Display**:
+  - **Shared WordDetailCard component**: Same rich display in exercise feedback AND My Vocabulary
+  - **Auto-fetch enhanced data**: If example sentences/Hebrew cognate missing, fetches from OpenAI
+  - **Improved Hebrew cognate detection**: Explicit Semitic root examples (כ-ת-ב, ע-מ-ל, etc.)
+  - **Heart button removed**: Words auto-save, no confusing one-way toggle
+
+- **Planned - Passage Lookup**:
+  - Paste any Arabic text and get full translation + transliteration
+  - Word-by-word breakdown with ability to save individual words
+  - Save entire sentences for spoken Arabic practice
+
+- **Planned - Navigation Redesign**:
+  - Main menu with clear options: Lessons, My Words, My Sentences
+  - Remove clunky resume flow
+  - Saved Sentences view for practicing spoken Arabic phrases
+
+### Phase 14
 - **Egyptian Arabic Focus**:
   - **Example sentences show BOTH dialects**: Egyptian (spoken) first, MSA (formal) second
   - **Egyptian displayed prominently**: Larger text, amber color, 🇪🇬 flag indicator

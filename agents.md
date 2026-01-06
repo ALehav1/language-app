@@ -20,7 +20,7 @@ Last Updated: January 6, 2026
 - Designed for 5-10 minute sessions, often when you can't speak aloud
 
 ## Current State
-- Status: Phase 14 Complete - Egyptian Arabic Focus & Word Deduplication
+- Status: Phase 15 In Progress - Unified Word Display & Navigation Redesign
 - Working features:
   - **Simplified header** - filter/settings icon + centered title (shows current content type + language)
   - **Bottom sheet menu** - filter icon opens settings popup (not hamburger - better UX signal):
@@ -44,9 +44,14 @@ Last Updated: January 6, 2026
   - **Resume lessons** - progress saved to localStorage for 24 hours
   - **Segmented progress bar** - each word as colored segment
   - **Desktop 3-column layout** - sidebars with progress + stats
-  - **Save vocabulary** - heart button on feedback screen
+  - **Auto-save vocabulary** - all practiced Arabic words automatically saved (no heart button needed)
   - **Saved words view** - browse, filter, practice, remove saved items
-  - **Word detail modal** - tap any saved word to see full breakdown
+  - **Unified WordDetailCard** - same rich display in both exercise feedback and My Vocabulary:
+    - Arabic word with vowels
+    - Both dialect pronunciations (MSA + Egyptian)
+    - Example sentences (Egyptian first, MSA second)
+    - Hebrew cognate with improved detection
+    - Letter breakdown (RTL)
   - **Practice saved words** - select words and practice as custom lesson
   - **Arabic letter breakdown** - horizontal, right-to-left display matching Arabic reading order
   - Arabic feedback: transliteration + Hebrew cognate + letter breakdown with diacritics
