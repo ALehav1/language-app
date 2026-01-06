@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSavedSentences, type SavedSentence } from '../../hooks/useSavedSentences';
+
+// Shared dialect preference key (same as LookupView)
+const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
 
 /**
  * MySentencesView - Browse and practice saved spoken Arabic sentences.
@@ -11,6 +14,16 @@ export function MySentencesView() {
     const { sentences, loading, counts, deleteSentence, updateStatus } = useSavedSentences();
     const [selectedSentence, setSelectedSentence] = useState<SavedSentence | null>(null);
     const [filter, setFilter] = useState<'all' | 'active' | 'learned'>('all');
+    
+    // Dialect preference (shared with Lookup)
+    const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
+        const saved = localStorage.getItem(DIALECT_PREFERENCE_KEY);
+        return (saved === 'standard') ? 'standard' : 'egyptian';
+    });
+    
+    useEffect(() => {
+        localStorage.setItem(DIALECT_PREFERENCE_KEY, dialectPreference);
+    }, [dialectPreference]);
 
     // Filter sentences
     const filteredSentences = sentences.filter(s => {
@@ -116,46 +129,81 @@ export function MySentencesView() {
                 </div>
             )}
 
+            {/* Dialect toggle */}
+            <div className="flex items-center gap-2 mb-4">
+                <span className="text-xs text-white/40">Show:</span>
+                <button
+                    onClick={() => setDialectPreference('egyptian')}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        dialectPreference === 'egyptian'
+                            ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
+                            : 'bg-white/5 text-white/50 hover:bg-white/10'
+                    }`}
+                >
+                    🇪🇬 Egyptian
+                </button>
+                <button
+                    onClick={() => setDialectPreference('standard')}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        dialectPreference === 'standard'
+                            ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
+                            : 'bg-white/5 text-white/50 hover:bg-white/10'
+                    }`}
+                >
+                    📖 MSA
+                </button>
+            </div>
+
             {/* Sentence list */}
             <div className="space-y-3">
-                {filteredSentences.map(sentence => (
-                    <button
-                        key={sentence.id}
-                        onClick={() => setSelectedSentence(sentence)}
-                        className="w-full text-left glass-card p-4 hover:bg-white/10 transition-colors"
-                    >
-                        {/* Arabic text */}
-                        <div className="text-xl font-arabic text-white mb-2" dir="rtl">
-                            {sentence.arabic_egyptian || sentence.arabic_text}
-                        </div>
-                        
-                        {/* Transliteration */}
-                        <div className="text-white/60 text-sm mb-1">
-                            {sentence.transliteration_egyptian || sentence.transliteration}
-                        </div>
-                        
-                        {/* Translation */}
-                        <div className="text-white/80">
-                            {sentence.translation}
-                        </div>
-                        
-                        {/* Status badge */}
-                        <div className="flex items-center gap-2 mt-2">
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                                sentence.status === 'active'
-                                    ? 'bg-purple-500/20 text-purple-300'
-                                    : 'bg-green-500/20 text-green-300'
-                            }`}>
-                                {sentence.status === 'active' ? 'Active' : 'Learned'}
-                            </span>
-                            {sentence.topic && (
-                                <span className="text-xs px-2 py-1 rounded-full bg-white/10 text-white/50">
-                                    {sentence.topic}
+                {filteredSentences.map(sentence => {
+                    // Show preferred dialect first
+                    const primaryArabic = dialectPreference === 'egyptian'
+                        ? (sentence.arabic_egyptian || sentence.arabic_text)
+                        : (sentence.arabic_text || sentence.arabic_egyptian);
+                    const primaryTranslit = dialectPreference === 'egyptian'
+                        ? (sentence.transliteration_egyptian || sentence.transliteration)
+                        : (sentence.transliteration || sentence.transliteration_egyptian);
+                    
+                    return (
+                        <button
+                            key={sentence.id}
+                            onClick={() => setSelectedSentence(sentence)}
+                            className="w-full text-left glass-card p-4 hover:bg-white/10 transition-colors"
+                        >
+                            {/* Arabic text */}
+                            <div className="text-xl font-arabic text-white mb-2" dir="rtl">
+                                {primaryArabic}
+                            </div>
+                            
+                            {/* Transliteration */}
+                            <div className={`text-sm mb-1 ${dialectPreference === 'egyptian' ? 'text-amber-300/70' : 'text-teal-300/70'}`}>
+                                {primaryTranslit}
+                            </div>
+                            
+                            {/* Translation */}
+                            <div className="text-white/80">
+                                {sentence.translation}
+                            </div>
+                            
+                            {/* Status badge */}
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                    sentence.status === 'active'
+                                        ? 'bg-purple-500/20 text-purple-300'
+                                        : 'bg-green-500/20 text-green-300'
+                                }`}>
+                                    {sentence.status === 'active' ? 'Active' : 'Learned'}
                                 </span>
-                            )}
-                        </div>
-                    </button>
-                ))}
+                                {sentence.topic && (
+                                    <span className="text-xs px-2 py-1 rounded-full bg-white/10 text-white/50">
+                                        {sentence.topic}
+                                    </span>
+                                )}
+                            </div>
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Sentence detail modal */}
@@ -187,30 +235,57 @@ export function MySentencesView() {
 
                         {/* Content */}
                         <div className="p-4 space-y-4">
-                            {/* Egyptian Arabic (primary) */}
-                            <div className="text-center">
-                                <div className="text-2xl font-arabic text-white mb-2" dir="rtl">
-                                    {selectedSentence.arabic_egyptian || selectedSentence.arabic_text}
-                                </div>
-                                <div className="text-amber-300 text-lg">
-                                    {selectedSentence.transliteration_egyptian || selectedSentence.transliteration}
-                                </div>
-                                {selectedSentence.arabic_egyptian && (
-                                    <div className="text-xs text-amber-400/60 mt-1">🇪🇬 Egyptian</div>
-                                )}
-                            </div>
-
-                            {/* MSA version if different */}
-                            {selectedSentence.arabic_egyptian && (
-                                <div className="glass-card p-3 text-center">
-                                    <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
-                                    <div className="text-lg font-arabic text-white/80" dir="rtl">
-                                        {selectedSentence.arabic_text}
+                            {/* Primary dialect (based on preference) */}
+                            {dialectPreference === 'egyptian' ? (
+                                <>
+                                    {/* Egyptian first */}
+                                    <div className="text-center">
+                                        <div className="text-xs text-amber-400/60 mb-1">🇪🇬 Egyptian (Spoken)</div>
+                                        <div className="text-2xl font-arabic text-white mb-2" dir="rtl">
+                                            {selectedSentence.arabic_egyptian || selectedSentence.arabic_text}
+                                        </div>
+                                        <div className="text-amber-300 text-lg">
+                                            {selectedSentence.transliteration_egyptian || selectedSentence.transliteration}
+                                        </div>
                                     </div>
-                                    <div className="text-teal-300/70 text-sm">
-                                        {selectedSentence.transliteration}
+                                    {/* MSA as reference */}
+                                    {selectedSentence.arabic_egyptian && (
+                                        <div className="glass-card p-3 text-center">
+                                            <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
+                                            <div className="text-lg font-arabic text-white/70" dir="rtl">
+                                                {selectedSentence.arabic_text}
+                                            </div>
+                                            <div className="text-teal-300/60 text-sm">
+                                                {selectedSentence.transliteration}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    {/* MSA first */}
+                                    <div className="text-center">
+                                        <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
+                                        <div className="text-2xl font-arabic text-white mb-2" dir="rtl">
+                                            {selectedSentence.arabic_text || selectedSentence.arabic_egyptian}
+                                        </div>
+                                        <div className="text-teal-300 text-lg">
+                                            {selectedSentence.transliteration || selectedSentence.transliteration_egyptian}
+                                        </div>
                                     </div>
-                                </div>
+                                    {/* Egyptian as reference */}
+                                    {selectedSentence.arabic_egyptian && (
+                                        <div className="glass-card p-3 text-center">
+                                            <div className="text-xs text-amber-400/60 mb-1">🇪🇬 Egyptian (Spoken)</div>
+                                            <div className="text-lg font-arabic text-white/70" dir="rtl">
+                                                {selectedSentence.arabic_egyptian}
+                                            </div>
+                                            <div className="text-amber-300/60 text-sm">
+                                                {selectedSentence.transliteration_egyptian}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
 
                             {/* Translation */}

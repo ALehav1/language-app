@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSavedPassages, type SavedPassage } from '../../hooks/useSavedPassages';
+
+// Shared dialect preference key
+const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
 
 /**
  * MyPassagesView - Browse and review saved full passages.
@@ -11,6 +14,16 @@ export function MyPassagesView() {
     const { passages, loading, counts, deletePassage, updateStatus } = useSavedPassages();
     const [selectedPassage, setSelectedPassage] = useState<SavedPassage | null>(null);
     const [filter, setFilter] = useState<'all' | 'active' | 'learned'>('all');
+    
+    // Dialect preference (shared with Lookup and Sentences)
+    const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
+        const saved = localStorage.getItem(DIALECT_PREFERENCE_KEY);
+        return (saved === 'standard') ? 'standard' : 'egyptian';
+    });
+    
+    useEffect(() => {
+        localStorage.setItem(DIALECT_PREFERENCE_KEY, dialectPreference);
+    }, [dialectPreference]);
 
     // Filter passages
     const filteredPassages = passages.filter(p => {
@@ -96,6 +109,33 @@ export function MyPassagesView() {
                             {f === 'learned' && ` (${counts.learned})`}
                         </button>
                     ))}
+                </div>
+            )}
+
+            {/* Dialect toggle */}
+            {passages.length > 0 && (
+                <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xs text-white/40">Show:</span>
+                    <button
+                        onClick={() => setDialectPreference('egyptian')}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                            dialectPreference === 'egyptian'
+                                ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
+                                : 'bg-white/5 text-white/50 hover:bg-white/10'
+                        }`}
+                    >
+                        🇪🇬 Egyptian
+                    </button>
+                    <button
+                        onClick={() => setDialectPreference('standard')}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                            dialectPreference === 'standard'
+                                ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
+                                : 'bg-white/5 text-white/50 hover:bg-white/10'
+                        }`}
+                    >
+                        📖 MSA
+                    </button>
                 </div>
             )}
 
