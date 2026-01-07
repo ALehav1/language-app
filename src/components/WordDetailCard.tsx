@@ -97,10 +97,12 @@ export function WordDetailCard({
     // Generate letter breakdown by word
     const wordBreakdowns: WordBreakdown[] = useMemo(() => {
         if (isArabic) {
-            return generateArabicBreakdownByWord(word);
+            // Use the displayed word (Egyptian if available, otherwise MSA)
+            const wordToBreakdown = displayData.arabicWordEgyptian || displayData.arabicWord || word;
+            return generateArabicBreakdownByWord(wordToBreakdown);
         }
         return [];
-    }, [word, isArabic]);
+    }, [word, isArabic, displayData.arabicWordEgyptian, displayData.arabicWord]);
 
     return (
         <div className="space-y-4">

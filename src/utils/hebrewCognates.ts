@@ -179,10 +179,28 @@ const COGNATE_MAP: Record<string, HebrewCognate> = {
 };
 
 /**
- * Look up Hebrew cognate for an Arabic word.
- * Strips diacritics and tries multiple variations.
+ * Look up Hebrew cognate for an Arabic word or phrase.
+ * Uses the same word-by-word approach as lessons for consistency.
+ * 
+ * For single words: Returns cognate if found
+ * For phrases: Analyzes each word and returns cognate for first match found
+ * Uses hebrew_note field to specify which word the cognate relates to (lesson approach)
  */
 export function findHebrewCognate(arabicWord: string): HebrewCognate | null {
+    // Check if input is a phrase (contains spaces)
+    if (arabicWord.includes(' ')) {
+        return findHebrewCognateForPhrase(arabicWord);
+    }
+    
+    // Single word - use existing logic
+    return findHebrewCognateForSingleWord(arabicWord);
+}
+
+/**
+ * Look up Hebrew cognate for a single Arabic word.
+ * Strips diacritics and tries multiple variations.
+ */
+function findHebrewCognateForSingleWord(arabicWord: string): HebrewCognate | null {
     // Remove common diacritics
     const stripped = arabicWord
         .replace(/[\u064B-\u065F\u0670]/g, '') // Remove Arabic diacritics
@@ -215,6 +233,33 @@ export function findHebrewCognate(arabicWord: string): HebrewCognate | null {
         const root = consonants.slice(0, 3);
         if (COGNATE_MAP[root]) {
             return COGNATE_MAP[root];
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Look up Hebrew cognate for an Arabic phrase.
+ * Uses the same approach as lessons: check each word individually.
+ * Returns cognate for the first word found, with note specifying which word.
+ */
+function findHebrewCognateForPhrase(arabicPhrase: string): HebrewCognate | null {
+    // Split phrase into individual words
+    const words = arabicPhrase.trim().split(/\s+/);
+    
+    // Check each word for cognates (lesson approach)
+    for (const word of words) {
+        const cognate = findHebrewCognateForSingleWord(word);
+        if (cognate) {
+            // Return cognate with note specifying which word it relates to
+            // This matches the lesson's hebrew_note pattern
+            return {
+                ...cognate,
+                notes: cognate.notes 
+                    ? `${cognate.notes} (for ${word})` 
+                    : `for ${word}`
+            };
         }
     }
     

@@ -75,20 +75,22 @@ export interface LetterBreakdown {
  * Groups letters with their diacritics for combined pronunciation.
  */
 export function generateArabicBreakdown(word: string): LetterBreakdown[] {
-    const breakdown: LetterBreakdown[] = [];
+    
+    let breakdown: LetterBreakdown[] = [];
     const chars = [...word]; // Spread to handle unicode properly
-
-    let i = 0;
-    while (i < chars.length) {
+    
+    console.log('[generateArabicBreakdown] Input word:', word, 'Chars:', chars);
+    console.log('[generateArabicBreakdown] Breakdown array before loop:', breakdown);
+    
+    for (let i = 0; i < chars.length; i++) {
         const char = chars[i];
-
+        const info = ARABIC_LETTERS[char];
+        console.log('[generateArabicBreakdown] Processing char at index', i, ':', char, 'Info:', info);
+        
         // Skip spaces
         if (char === ' ') {
-            i++;
             continue;
         }
-
-        const info = ARABIC_LETTERS[char];
 
         if (info && info.type === 'letter') {
             // This is a letter - check for following diacritics
@@ -123,14 +125,18 @@ export function generateArabicBreakdown(word: string): LetterBreakdown[] {
                 combinedName += ' + ' + diacriticsFound.join(' + ');
             }
 
-            breakdown.push({
+            const letterObj = {
                 letter: combinedLetter,
                 name: combinedName,
                 sound: combinedSound,
-                type: 'letter',
-            });
+                type: 'letter' as const,
+            };
+            breakdown.push(letterObj);
+            console.log('[generateArabicBreakdown] Added letter to breakdown:', letterObj);
+            console.log('[generateArabicBreakdown] Breakdown array after push:', breakdown);
+            console.log('[generateArabicBreakdown] Breakdown length after push:', breakdown.length);
 
-            i = j; // Skip past the diacritics we processed
+            i = j - 1; // Skip past the diacritics we processed (j-1 because for loop will i++)
         } else if (info && info.type === 'diacritic') {
             // Standalone diacritic (unusual but handle it)
             breakdown.push({
@@ -139,7 +145,6 @@ export function generateArabicBreakdown(word: string): LetterBreakdown[] {
                 sound: info.sound,
                 type: 'diacritic',
             });
-            i++;
         } else if (/[\u0600-\u06FF]/.test(char)) {
             // Unknown Arabic character - still show it
             breakdown.push({
@@ -148,13 +153,13 @@ export function generateArabicBreakdown(word: string): LetterBreakdown[] {
                 sound: '?',
                 type: 'letter',
             });
-            i++;
         } else {
             // Non-Arabic character, skip
-            i++;
         }
     }
 
+    console.log('[generateArabicBreakdown] Final breakdown array:', breakdown);
+    console.log('[generateArabicBreakdown] Breakdown length:', breakdown.length);
     return breakdown;
 }
 
@@ -178,8 +183,18 @@ export function generateArabicBreakdownByWord(phrase: string): WordBreakdown[] {
     // Split by spaces, keeping Arabic words together
     const words = phrase.split(/\s+/).filter(w => w.trim().length > 0);
     
-    return words.map(word => ({
-        word,
-        letters: generateArabicBreakdown(word),
-    })).filter(wb => wb.letters.length > 0); // Only include words with Arabic letters
+    console.log('[generateArabicBreakdownByWord] Input phrase:', phrase);
+    console.log('[generateArabicBreakdownByWord] Split words:', words);
+    
+    const result = words.map(word => {
+        const letters = generateArabicBreakdown(word);
+        console.log('[generateArabicBreakdownByWord] Word:', word, 'Letters count:', letters.length);
+        return {
+            word,
+            letters,
+        };
+    }).filter(wb => wb.letters.length > 0); // Only include words with Arabic letters
+    
+    console.log('[generateArabicBreakdownByWord] Final result:', result);
+    return result;
 }

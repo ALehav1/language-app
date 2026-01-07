@@ -241,12 +241,6 @@ export function LookupView() {
                         <div className="text-sm text-white/50 mb-1">
                             {result.detected_language === 'arabic' ? 'Arabic → English' : 'English → Arabic'}
                         </div>
-                        <div className="text-2xl font-bold text-white font-arabic mb-2" dir="rtl">
-                            {result.arabic_word}
-                        </div>
-                        <div className="text-lg text-white/80">
-                            {result.translation}
-                        </div>
                     </div>
 
                     {/* Full word details using shared component */}

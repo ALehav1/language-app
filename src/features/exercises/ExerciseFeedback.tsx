@@ -1,15 +1,29 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type { AnswerResult, VocabularyItem } from '../../types';
-import { generateArabicBreakdownByWord, type WordBreakdown } from '../../utils/arabicLetters';
 import { lookupWord, type LookupResult } from '../../lib/openai';
 import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecisionPanel';
+import { WordDisplay } from '../../components/WordDisplay';
 
 interface ExerciseFeedbackProps {
     result: AnswerResult;
     item: VocabularyItem; // Need the item for details
-    onContinue: (saveDecision?: { decision: SaveDecision; memoryAid?: { note?: string; imageUrl?: string } }) => void;
+    onContinue: (saveDecision?: { 
+        decision: SaveDecision; 
+        memoryAid?: { note?: string; imageUrl?: string };
+        enhancedData?: {
+            arabicWordEgyptian?: string;
+            arabicWordMSA?: string;
+            pronunciationStandard?: string;
+            pronunciationEgyptian?: string;
+            hebrewCognate?: any;
+            letterBreakdown?: any[];
+            exampleSentences?: any[];
+        };
+    }) => void;
     isLastQuestion: boolean;
     isWordAlreadySaved?: boolean; // Check if word is already in saved_words
+    savedWordStatus?: 'active' | 'learned'; // Current status if already saved
+    savedWordMemoryAid?: { note?: string; imageUrl?: string }; // Existing memory aid if saved
 }
 
 /**
@@ -20,13 +34,21 @@ interface ExerciseFeedbackProps {
  * - Arabic Letter Breakdown (if available)
  * - Hebrew Cognate (if available)
  */
-export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, isWordAlreadySaved = false }: ExerciseFeedbackProps) {
+export function ExerciseFeedback({ 
+    result, 
+    item, 
+    onContinue, 
+    isLastQuestion, 
+    isWordAlreadySaved = false,
+    savedWordStatus,
+    savedWordMemoryAid,
+}: ExerciseFeedbackProps) {
     const { correct, userAnswer, correctAnswer } = result;
     const isArabic = item.language === 'arabic';
 
     // State for enhanced word data (both dialects, Hebrew cognate)
     const [enhancedData, setEnhancedData] = useState<LookupResult | null>(null);
-    const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(false);
+    const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(isArabic);
 
     // Fetch enhanced data for Arabic words (both dialects + Hebrew cognate)
     useEffect(() => {
@@ -42,11 +64,12 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, isW
             .then(data => {
                 console.log('[ExerciseFeedback] Got enhanced data:', data);
                 setEnhancedData(data);
+                setIsLoadingEnhanced(false);
             })
             .catch(err => {
                 console.error('[ExerciseFeedback] Failed to fetch enhanced data:', err);
-            })
-            .finally(() => setIsLoadingEnhanced(false));
+                setIsLoadingEnhanced(false);
+            });
     }, [item.word, isArabic]);
 
     // Use enhanced data if available, otherwise fall back to item data
@@ -54,15 +77,10 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, isW
     const pronunciationStandard = enhancedData?.pronunciation_standard || item.transliteration;
     const pronunciationEgyptian = enhancedData?.pronunciation_egyptian;
     const arabicWordWithHarakat = enhancedData?.arabic_word || item.word;
-    const egyptianWord = enhancedData?.arabic_word_egyptian;
+    const arabicWordEgyptian = enhancedData?.arabic_word_egyptian || item.word;
 
-    // Generate letter breakdown by word on-the-fly
-    const wordBreakdowns: WordBreakdown[] = useMemo(() => {
-        if (isArabic) {
-            return generateArabicBreakdownByWord(item.word);
-        }
-        return [];
-    }, [item.word, isArabic]);
+    // Generate letter breakdown - WordDisplay will handle this internally
+    // We don't need to pass it explicitly since WordDisplay generates it when showLetterBreakdown=true
 
     return (
         <div className="space-y-6 pb-20">
@@ -150,166 +168,79 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, isW
             <div className="space-y-4">
                 <h4 className="text-white/70 font-semibold px-1">Word Details</h4>
 
-                {/* 1. The Word itself with translation + both dialect pronunciations */}
-                <div className="glass-card p-4">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className={`text-3xl font-bold text-white ${isArabic ? 'font-arabic' : ''}`} dir={isArabic ? 'rtl' : 'ltr'}>
-                            {arabicWordWithHarakat}
-                        </span>
-                        <span className="text-white/60 text-lg">{item.translation}</span>
+                {/* Use WordDisplay for the word details */}
+                {isArabic && isLoadingEnhanced ? (
+                    /* Loading skeleton for Arabic words */
+                    <div className="glass-card p-4 animate-pulse">
+                        <div className="h-10 bg-white/10 rounded mb-4"></div>
+                        <div className="h-6 bg-white/10 rounded mb-2 w-3/4"></div>
+                        <div className="h-6 bg-white/10 rounded w-1/2"></div>
                     </div>
-                    
-                    {/* Pronunciations - show both dialects for Arabic with actual words */}
-                    {isArabic && (pronunciationStandard || pronunciationEgyptian) ? (
-                        <div className="grid grid-cols-2 gap-3 mt-3">
-                            {pronunciationStandard && (
-                                <div className="bg-white/5 rounded-lg p-3 text-center">
-                                    <div className="text-white/40 text-xs mb-1">Standard (MSA)</div>
-                                    <div className="text-xl font-arabic text-white/90 mb-1" dir="rtl">{arabicWordWithHarakat}</div>
-                                    <div className="text-white/60 text-sm">{pronunciationStandard}</div>
-                                </div>
-                            )}
-                            {pronunciationEgyptian && (
-                                <div className="bg-white/5 rounded-lg p-3 text-center">
-                                    <div className="text-white/40 text-xs mb-1">Egyptian</div>
-                                    {egyptianWord && egyptianWord !== arabicWordWithHarakat ? (
-                                        <>
-                                            <div className="text-xl font-arabic text-amber-300/90 mb-1" dir="rtl">{egyptianWord}</div>
-                                            <div className="text-white/60 text-sm">{pronunciationEgyptian}</div>
-                                        </>
-                                    ) : (
-                                        <div className="text-white/60 text-sm mt-2">{pronunciationEgyptian}</div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    ) : item.transliteration ? (
-                        <div className="flex items-center gap-2 text-white/50 text-sm">
-                            <span className="text-white/30">Pronunciation:</span>
-                            <span className="font-medium text-white/70">{item.transliteration}</span>
-                        </div>
-                    ) : isLoadingEnhanced ? (
-                        <div className="text-white/30 text-sm animate-pulse">Loading pronunciations...</div>
-                    ) : null}
-                </div>
-
-                {/* 2. Hebrew Cognate (Arabic only) - use enhanced data if available */}
-                {isArabic && (
-                    <div className={`glass-card p-4 space-y-2 border-l-4 ${hebrewCognate ? 'border-l-blue-500/50' : 'border-l-white/10'}`}>
-                        <div className="flex items-center gap-2 text-blue-300 mb-1">
-                            <span className="text-xs font-bold uppercase tracking-wider">Hebrew Connection</span>
-                            {isLoadingEnhanced && !hebrewCognate && (
-                                <span className="text-white/30 text-xs animate-pulse">checking...</span>
-                            )}
-                        </div>
-                        {hebrewCognate ? (
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <div className="text-2xl font-hebrew text-white mb-1">{hebrewCognate.root}</div>
-                                    <div className="text-sm text-white/60">{hebrewCognate.meaning}</div>
-                                </div>
-                                {hebrewCognate.notes && (
-                                    <div className="text-xs text-white/40 max-w-[150px] text-right italic">
-                                        "{hebrewCognate.notes}"
-                                    </div>
-                                )}
-                            </div>
-                        ) : !isLoadingEnhanced ? (
-                            <div className="text-white/40 text-sm italic">
-                                No Hebrew cognate - this word doesn't share a Semitic root with Hebrew
-                            </div>
-                        ) : null}
-                    </div>
-                )}
-
-                {/* 3. Example Sentences - Egyptian (spoken) first, then MSA */}
-                {isArabic && enhancedData?.example_sentences && enhancedData.example_sentences.length > 0 && (
+                ) : isArabic ? (
+                    <WordDisplay
+                        word={{
+                            arabic: arabicWordWithHarakat,
+                            arabicEgyptian: arabicWordEgyptian,
+                            translation: item.translation,
+                            transliteration: pronunciationStandard,
+                            transliterationEgyptian: pronunciationEgyptian,
+                            hebrewCognate: hebrewCognate,
+                            exampleSentences: enhancedData?.example_sentences,
+                            letterBreakdown: enhancedData?.letter_breakdown ? [{
+                                word: arabicWordEgyptian || arabicWordWithHarakat,
+                                letters: enhancedData.letter_breakdown as any
+                            }] as any : undefined,
+                        }}
+                        size="large"
+                        showHebrewCognate={true}
+                        showLetterBreakdown={true}
+                        showExampleSentences={true}
+                        showSaveOption={false}
+                        dialectPreference="egyptian"
+                    />
+                ) : (
+                    /* Non-Arabic word display */
                     <div className="glass-card p-4">
-                        <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-3">Example Sentences</div>
-                        <div className="space-y-4">
-                            {enhancedData.example_sentences.map((sentence, idx) => (
-                                <div key={idx} className="bg-white/5 rounded-xl p-3 space-y-3">
-                                    {/* Egyptian (spoken) - PRIMARY */}
-                                    <div className="border-l-2 border-amber-500/50 pl-3">
-                                        <div className="text-amber-400/60 text-xs font-bold uppercase tracking-wider mb-1">
-                                            🇪🇬 Egyptian (Spoken)
-                                        </div>
-                                        <div className="text-xl font-arabic text-white text-right" dir="rtl">
-                                            {sentence.arabic_egyptian}
-                                        </div>
-                                        <div className="text-sm text-amber-400/80 italic">
-                                            {sentence.transliteration_egyptian}
-                                        </div>
-                                    </div>
-                                    
-                                    {/* MSA (formal) */}
-                                    <div className="border-l-2 border-teal-500/30 pl-3 opacity-70">
-                                        <div className="text-teal-400/60 text-xs font-bold uppercase tracking-wider mb-1">
-                                            📖 MSA (Formal)
-                                        </div>
-                                        <div className="text-lg font-arabic text-white/80 text-right" dir="rtl">
-                                            {sentence.arabic_msa}
-                                        </div>
-                                        <div className="text-sm text-teal-400/60 italic">
-                                            {sentence.transliteration_msa}
-                                        </div>
-                                    </div>
-                                    
-                                    {/* English translation */}
-                                    <div className="text-white/80 pt-1">
-                                        {sentence.english}
-                                    </div>
-                                    
-                                    {/* Explanation if present */}
-                                    {sentence.explanation && (
-                                        <div className="text-xs text-white/40 border-t border-white/10 pt-2">
-                                            💡 {sentence.explanation}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-3xl font-bold text-white">
+                                {item.word}
+                            </span>
+                            <span className="text-white/60 text-lg">{item.translation}</span>
                         </div>
-                    </div>
-                )}
-
-                {/* 4. Arabic Letter Breakdown - Each word on its own line, RTL */}
-                {isArabic && wordBreakdowns.length > 0 && (
-                    <div className="glass-card p-4">
-                        <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider mb-3">Letter Breakdown</div>
-                        <div className="space-y-4">
-                            {wordBreakdowns.map((wordBreakdown, wordIdx) => (
-                                <div key={wordIdx} className="space-y-2">
-                                    {/* Word label */}
-                                    <div className="text-center text-white/60 text-sm font-arabic" dir="rtl">
-                                        {wordBreakdown.word}
-                                    </div>
-                                    {/* Letters for this word */}
-                                    <div className="flex flex-wrap justify-center gap-2" dir="rtl">
-                                        {wordBreakdown.letters.map((l, idx) => (
-                                            <div key={idx} className="flex flex-col items-center gap-1 p-3 bg-white/5 rounded-xl min-w-[60px]">
-                                                <span className="text-2xl font-arabic text-white">{l.letter}</span>
-                                                <span className="text-[10px] text-white/50 text-center leading-tight">{l.name}</span>
-                                                <span className="text-xs text-teal-400/80 font-mono">/{l.sound}/</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        {item.transliteration && (
+                            <div className="flex items-center gap-2 text-white/50 text-sm">
+                                <span className="text-white/30">Pronunciation:</span>
+                                <span className="font-medium text-white/70">{item.transliteration}</span>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
             {/* Save Decision Panel for Arabic words */}
-            {isArabic && (
+            {isArabic && !isLoadingEnhanced && (
                 <div className="glass-card p-4">
                     <SaveDecisionPanel
-                        primaryText={item.word}
+                        primaryText={arabicWordEgyptian || arabicWordWithHarakat}
                         translation={item.translation}
                         onDecision={(decision, memoryAid) => {
-                            onContinue({ decision, memoryAid });
+                            onContinue({ 
+                                decision, 
+                                memoryAid,
+                                enhancedData: enhancedData ? {
+                                    arabicWordEgyptian: enhancedData.arabic_word_egyptian,
+                                    arabicWordMSA: enhancedData.arabic_word,
+                                    pronunciationStandard: enhancedData.pronunciation_standard,
+                                    pronunciationEgyptian: enhancedData.pronunciation_egyptian,
+                                    hebrewCognate: enhancedData.hebrew_cognate,
+                                    letterBreakdown: enhancedData.letter_breakdown,
+                                    exampleSentences: enhancedData.example_sentences
+                                } : undefined
+                            });
                         }}
                         alreadySaved={isWordAlreadySaved}
+                        currentStatus={savedWordStatus}
+                        existingMemoryAid={savedWordMemoryAid}
                     />
                 </div>
             )}
@@ -325,6 +256,7 @@ export function ExerciseFeedback({ result, item, onContinue, isLastQuestion, isW
                     </button>
                 </div>
             )}
+
         </div>
     );
 }

@@ -3,7 +3,7 @@
 AI-powered language learning for Arabic (novice) and Spanish (intermediate) that teaches how native speakers actually talk.
 
 **Last Updated**: January 6, 2026
-**Status**: Phase 15 Complete - Navigation Redesign + Lookup Enhancement
+**Status**: Phase 17 Complete - Explicit Save Control + UX Fixes
 
 ---
 
@@ -33,7 +33,9 @@ src/
 │   ├── Card.tsx                   # Base glassmorphism card
 │   ├── LessonCard.tsx             # Swipeable lesson with Start button
 │   ├── CardStack.tsx              # Deck management
-│   └── WordDetailCard.tsx         # Unified word display component
+│   ├── WordDetailCard.tsx         # Unified word display component
+│   ├── SaveDecisionPanel.tsx      # Practice/Archive/Skip buttons with memory aid
+│   └── MemoryAidEditor.tsx        # DALL-E image generation + custom prompts + notes
 ├── hooks/
 │   ├── useExercise.ts             # Exercise session + resume
 │   ├── useLessons.ts              # Fetch lessons with filters
@@ -379,6 +381,8 @@ Test at these breakpoints IN ORDER:
 - **Letter breakdown** for Arabic - horizontal, right-to-left display matching word order
 - **Lookup any text** - paste Arabic OR English, get full translation + word-by-word breakdown
 - **Save vocabulary, sentences, and passages** for later review
+- **Memory Aids** - DALL-E visuals + personal notes to help remember words
+- **Explicit save control** - choose Practice/Archive/Skip for each word (no auto-save)
 - **Resume lessons** - continue where you left off
 - **Desktop-optimized** with 3-column layout
 - **NO gamification** - no streaks, points, badges
@@ -388,7 +392,32 @@ Test at these breakpoints IN ORDER:
 
 ## Completed Features
 
-### Phase 15 (Complete)
+### Phase 17 (Complete)
+
+- **Explicit Save Control**:
+  - Replaces auto-save with user choice for each word
+  - **SaveDecisionPanel** - Practice / Archive / Skip buttons
+  - 📚 **Practice** = save to active queue (appears in lessons)
+  - 📦 **Archive** = save for reference only (won't appear in practice)
+  - ⏭️ **Skip** = don't save this word
+  - Memory Aid option available BEFORE save decision
+  - Custom image prompts - write your own if auto-generated doesn't work
+  - Applied in: Lookup (word results), Exercise feedback (each Arabic word)
+
+### Phase 16
+
+- **Dialect Preference System**:
+  - Global dialect toggle (🇪🇬 Egyptian / 📖 MSA) shared across Lookup, Sentences, Passages
+  - Preferred dialect shown first and larger, other as reference
+  - Persists to localStorage, default: Egyptian (spoken Arabic focus)
+
+- **Memory Aids**:
+  - 🎨 **Generate Visual** - DALL-E creates cartoon/flat style illustrations
+  - 📝 **Memory Note** - personal notes to aid recall
+  - 🖼️ 📝 indicators in list views show items with memory aids
+  - Available for words, sentences, and passages
+
+### Phase 15
 
 - **Navigation Redesign**:
   - **MainMenu home screen** with 5 clear navigation tiles:
@@ -541,6 +570,34 @@ Test at these breakpoints IN ORDER:
 - Supabase integration for all data
 - Spaced repetition mastery tracking
 - Mobile-first UI with 48x48px touch targets
+
+---
+
+## Known Limitations
+
+### Word Deduplication
+
+- **Only applies to NEW AI-generated lessons** - When you create a new lesson, the AI excludes words you've already saved (up to 50 words)
+- **Existing lessons in database may contain saved words** - Old lessons created before you saved certain words will still show those words
+- **"Already in your vocabulary" message** - When you encounter a saved word in a lesson, you'll see this message with a Continue button
+
+### Arabic Vowels (Harakat)
+
+- All lessons now include full vowel marks (عَمَل not عمل)
+- **Database was reset January 6, 2026** - Fresh start with proper harakat support
+
+### Data Storage
+
+- Card swipe state stored in localStorage, not Supabase
+- Resume progress expires after 24 hours
+- No user authentication (single-user app)
+- No cross-device sync
+
+### UI/UX Notes
+
+- Arabic text sizes: Primary dialect = text-2xl, Secondary = text-xl
+- SaveDecisionPanel for already-saved words shows "Already in your vocabulary" + Continue button
+- Loading skeletons shown while fetching enhanced word data (pronunciations, example sentences)
 
 ---
 

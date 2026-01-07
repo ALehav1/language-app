@@ -34,7 +34,7 @@ export function ExerciseView() {
         fromSavedWords: isSavedPractice,  // Fetch from saved_words table for practice
     });
     const { saveProgress, updateVocabularyMastery } = useLessonProgress();
-    const { saveWord, isWordSaved } = useSavedWords();
+    const { saveWord, getSavedWord, deleteWord } = useSavedWords();
 
     const {
         phase,
@@ -116,19 +116,41 @@ export function ExerciseView() {
 
     // Handle save decision from ExerciseFeedback and continue to next
     const handleFeedbackContinue = useCallback(async (
-        saveDecision?: { decision: SaveDecision; memoryAid?: { note?: string; imageUrl?: string } }
+        saveDecision?: { 
+            decision: SaveDecision; 
+            memoryAid?: { note?: string; imageUrl?: string };
+            enhancedData?: {
+                arabicWordEgyptian?: string;
+                arabicWordMSA?: string;
+                pronunciationStandard?: string;
+                pronunciationEgyptian?: string;
+                hebrewCognate?: any;
+                letterBreakdown?: any[];
+                exampleSentences?: any[];
+            };
+        }
     ) => {
-        // Save word if user chose practice or archive (not discard)
+        // Handle word save/update/remove decisions
         if (saveDecision && currentItem && currentItem.language === 'arabic') {
             const { decision, memoryAid } = saveDecision;
-            if (decision !== 'discard') {
+            
+            if (decision === 'remove') {
+                // Delete the word from saved_words
+                const savedWord = getSavedWord(currentItem.word);
+                if (savedWord) {
+                    await deleteWord(savedWord.id);
+                }
+            } else if (decision !== 'discard') {
+                // Save or update word (practice or archive)
                 await saveWord(
                     {
-                        word: currentItem.word,
+                        word: saveDecision.enhancedData?.arabicWordEgyptian || currentItem.word,
                         translation: currentItem.translation,
-                        pronunciation_standard: currentItem.transliteration,
-                        letter_breakdown: currentItem.letter_breakdown || undefined,
-                        hebrew_cognate: currentItem.hebrew_cognate || undefined,
+                        pronunciation_standard: saveDecision.enhancedData?.pronunciationStandard || currentItem.transliteration,
+                        pronunciation_egyptian: saveDecision.enhancedData?.pronunciationEgyptian || undefined,
+                        letter_breakdown: saveDecision.enhancedData?.letterBreakdown || currentItem.letter_breakdown || undefined,
+                        hebrew_cognate: saveDecision.enhancedData?.hebrewCognate || currentItem.hebrew_cognate || undefined,
+                        example_sentences: saveDecision.enhancedData?.exampleSentences || undefined,
                         status: decision === 'practice' ? 'active' : 'learned',
                         times_practiced: 1,
                         times_correct: lastAnswer?.correct ? 1 : 0,
@@ -148,7 +170,7 @@ export function ExerciseView() {
         }
         // Continue to next question
         continueToNext();
-    }, [currentItem, lastAnswer, lessonId, saveWord, continueToNext]);
+    }, [currentItem, lastAnswer, lessonId, saveWord, getSavedWord, deleteWord, continueToNext]);
 
     // Loading state with skeleton
     if (loading) {
@@ -336,6 +358,14 @@ export function ExerciseView() {
                 <div className="text-white/50 text-sm font-medium min-w-[3rem] text-right">
                     {currentIndex + 1}/{totalItems}
                 </div>
+                
+                {/* Exit button */}
+                <button
+                    onClick={() => setShowExitConfirm(true)}
+                    className="ml-2 px-3 py-1.5 text-sm text-white/60 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                    ✕ Exit
+                </button>
             </header>
 
 
@@ -476,15 +506,23 @@ export function ExerciseView() {
                                 </div>
                             )}
 
-                            {phase === 'feedback' && lastAnswer && currentItem && (
-                                <ExerciseFeedback
-                                    result={lastAnswer}
-                                    item={currentItem}
-                                    onContinue={handleFeedbackContinue}
-                                    isLastQuestion={currentIndex === totalItems - 1}
-                                    isWordAlreadySaved={isWordSaved(currentItem.word)}
-                                />
-                            )}
+                            {phase === 'feedback' && lastAnswer && currentItem && (() => {
+                                const savedWord = currentItem.language === 'arabic' ? getSavedWord(currentItem.word) : null;
+                                return (
+                                    <ExerciseFeedback
+                                        result={lastAnswer}
+                                        item={currentItem}
+                                        onContinue={handleFeedbackContinue}
+                                        isLastQuestion={currentIndex === totalItems - 1}
+                                        isWordAlreadySaved={!!savedWord}
+                                        savedWordStatus={savedWord?.status}
+                                        savedWordMemoryAid={savedWord ? {
+                                            note: savedWord.memory_note || undefined,
+                                            imageUrl: savedWord.memory_image_url || undefined
+                                        } : undefined}
+                                    />
+                                );
+                            })()}
                         </div>
 
                         {/* Right sidebar - Stats & hints (desktop only) */}

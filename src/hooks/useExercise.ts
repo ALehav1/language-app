@@ -44,6 +44,8 @@ interface UseExerciseReturn {
     skipQuestion: () => void;
     /** Clear saved progress and start fresh */
     startFresh: () => void;
+    /** Navigate to a specific item by index */
+    goToItem: (index: number) => void;
 }
 
 const PROGRESS_KEY_PREFIX = 'exercise-progress-';
@@ -272,6 +274,13 @@ export function useExercise({ vocabItems, lessonId, onComplete }: UseExerciseOpt
         }
     }, [phase, currentItem, currentIndex, totalItems, answers, onComplete, lessonId]);
 
+    // Navigate to a specific item (only allowed during prompting phase)
+    const goToItem = useCallback((index: number) => {
+        if (phase !== 'prompting') return;
+        if (index < 0 || index >= totalItems) return;
+        setCurrentIndex(index);
+    }, [phase, totalItems]);
+
     return {
         phase,
         currentItem,
@@ -287,5 +296,6 @@ export function useExercise({ vocabItems, lessonId, onComplete }: UseExerciseOpt
         reset,
         skipQuestion,
         startFresh,
+        goToItem,
     };
 }

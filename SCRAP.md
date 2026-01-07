@@ -6,6 +6,142 @@ This saves you when you realize you need that old code back.
 
 ---
 
+## January 6, 2026 - REFACTORING TO SHARED COMPONENTS
+
+### Goal
+Replace bespoke word/sentence/passage displays with unified shared components:
+- `WordDisplay` - for all word displays
+- `SentenceDisplay` - for all sentence displays
+
+### Files to Refactor
+
+| File | Status | Notes |
+|------|--------|-------|
+| `LookupView.tsx` (passage words) | ✅ DONE | Replaced with SentenceDisplay |
+| `LookupView.tsx` (single word) | ✅ DONE | Replaced with WordDisplay |
+| `ExerciseFeedback.tsx` | ✅ DONE | Replaced with WordDisplay |
+| `MyVocabularyView.tsx` | ✅ DONE | Replaced with WordDisplay |
+| `MySentencesView.tsx` | ✅ DONE | Replaced with SentenceDisplay |
+| `MyPassagesView.tsx` | ⬜ TODO | Replace passage display |
+| `WordDetailCard.tsx` | ⬜ DEPRECATE | Replace with WordDisplay |
+
+### Shared Component Interfaces
+
+```typescript
+// WordDisplay expects:
+interface ArabicWordData {
+  arabic: string;
+  translation: string;
+  arabicEgyptian?: string;
+  transliteration?: string;
+  transliterationEgyptian?: string;
+  hebrewCognate?: HebrewCognate | null;
+  letterBreakdown?: WordBreakdown[];
+  exampleSentences?: ExampleSentence[];
+  partOfSpeech?: string;
+}
+
+// SentenceDisplay expects:
+interface ArabicSentenceData {
+  arabicMsa: string;
+  arabicEgyptian: string;
+  transliterationMsa: string;
+  transliterationEgyptian: string;
+  english: string;
+  explanation?: string;
+  words?: ArabicWordData[];
+}
+```
+
+### Data Mapping Notes
+
+**From PassageResult.sentences[].words (API) → ArabicWordData:**
+```typescript
+// API returns:
+{ arabic, arabic_egyptian, transliteration, transliteration_egyptian, translation, part_of_speech }
+
+// Map to:
+{ arabic, arabicEgyptian, transliteration, transliterationEgyptian, translation, partOfSpeech }
+```
+
+**From ExampleSentence (API) → ArabicSentenceData:**
+```typescript
+// API returns:
+{ arabic_msa, arabic_egyptian, transliteration_msa, transliteration_egyptian, english, explanation }
+
+// Map to:
+{ arabicMsa, arabicEgyptian, transliterationMsa, transliterationEgyptian, english, explanation }
+```
+
+---
+
+## January 6, 2026 - Old ExerciseFeedback Word Details + Example Sentences
+
+Replaced with WordDisplay and SentenceDisplay components.
+
+```tsx
+{/* 1. The Word itself with translation + both dialect pronunciations */}
+<div className="glass-card p-4">
+    <div className="flex items-center justify-between mb-3">
+        <span className={`text-3xl font-bold text-white ${isArabic ? 'font-arabic' : ''}`}>
+            {arabicWordWithHarakat}
+        </span>
+        <span className="text-white/60 text-lg">{item.translation}</span>
+    </div>
+    {/* Pronunciations - 25+ lines of inline JSX */}
+</div>
+
+{/* 2. Hebrew Cognate - 25+ lines */}
+{/* 3. Example Sentences - 60+ lines with inline modal */}
+{/* 4. Letter Breakdown - 25+ lines */}
+```
+
+---
+
+## January 6, 2026 - Old LookupView Passage Sentence Display
+
+Replaced with SentenceDisplay component for consistency.
+
+```tsx
+{/* Sentence by sentence breakdown */}
+{passageResult.sentences?.map((sentence, sentenceIdx) => (
+    <div key={sentenceIdx} className="glass-card p-4 space-y-4">
+        {/* Sentence header */}
+        <div className="flex items-center justify-between">
+            <span className="text-xs text-white/40">Sentence {sentenceIdx + 1}</span>
+            <button
+                onClick={() => handleSaveSentence({...})}
+                disabled={isSentenceAlreadySaved(sentence.arabic_msa)}
+                className={...}
+            >
+                {isSentenceAlreadySaved(sentence.arabic_msa) ? '✓ Saved' : '💬 Save'}
+            </button>
+        </div>
+
+        {/* Primary dialect (based on preference) - 70+ lines of inline JSX */}
+        {dialectPreference === 'egyptian' ? (...) : (...)}
+
+        {/* Translation */}
+        <div className="text-white">{sentence.translation}</div>
+
+        {/* Explanation */}
+        {sentence.explanation && (...)}
+
+        {/* Word-by-word breakdown - 60+ lines of inline JSX */}
+        <div>
+            <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-3">Word Breakdown</div>
+            <div className="space-y-2">
+                {sentence.words?.map((word, wordIdx) => {
+                    // ... inline word display with Hebrew cognate
+                })}
+            </div>
+        </div>
+    </div>
+))}
+```
+
+---
+
 ## January 4, 2026 - Floating Create Button
 
 Removed from `LessonGenerator.tsx`. The floating "+" button was causing issues - users clicking in the menu area were accidentally hitting this button and opening the generator. Now the generator only opens from the menu's "Create Lesson" button.

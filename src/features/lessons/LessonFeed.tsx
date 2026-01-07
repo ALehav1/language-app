@@ -91,15 +91,27 @@ export function LessonFeed() {
                             {languageFilter === 'arabic' ? 'العربية' : 'Español'}
                         </span>
                     </div>
-                    <button
-                        onClick={() => setMenuOpen(true)}
-                        className="touch-btn w-10 h-10 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center rounded-xl"
-                        aria-label="Filter settings"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {/* Create Lesson button - prominent */}
+                        <button
+                            onClick={() => setGeneratorOpen(true)}
+                            className="touch-btn px-3 h-10 bg-violet-500 text-white hover:bg-violet-600 flex items-center justify-center gap-1.5 rounded-xl font-medium text-sm"
+                            aria-label="Create new lesson"
+                        >
+                            <span className="text-lg">+</span>
+                            <span>Create</span>
+                        </button>
+                        {/* Filter button */}
+                        <button
+                            onClick={() => setMenuOpen(true)}
+                            className="touch-btn w-10 h-10 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center rounded-xl"
+                            aria-label="Filter settings"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </header>
 

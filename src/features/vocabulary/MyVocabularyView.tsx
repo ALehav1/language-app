@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { LookupModal } from './LookupModal';
-import { WordDetailCard } from '../../components/WordDetailCard';
+import { WordDisplay, type ArabicWordData } from '../../components/WordDisplay';
 import { MemoryAidEditor } from '../../components/MemoryAidEditor';
 import { findHebrewCognate } from '../../utils/hebrewCognates';
 import type { SavedWordWithContexts, WordStatus } from '../../types';
@@ -17,7 +17,7 @@ export function MyVocabularyView() {
     const navigate = useNavigate();
     
     // State for filters and search
-    const [statusFilter, setStatusFilter] = useState<WordStatus | 'all'>('all');
+    const [statusFilter, setStatusFilter] = useState<WordStatus | 'all'>('active');
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<SortOption>('recent');
     const [selectedWord, setSelectedWord] = useState<SavedWordWithContexts | null>(null);
@@ -85,16 +85,13 @@ export function MyVocabularyView() {
     // Status badge component
     const StatusBadge = ({ status }: { status: WordStatus }) => {
         const styles: Record<WordStatus, string> = {
-            active: 'bg-amber-500/20 text-amber-400',
-            learned: 'bg-green-500/20 text-green-400',
+            active: 'bg-teal-500/20 text-teal-300',
+            learned: 'bg-amber-500/20 text-amber-300',
         };
-        const labels: Record<WordStatus, string> = {
-            active: 'Active',
-            learned: 'Learned',
-        };
+        
         return (
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status]}`}>
-                {labels[status]}
+            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${styles[status]}`}>
+                {status === 'active' ? '📚 Practice' : '📦 Archive'}
             </span>
         );
     };
@@ -196,36 +193,26 @@ export function MyVocabularyView() {
                     </div>
                 ) : (
                     <div className="flex gap-2 px-4 pb-3 overflow-x-auto">
-                        {/* Status filters */}
-                        <button
-                            onClick={() => setStatusFilter('all')}
-                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                                statusFilter === 'all'
-                                    ? 'bg-white text-surface-300'
-                                    : 'bg-white/10 text-white/70 hover:bg-white/20'
-                            }`}
-                        >
-                            All ({counts.total})
-                        </button>
+                        {/* Status filters - Practice and Archive only */}
                         <button
                             onClick={() => setStatusFilter('active')}
                             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                                 statusFilter === 'active'
-                                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
+                                    ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
                                     : 'bg-white/10 text-white/70 hover:bg-white/20'
                             }`}
                         >
-                            Active ({counts.active})
+                            📚 Practice ({counts.active})
                         </button>
                         <button
                             onClick={() => setStatusFilter('learned')}
                             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                                 statusFilter === 'learned'
-                                    ? 'bg-green-500/30 text-green-300 border border-green-500/50'
+                                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
                                     : 'bg-white/10 text-white/70 hover:bg-white/20'
                             }`}
                         >
-                            Learned ({counts.learned})
+                            📦 Archive ({counts.learned})
                         </button>
 
                         {/* Sort dropdown */}
@@ -290,85 +277,81 @@ export function MyVocabularyView() {
                                 className={`glass-card p-4 cursor-pointer transition-all ${isSelected ? 'ring-2 ring-white/50' : ''}`}
                                 onClick={() => selectionMode ? toggleSelection(word.id) : setSelectedWord(word)}
                             >
-                                <div className="flex items-start gap-3">
+                                <div className="flex flex-col">
                                     {/* Selection checkbox */}
                                     {selectionMode && (
-                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 ${isSelected ? 'bg-white border-white' : 'border-white/30'}`}>
-                                            {isSelected && (
-                                                <svg className="w-4 h-4 text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            )}
+                                        <div className="absolute top-3 right-3">
+                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'bg-white border-white' : 'border-white/30'}`}>
+                                                {isSelected && (
+                                                    <svg className="w-4 h-4 text-surface-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
 
-                                    <div className="flex-1 min-w-0">
-                                        {/* Status badge + memory indicator */}
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <StatusBadge status={word.status} />
-                                            {word.memory_image_url && (
-                                                <span className="text-xs" title="Has memory visual">🖼️</span>
-                                            )}
-                                            {word.memory_note && (
-                                                <span className="text-xs" title="Has memory note">📝</span>
-                                            )}
-                                            {word.topic && (
-                                                <span className="px-2 py-0.5 rounded-full text-xs bg-white/10 text-white/50">
-                                                    {word.topic}
-                                                </span>
+                                    {/* Center all content */}
+                                    <div className="flex flex-col items-center">
+                                        {/* Word content - centered */}
+                                        <div className="w-full text-center mb-4">
+                                            {/* Arabic word - consistent size */}
+                                            <div className="text-5xl font-bold text-white mb-2 leading-tight" dir="rtl">
+                                                {word.word}
+                                            </div>
+                                            <div className="text-lg font-medium text-white/80">
+                                                {word.translation}
+                                            </div>
+                                            {(word.pronunciation_egyptian || word.pronunciation_standard) && (
+                                                <div className="text-sm text-white/60 mt-1 font-mono">
+                                                    {word.pronunciation_egyptian || word.pronunciation_standard}
+                                                </div>
                                             )}
                                         </div>
 
-                                        {/* Word */}
-                                        <h3 className="text-2xl font-bold text-white font-arabic mb-1" dir="rtl">
-                                            {word.word}
-                                        </h3>
-
-                                        {/* Pronunciations */}
-                                        {(word.pronunciation_standard || word.pronunciation_egyptian) && (
-                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mb-2">
-                                                {word.pronunciation_standard && (
-                                                    <span className="text-white/50">
-                                                        <span className="text-white/30">MSA:</span> {word.pronunciation_standard}
-                                                    </span>
+                                        {/* Memory aid - centered */}
+                                        {(word.memory_image_url || word.memory_note) && (
+                                            <div className="flex flex-col items-center mb-4">
+                                                {word.memory_image_url && (
+                                                    <img 
+                                                        src={word.memory_image_url} 
+                                                        alt="Memory aid" 
+                                                        className="w-32 h-32 rounded-lg object-cover mb-2"
+                                                    />
                                                 )}
-                                                {word.pronunciation_egyptian && (
-                                                    <span className="text-white/50">
-                                                        <span className="text-white/30">Egyptian:</span> {word.pronunciation_egyptian}
-                                                    </span>
+                                                {word.memory_note && (
+                                                    <p className="text-xs text-white/60 text-center max-w-[200px]">
+                                                        {word.memory_note}
+                                                    </p>
                                                 )}
                                             </div>
                                         )}
-
-                                        {/* Translation */}
-                                        <p className="text-white/80">{word.translation}</p>
-
-                                        {/* Context preview */}
-                                        {word.contexts && word.contexts.length > 0 && (
-                                            <p className="text-white/40 text-sm mt-2 truncate">
-                                                "{word.contexts[0].full_translation}"
-                                            </p>
-                                        )}
                                     </div>
 
-                                    {/* Actions (not in selection mode) */}
+                                    {/* Action buttons */}
                                     {!selectionMode && (
-                                        <div className="flex flex-col gap-1">
+                                        <div className="flex gap-2 mt-3 pt-3 border-t border-white/10">
                                             <button
                                                 onClick={(e) => { 
                                                     e.stopPropagation(); 
                                                     updateStatus(word.id, word.status === 'learned' ? 'active' : 'learned');
                                                 }}
-                                                className={`touch-btn w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
+                                                className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition-colors ${
                                                     word.status === 'learned' 
-                                                        ? 'bg-green-500/20 text-green-400' 
-                                                        : 'bg-white/5 text-white/30 hover:text-green-400'
+                                                        ? 'bg-teal-500/20 text-teal-300 hover:bg-teal-500/30' 
+                                                        : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
                                                 }`}
-                                                aria-label={word.status === 'learned' ? 'Mark as active' : 'Mark as learned'}
                                             >
-                                                <svg className="w-5 h-5" fill={word.status === 'learned' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
+                                                {word.status === 'learned' ? '📚 Move to Practice' : '📦 Move to Archive'}
+                                            </button>
+                                            <button
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    deleteWord(word.id);
+                                                }}
+                                                className="px-3 py-2 bg-red-500/20 text-red-300 rounded-lg font-medium text-sm hover:bg-red-500/30 transition-colors"
+                                            >
+                                                🗑️ Delete
                                             </button>
                                         </div>
                                     )}
@@ -402,16 +385,53 @@ export function MyVocabularyView() {
                         className="w-full max-w-md bg-surface-300 rounded-2xl p-6 max-h-[85vh] overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Header with status badge and close button */}
-                        <div className="flex items-start justify-between mb-4">
-                            <div>
-                                <StatusBadge status={selectedWord.status} />
-                                {selectedWord.topic && (
-                                    <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-white/10 text-white/50">
-                                        {selectedWord.topic}
-                                    </span>
-                                )}
+                        {/* Header with navigation and close button */}
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                {/* Previous button */}
+                                <button
+                                    onClick={() => {
+                                        const currentIndex = sortedWords.findIndex(w => w.id === selectedWord.id);
+                                        if (currentIndex > 0) {
+                                            setSelectedWord(sortedWords[currentIndex - 1]);
+                                        }
+                                    }}
+                                    disabled={sortedWords.findIndex(w => w.id === selectedWord.id) === 0}
+                                    className="p-2 rounded-lg bg-white/10 text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                                    aria-label="Previous word"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
+                                
+                                {/* Next button */}
+                                <button
+                                    onClick={() => {
+                                        const currentIndex = sortedWords.findIndex(w => w.id === selectedWord.id);
+                                        if (currentIndex < sortedWords.length - 1) {
+                                            setSelectedWord(sortedWords[currentIndex + 1]);
+                                        }
+                                    }}
+                                    disabled={sortedWords.findIndex(w => w.id === selectedWord.id) === sortedWords.length - 1}
+                                    className="p-2 rounded-lg bg-white/10 text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                                    aria-label="Next word"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                                
+                                <div className="ml-2">
+                                    <StatusBadge status={selectedWord.status} />
+                                    {selectedWord.topic && (
+                                        <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-white/10 text-white/50">
+                                            {selectedWord.topic}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
+                            
                             <button
                                 onClick={() => setSelectedWord(null)}
                                 className="text-white/50 hover:text-white"
@@ -423,43 +443,54 @@ export function MyVocabularyView() {
                             </button>
                         </div>
 
-                        {/* Unified WordDetailCard - same as exercise feedback */}
-                        {/* Use static Hebrew cognate lookup as fallback if not in database */}
-                        <WordDetailCard
-                            word={selectedWord.word}
-                            translation={selectedWord.translation}
-                            language="arabic"
-                            pronunciationStandard={selectedWord.pronunciation_standard || undefined}
-                            pronunciationEgyptian={selectedWord.pronunciation_egyptian || undefined}
-                            hebrewCognate={selectedWord.hebrew_cognate || findHebrewCognate(selectedWord.word) || undefined}
-                            exampleSentences={selectedWord.example_sentences || undefined}
+                        {/* Use WordDisplay for consistent word rendering */}
+                        <WordDisplay
+                            word={{
+                                arabic: selectedWord.word,
+                                translation: selectedWord.translation,
+                                transliteration: selectedWord.pronunciation_standard || undefined,
+                                transliterationEgyptian: selectedWord.pronunciation_egyptian || undefined,
+                                hebrewCognate: selectedWord.hebrew_cognate || findHebrewCognate(selectedWord.word) || undefined,
+                                exampleSentences: selectedWord.example_sentences || undefined,
+                            } as ArabicWordData}
+                            size="large"
+                            showHebrewCognate={true}
+                            showLetterBreakdown={true}
+                            showExampleSentences={true}
+                            dialectPreference="egyptian"
                         />
 
-                        {/* Source Contexts - unique to vocabulary view */}
-                        {selectedWord.contexts && selectedWord.contexts.length > 0 && (
-                            <div className="glass-card p-4 mt-4">
-                                <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-3">
-                                    Found In
-                                </div>
-                                <div className="space-y-3">
-                                    {selectedWord.contexts.map((ctx, idx) => (
-                                        <div key={idx} className="bg-white/5 rounded-lg p-3">
-                                            <div className="text-white font-arabic text-lg mb-1" dir="rtl">
-                                                {ctx.full_text}
-                                            </div>
-                                            {ctx.full_transliteration && (
-                                                <div className="text-white/50 text-sm italic mb-1">
-                                                    {ctx.full_transliteration}
+                        {/* Source Contexts - unique to vocabulary view, deduplicated by full_text */}
+                        {selectedWord.contexts && selectedWord.contexts.length > 0 && (() => {
+                            // Deduplicate contexts by full_text
+                            const uniqueContexts = selectedWord.contexts.filter(
+                                (ctx, idx, arr) => arr.findIndex(c => c.full_text === ctx.full_text) === idx
+                            );
+                            return uniqueContexts.length > 0 ? (
+                                <div className="glass-card p-4 mt-4">
+                                    <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-3">
+                                        Found In
+                                    </div>
+                                    <div className="space-y-3">
+                                        {uniqueContexts.map((ctx, idx) => (
+                                            <div key={idx} className="bg-white/5 rounded-lg p-3">
+                                                <div className="text-white font-arabic text-lg mb-1" dir="rtl">
+                                                    {ctx.full_text}
                                                 </div>
-                                            )}
-                                            <div className="text-white/70 text-sm">
-                                                {ctx.full_translation}
+                                                {ctx.full_transliteration && (
+                                                    <div className="text-white/50 text-sm italic mb-1">
+                                                        {ctx.full_transliteration}
+                                                    </div>
+                                                )}
+                                                <div className="text-white/70 text-sm">
+                                                    {ctx.full_translation}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            ) : null;
+                        })()}
 
                         {/* Memory Aids Section */}
                         <div className="glass-card p-4 mt-4">
@@ -489,11 +520,11 @@ export function MyVocabularyView() {
                                 }}
                                 className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
                                     selectedWord.status === 'learned'
-                                        ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
-                                        : 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
+                                        ? 'bg-teal-500/20 text-teal-300 hover:bg-teal-500/30'
+                                        : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
                                 }`}
                             >
-                                {selectedWord.status === 'learned' ? 'Mark as Active' : 'Mark as Learned'}
+                                {selectedWord.status === 'learned' ? '📚 Move to Practice' : '📦 Move to Archive'}
                             </button>
                             <button
                                 onClick={() => {
@@ -502,7 +533,7 @@ export function MyVocabularyView() {
                                 }}
                                 className="px-4 py-3 bg-red-500/20 text-red-300 rounded-xl font-medium hover:bg-red-500/30"
                             >
-                                Delete
+                                🗑️ Delete
                             </button>
                         </div>
                     </div>
@@ -513,7 +544,7 @@ export function MyVocabularyView() {
             {!selectionMode && (
                 <button
                     onClick={() => setShowLookup(true)}
-                    className="fixed bottom-24 right-4 w-14 h-14 btn-primary rounded-full shadow-lg flex items-center justify-center z-40"
+                    className="fixed bottom-6 right-6 w-14 h-14 btn-primary rounded-full shadow-lg flex items-center justify-center z-40"
                     aria-label="Look up word"
                 >
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">

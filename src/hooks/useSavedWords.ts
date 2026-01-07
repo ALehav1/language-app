@@ -322,6 +322,11 @@ export function useSavedWords(options?: {
         return words.some(w => w.word === arabicWord);
     }, [words]);
 
+    // Get full saved word data (returns null if not saved)
+    const getSavedWord = useCallback((arabicWord: string): SavedWordWithContexts | null => {
+        return words.find(w => w.word === arabicWord) || null;
+    }, [words]);
+
     // Check if a word is active (still practicing)
     const isActive = useCallback((arabicWord: string): boolean => {
         return words.some(w => w.word === arabicWord && w.status === 'active');
@@ -374,6 +379,7 @@ export function useSavedWords(options?: {
         recordPractice,
         saveAsActive,
         isWordSaved,
+        getSavedWord,
         isActive,
         updateMemoryAids,
         refetch: fetchWords,

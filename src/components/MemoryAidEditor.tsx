@@ -41,18 +41,20 @@ export function MemoryAidEditor({
     // Image generation state
     const [generatingImage, setGeneratingImage] = useState(false);
     const [showCustomPrompt, setShowCustomPrompt] = useState(false);
-    const [customPrompt, setCustomPrompt] = useState('');
+    // Pre-fill with a usable default prompt
+    const defaultPrompt = `A simple illustration of "${translation}"`;
+    const [customPrompt, setCustomPrompt] = useState(defaultPrompt);
     
     // Note editing state
     const [editingNote, setEditingNote] = useState(false);
     const [noteText, setNoteText] = useState(currentNote || '');
 
-    // Generate image with optional custom prompt
-    const handleGenerateImage = async (useCustomPrompt = false) => {
+    // Generate image - uses custom prompt if provided, otherwise auto-generates
+    const handleGenerateImage = async () => {
         setGeneratingImage(true);
         try {
-            // If custom prompt provided, pass it as context
-            const context = useCustomPrompt && customPrompt.trim() 
+            // Use custom prompt if it differs from default, otherwise let AI decide
+            const context = customPrompt.trim() && customPrompt.trim() !== defaultPrompt
                 ? customPrompt.trim() 
                 : undefined;
             
@@ -92,8 +94,8 @@ export function MemoryAidEditor({
                     <div className="relative">
                         <img 
                             src={currentImageUrl} 
-                            alt="Memory aid visual"
-                            className={`w-full ${compact ? 'h-32' : 'h-48'} object-cover rounded-lg`}
+                            alt="Memory aid" 
+                            className={`w-full ${compact ? 'h-32' : 'h-40'} rounded-lg object-contain bg-black/20`}
                         />
                         {/* Regenerate button */}
                         <button
@@ -111,31 +113,23 @@ export function MemoryAidEditor({
                         <textarea
                             value={customPrompt}
                             onChange={(e) => setCustomPrompt(e.target.value)}
-                            placeholder={`Describe what image would help you remember "${translation}"...`}
+                            placeholder="Describe what image would help you remember..."
                             className="w-full p-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 resize-none text-sm"
                             rows={2}
                             autoFocus
                         />
                         <div className="flex gap-2">
                             <button
-                                onClick={() => handleGenerateImage(true)}
+                                onClick={() => handleGenerateImage()}
                                 disabled={generatingImage}
                                 className="flex-1 py-2 bg-purple-500/20 text-purple-300 rounded-lg text-sm hover:bg-purple-500/30 disabled:opacity-50"
                             >
                                 {generatingImage ? '⏳ Generating...' : '🎨 Generate'}
                             </button>
                             <button
-                                onClick={() => handleGenerateImage(false)}
-                                disabled={generatingImage}
-                                className="px-3 py-2 bg-white/10 text-white/60 rounded-lg text-sm hover:bg-white/20 disabled:opacity-50"
-                                title="Use default prompt"
-                            >
-                                Auto
-                            </button>
-                            <button
                                 onClick={() => {
                                     setShowCustomPrompt(false);
-                                    setCustomPrompt('');
+                                    setCustomPrompt(defaultPrompt);
                                 }}
                                 className="px-3 py-2 bg-white/10 text-white/50 rounded-lg text-sm hover:bg-white/20"
                             >
@@ -173,16 +167,16 @@ export function MemoryAidEditor({
                         />
                         <div className="flex gap-2">
                             <button
-                                onClick={() => handleGenerateImage(true)}
+                                onClick={() => handleGenerateImage()}
                                 disabled={generatingImage || !customPrompt.trim()}
                                 className="flex-1 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg text-xs hover:bg-purple-500/30 disabled:opacity-50"
                             >
-                                {generatingImage ? '⏳...' : 'Generate with Custom Prompt'}
+                                {generatingImage ? '⏳...' : '🎨 Generate'}
                             </button>
                             <button
                                 onClick={() => {
                                     setShowCustomPrompt(false);
-                                    setCustomPrompt('');
+                                    setCustomPrompt(defaultPrompt);
                                 }}
                                 className="px-3 py-1.5 bg-white/10 text-white/50 rounded-lg text-xs"
                             >

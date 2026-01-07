@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSavedSentences, type SavedSentence } from '../../hooks/useSavedSentences';
 import { MemoryAidEditor } from '../../components/MemoryAidEditor';
+import { SentenceDisplay, type ArabicSentenceData } from '../../components/SentenceDisplay';
 
 // Shared dialect preference key (same as LookupView)
 const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
@@ -158,34 +159,29 @@ export function MySentencesView() {
             {/* Sentence list */}
             <div className="space-y-3">
                 {filteredSentences.map(sentence => {
-                    // Show preferred dialect first
-                    const primaryArabic = dialectPreference === 'egyptian'
-                        ? (sentence.arabic_egyptian || sentence.arabic_text)
-                        : (sentence.arabic_text || sentence.arabic_egyptian);
-                    const primaryTranslit = dialectPreference === 'egyptian'
-                        ? (sentence.transliteration_egyptian || sentence.transliteration)
-                        : (sentence.transliteration || sentence.transliteration_egyptian);
+                    // Map to SentenceDisplay format
+                    const sentenceData: ArabicSentenceData = {
+                        arabicMsa: sentence.arabic_text,
+                        arabicEgyptian: sentence.arabic_egyptian || sentence.arabic_text,
+                        transliterationMsa: sentence.transliteration,
+                        transliterationEgyptian: sentence.transliteration_egyptian || sentence.transliteration,
+                        english: sentence.translation,
+                    };
                     
                     return (
-                        <button
+                        <div
                             key={sentence.id}
+                            className="glass-card p-4 hover:bg-white/10 transition-colors cursor-pointer"
                             onClick={() => setSelectedSentence(sentence)}
-                            className="w-full text-left glass-card p-4 hover:bg-white/10 transition-colors"
                         >
-                            {/* Arabic text */}
-                            <div className="text-xl font-arabic text-white mb-2" dir="rtl">
-                                {primaryArabic}
-                            </div>
-                            
-                            {/* Transliteration */}
-                            <div className={`text-sm mb-1 ${dialectPreference === 'egyptian' ? 'text-amber-300/70' : 'text-teal-300/70'}`}>
-                                {primaryTranslit}
-                            </div>
-                            
-                            {/* Translation */}
-                            <div className="text-white/80">
-                                {sentence.translation}
-                            </div>
+                            <SentenceDisplay
+                                sentence={sentenceData}
+                                size="compact"
+                                dialectPreference={dialectPreference}
+                                showWordBreakdown={false}
+                                showSaveOption={false}
+                                showExplanation={false}
+                            />
                             
                             {/* Status badge + memory indicators */}
                             <div className="flex items-center gap-2 mt-2">
@@ -208,7 +204,7 @@ export function MySentencesView() {
                                     </span>
                                 )}
                             </div>
-                        </button>
+                        </div>
                     );
                 })}
             </div>
@@ -242,71 +238,27 @@ export function MySentencesView() {
 
                         {/* Content */}
                         <div className="p-4 space-y-4">
-                            {/* Primary dialect (based on preference) */}
-                            {dialectPreference === 'egyptian' ? (
-                                <>
-                                    {/* Egyptian first */}
-                                    <div className="text-center">
-                                        <div className="text-xs text-amber-400/60 mb-1">🇪🇬 Egyptian (Spoken)</div>
-                                        <div className="text-2xl font-arabic text-white mb-2" dir="rtl">
-                                            {selectedSentence.arabic_egyptian || selectedSentence.arabic_text}
-                                        </div>
-                                        <div className="text-amber-300 text-lg">
-                                            {selectedSentence.transliteration_egyptian || selectedSentence.transliteration}
-                                        </div>
-                                    </div>
-                                    {/* MSA as reference */}
-                                    {selectedSentence.arabic_egyptian && (
-                                        <div className="glass-card p-3 text-center">
-                                            <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
-                                            <div className="text-lg font-arabic text-white/70" dir="rtl">
-                                                {selectedSentence.arabic_text}
-                                            </div>
-                                            <div className="text-teal-300/60 text-sm">
-                                                {selectedSentence.transliteration}
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <>
-                                    {/* MSA first */}
-                                    <div className="text-center">
-                                        <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
-                                        <div className="text-2xl font-arabic text-white mb-2" dir="rtl">
-                                            {selectedSentence.arabic_text || selectedSentence.arabic_egyptian}
-                                        </div>
-                                        <div className="text-teal-300 text-lg">
-                                            {selectedSentence.transliteration || selectedSentence.transliteration_egyptian}
-                                        </div>
-                                    </div>
-                                    {/* Egyptian as reference */}
-                                    {selectedSentence.arabic_egyptian && (
-                                        <div className="glass-card p-3 text-center">
-                                            <div className="text-xs text-amber-400/60 mb-1">🇪🇬 Egyptian (Spoken)</div>
-                                            <div className="text-lg font-arabic text-white/70" dir="rtl">
-                                                {selectedSentence.arabic_egyptian}
-                                            </div>
-                                            <div className="text-amber-300/60 text-sm">
-                                                {selectedSentence.transliteration_egyptian}
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-
-                            {/* Translation */}
-                            <div className="text-center">
-                                <div className="text-white text-lg">
-                                    {selectedSentence.translation}
-                                </div>
-                            </div>
+                            {/* Use SentenceDisplay for consistent rendering */}
+                            <SentenceDisplay
+                                sentence={{
+                                    arabicMsa: selectedSentence.arabic_text,
+                                    arabicEgyptian: selectedSentence.arabic_egyptian || selectedSentence.arabic_text,
+                                    transliterationMsa: selectedSentence.transliteration,
+                                    transliterationEgyptian: selectedSentence.transliteration_egyptian || selectedSentence.transliteration,
+                                    english: selectedSentence.translation,
+                                }}
+                                size="large"
+                                dialectPreference={dialectPreference}
+                                showWordBreakdown={false}
+                                showSaveOption={false}
+                                showExplanation={false}
+                            />
 
                             {/* Explanation */}
                             {selectedSentence.explanation && (
                                 <div className="glass-card p-3">
-                                    <div className="text-xs text-white/40 mb-1">💡 Notes</div>
-                                    <div className="text-white/70 text-sm">
+                                    <div className="text-xs text-white/50 mb-1">Grammar Note</div>
+                                    <div className="text-white/80">
                                         {selectedSentence.explanation}
                                     </div>
                                 </div>
