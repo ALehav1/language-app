@@ -483,7 +483,7 @@ export function LookupView() {
                                     {/* Egyptian first */}
                                     <div>
                                         <div className="text-xs text-amber-400/60 mb-1">🇪🇬 Egyptian (Spoken)</div>
-                                        <div className="text-xl font-arabic text-white" dir="rtl">
+                                        <div className="text-2xl font-arabic text-white" dir="rtl">
                                             {sentence.arabic_egyptian}
                                         </div>
                                         <div className="text-amber-300">
@@ -506,7 +506,7 @@ export function LookupView() {
                                     {/* MSA first */}
                                     <div>
                                         <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
-                                        <div className="text-xl font-arabic text-white" dir="rtl">
+                                        <div className="text-2xl font-arabic text-white" dir="rtl">
                                             {sentence.arabic_msa}
                                         </div>
                                         <div className="text-teal-300">
@@ -538,10 +538,10 @@ export function LookupView() {
                                 </div>
                             )}
 
-                            {/* Word-by-word breakdown */}
+                            {/* Word-by-word breakdown - Vertical RTL */}
                             <div>
                                 <div className="text-xs text-white/40 mb-2">Word Breakdown</div>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="space-y-2" dir="rtl">
                                     {sentence.words?.map((word, wordIdx) => {
                                         const wordSaved = isWordAlreadySaved(word.arabic);
                                         // Show preferred dialect first
@@ -556,31 +556,31 @@ export function LookupView() {
                                                 key={wordIdx}
                                                 onClick={() => !wordSaved && handleSavePassageWord(word)}
                                                 disabled={wordSaved}
-                                                className={`group relative px-3 py-2 rounded-lg text-left transition-colors ${
+                                                className={`group relative w-full px-4 py-3 rounded-lg text-right transition-colors ${
                                                     wordSaved
                                                         ? 'bg-green-500/10 border border-green-500/30'
                                                         : 'bg-white/10 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/30'
                                                 }`}
                                             >
-                                                <div className="text-white font-arabic" dir="rtl">
+                                                <div className="text-2xl font-arabic text-white mb-1">
                                                     {primaryArabic}
                                                 </div>
-                                                <div className="text-white/60 text-xs">
+                                                <div className="text-white/60 text-sm mb-1">
                                                     {primaryTranslit}
                                                 </div>
-                                                <div className="text-white/80 text-sm">
+                                                <div className="text-white/80 text-base">
                                                     {word.translation}
                                                 </div>
                                                 {word.part_of_speech && (
-                                                    <div className="text-white/30 text-xs">
+                                                    <div className="text-white/30 text-xs mt-1">
                                                         {word.part_of_speech}
                                                     </div>
                                                 )}
                                                 {/* Save indicator */}
                                                 {wordSaved ? (
-                                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center text-[10px]">✓</div>
+                                                    <div className="absolute top-2 left-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-xs">✓</div>
                                                 ) : (
-                                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">+</div>
+                                                    <div className="absolute top-2 left-2 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">+</div>
                                                 )}
                                             </button>
                                         );
