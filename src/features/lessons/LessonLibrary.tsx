@@ -326,7 +326,6 @@ export function LessonLibrary() {
                         );
                     })}
                 </section>
-            </main>
 
             {/* AI Lesson Generator */}
             <LessonGenerator
