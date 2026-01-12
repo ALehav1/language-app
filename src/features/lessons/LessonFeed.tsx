@@ -4,31 +4,26 @@ import { CardStack } from '../../components/CardStack';
 import { useCardStack } from '../../hooks/useCardStack';
 import { useLessons } from '../../hooks/useLessons';
 import { LessonGenerator } from './LessonGenerator';
-import type { CardAction, Language, ContentType } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
+import type { CardAction, ContentType } from '../../types';
 
 const CONTENT_TYPE_INFO: Record<ContentType, { label: string; icon: string }> = {
     word: { label: 'Words', icon: 'Aa' },
-    phrase: { label: 'Phrases', icon: '""' },
+    sentence: { label: 'Sentences', icon: '""' },
     dialog: { label: 'Dialog', icon: '💬' },
-    paragraph: { label: 'Reading', icon: '📄' },
+    passage: { label: 'Passages', icon: '📄' },
 };
 
 // localStorage keys for persisting user preferences
-const LANGUAGE_STORAGE_KEY = 'language-app-language';
 const CONTENT_TYPE_STORAGE_KEY = 'language-app-content-type';
 
 export function LessonFeed() {
     const navigate = useNavigate();
-
-    const [languageFilter, setLanguageFilter] = useState<Language>(() => {
-        const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-        if (saved === 'arabic' || saved === 'spanish') return saved;
-        return 'arabic';
-    });
+    const { language } = useLanguage();
 
     const [contentFilter, setContentFilter] = useState<ContentType>(() => {
         const saved = localStorage.getItem(CONTENT_TYPE_STORAGE_KEY);
-        if (saved && ['word', 'phrase', 'dialog', 'paragraph'].includes(saved)) {
+        if (saved && ['word', 'sentence', 'dialog', 'passage'].includes(saved)) {
             return saved as ContentType;
         }
         return 'word';
@@ -39,21 +34,17 @@ export function LessonFeed() {
 
     // Persist filter changes to localStorage
     useEffect(() => {
-        localStorage.setItem(LANGUAGE_STORAGE_KEY, languageFilter);
-    }, [languageFilter]);
-
-    useEffect(() => {
         localStorage.setItem(CONTENT_TYPE_STORAGE_KEY, contentFilter);
     }, [contentFilter]);
 
     const { lessons, loading, error, refetch } = useLessons({
-        language: languageFilter,
+        language,
         contentType: contentFilter,
     });
 
     const { activeLessons, handleAction, resetWithLessons, canUndo, undoLastAction, lastActionType } = useCardStack({
         initialLessons: lessons,
-        persistKey: `lesson-cards-${languageFilter}-${contentFilter}`,
+        persistKey: `lesson-cards-${language}-${contentFilter}`,
     });
 
     // Update card stack when lessons change
@@ -78,7 +69,7 @@ export function LessonFeed() {
                 <div className="flex items-center justify-between">
                     <button
                         onClick={() => navigate('/')}
-                        className="touch-btn w-10 h-10 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center rounded-xl"
+                        className="w-10 h-10 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center rounded-xl transition-all duration-200"
                         aria-label="Back to menu"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,7 +79,7 @@ export function LessonFeed() {
                     <div className="text-center flex-1">
                         <h1 className="text-lg font-bold text-white">{currentTypeLabel}</h1>
                         <span className="text-white/50 text-xs">
-                            {languageFilter === 'arabic' ? 'العربية' : 'Español'}
+                            {language === 'arabic' ? 'العربية' : 'Español'}
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -151,7 +142,6 @@ export function LessonFeed() {
                         refetch();
                     }
                 }}
-                defaultLanguage={languageFilter}
                 defaultContentType={contentFilter}
                 externalOpen={generatorOpen}
                 onOpenChange={setGeneratorOpen}
@@ -172,30 +162,14 @@ export function LessonFeed() {
                             <div className="w-10 h-1 bg-white/20 rounded-full" />
                         </div>
 
-                        {/* Language Selection */}
+                        {/* Language Selection - Read-only, change via home */}
                         <div className="space-y-2">
                             <div className="text-white/40 text-xs font-medium uppercase tracking-wider">Language</div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setLanguageFilter('arabic')}
-                                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                                        languageFilter === 'arabic'
-                                            ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/25'
-                                            : 'bg-white/5 text-white/60 hover:bg-white/10'
-                                    }`}
-                                >
-                                    العربية
-                                </button>
-                                <button
-                                    onClick={() => setLanguageFilter('spanish')}
-                                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                                        languageFilter === 'spanish'
-                                            ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25'
-                                            : 'bg-white/5 text-white/60 hover:bg-white/10'
-                                    }`}
-                                >
-                                    Español
-                                </button>
+                            <div className="py-2.5 px-3 rounded-lg bg-white/5 text-white/80 text-sm">
+                                {language === 'arabic' ? '🇪🇬 العربية Arabic' : '🇲🇽 Español Spanish'}
+                            </div>
+                            <div className="text-white/30 text-xs">
+                                Change language from home screen
                             </div>
                         </div>
 

@@ -1,4 +1,55 @@
-# Vercel Deployment Guide
+# Vercel Deployment History & Guide
+
+**Current Production URL:** https://language-l68eo6ut3-alehav1s-projects.vercel.app
+
+---
+
+## Latest Deployment (January 10, 2026 - 4:30 PM)
+
+**Version:** 1.4 - Fixed Tile Order & Removed Redundant UI  
+**URL:** https://language-l68eo6ut3-alehav1s-projects.vercel.app
+
+### Changes Deployed
+- **Correct tile order in Lessons:** Context → Memory Aid → Example Sentences → Chat → Save
+- **Removed ALL redundant memory aid UI** from SaveDecisionPanel  
+- **No more duplicate memory aid sections**
+- **Example sentences now appear AFTER Memory Aid tile**
+
+### Tile Order (Final)
+1. WordDisplay (word details, NO examples shown)
+2. ContextTile (root, usage, MSA comparison)
+3. MemoryAidTile (image + note dropdown)
+4. Example Sentences (manually rendered)
+5. ChatTile (AI Q&A)
+6. SaveDecisionPanel (ONLY Practice/Archive/Skip buttons)
+5. **ChatTile** - Interactive AI Q&A
+6. **SaveDecisionPanel** - Practice/Archive/Skip buttons ONLY (no embedded memory aid)
+
+### AI Improvements
+- **Forbidden MSA words:** ممكن, مرآة, غرفة, سيارة, حقيبة (use Egyptian equivalents)
+- **Required harakat:** All Arabic text includes vowel marks (َ ُ ِ ْ ً ٌ ٍ ّ)
+- **Native Egyptian vocabulary:** Not MSA adapted to Egyptian pronunciation
+
+---
+
+## Previous Deployments
+
+### January 10, 2026 - 11:00 AM
+**URL:** https://language-o87w7kacs-alehav1s-projects.vercel.app
+- Fixed Egyptian dialect enforcement
+- Added vowel mark requirements
+
+### January 10, 2026 - 10:15 AM
+**URL:** https://language-g8e021s8w-alehav1s-projects.vercel.app
+- Added MemoryAidTile as separate dropdown
+- Reordered tiles: Context before examples
+
+### January 10, 2026 - 9:30 AM
+**URL:** https://language-3qvhgu0di-alehav1s-projects.vercel.app
+- Fixed sentence detection (only 2+ sentences = passage)
+- Unified Lookup and Lessons to use WordDisplay
+
+---
 
 ## Prerequisites
 - Vercel account (sign up at https://vercel.com)

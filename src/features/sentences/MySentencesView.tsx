@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSavedSentences, type SavedSentence } from '../../hooks/useSavedSentences';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { MemoryAidEditor } from '../../components/MemoryAidEditor';
 import { SentenceDisplay, type ArabicSentenceData } from '../../components/SentenceDisplay';
 
@@ -13,9 +14,13 @@ const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
  */
 export function MySentencesView() {
     const navigate = useNavigate();
-    const { sentences, loading, counts, deleteSentence, updateStatus, updateMemoryAids } = useSavedSentences();
+    const { language } = useLanguage();
+    const [searchParams] = useSearchParams();
+    const mode = searchParams.get('mode') || 'practice';
+    const { sentences, loading, counts, deleteSentence, updateStatus, updateMemoryAids } = useSavedSentences(language);
     const [selectedSentence, setSelectedSentence] = useState<SavedSentence | null>(null);
-    const [filter, setFilter] = useState<'all' | 'active' | 'learned'>('all');
+    const defaultFilter: 'all' | 'active' | 'learned' = mode === 'archive' ? 'learned' : 'active';
+    const [filter, setFilter] = useState<'all' | 'active' | 'learned'>(defaultFilter);
     
     // Dialect preference (shared with Lookup)
     const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
@@ -69,9 +74,9 @@ export function MySentencesView() {
             {/* Header */}
             <header className="flex items-center justify-between mb-4">
                 <button
-                    onClick={() => navigate('/')}
+                    onClick={() => navigate('/vocabulary')}
                     className="touch-btn w-10 h-10 flex items-center justify-center rounded-xl bg-white/10"
-                    aria-label="Back to menu"
+                    aria-label="Back to vocabulary"
                 >
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

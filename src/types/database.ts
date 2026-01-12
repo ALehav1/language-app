@@ -2,9 +2,13 @@ export type Language = 'arabic' | 'spanish';
 
 export type ArabicDialect = 'standard' | 'egyptian';
 
+export type SpanishDialect = 'latam' | 'spain';
+
+export type Dialect = ArabicDialect | SpanishDialect;
+
 export type MasteryLevel = 'new' | 'learning' | 'practiced' | 'mastered';
 
-export type ContentType = 'word' | 'phrase' | 'dialog' | 'paragraph';
+export type ContentType = 'word' | 'sentence' | 'dialog' | 'passage';
 
 export interface HebrewCognate {
   root?: string;
@@ -85,12 +89,12 @@ export interface DbVocabularyItem extends VocabularyItem {
  */
 export type WordStatus = 'active' | 'learned';
 
-/** Saved Arabic word (Phase 12 - Arabic only) */
+/** Saved word (supports Arabic and Spanish) */
 export interface SavedWord {
   id: string;
-  word: string;                              // Arabic word
+  word: string;                              // Word in target language
   translation: string;                       // English meaning
-  language: 'arabic';                        // Phase 12 is Arabic-only
+  language: Language;                        // 'arabic' | 'spanish'
   
   // Dialect-specific pronunciations
   pronunciation_standard: string | null;     // MSA/Fusha transliteration

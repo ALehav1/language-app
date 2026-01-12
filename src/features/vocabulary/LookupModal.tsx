@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { lookupWord, type LookupResult } from '../../lib/openai';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useSavedWords } from '../../hooks/useSavedWords';
 
 interface LookupModalProps {
@@ -12,6 +13,7 @@ interface LookupModalProps {
  * Users can type/paste any word and save it to their vocabulary.
  */
 export function LookupModal({ isOpen, onClose }: LookupModalProps) {
+    const { language } = useLanguage();
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export function LookupModal({ isOpen, onClose }: LookupModalProps) {
         setSaved(false);
 
         try {
-            const lookupResult = await lookupWord(input.trim());
+            const lookupResult = await lookupWord(input.trim(), { language });
             setResult(lookupResult);
             // Check if already saved
             if (isWordSaved(lookupResult.arabic_word)) {

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { VocabularyItem, DbVocabularyItem, SavedWord } from '../types';
+import type { VocabularyItem, DbVocabularyItem } from '../types';
+import { fromVocabularyItems } from '../domain/practice/adapters/fromVocabularyItems';
+import { fromSavedWords as adaptSavedWords } from '../domain/practice/adapters/fromSavedWords';
 
 interface UseVocabularyOptions {
     lessonId?: string;
@@ -46,23 +48,26 @@ export function useVocabulary({ lessonId, itemIds, fromSavedWords }: UseVocabula
 
                 if (savedError) throw new Error(savedError.message);
 
-                // Transform saved_words to VocabularyItem format for exercise compatibility
-                const items: VocabularyItem[] = (savedData || []).map((row: SavedWord) => ({
-                    id: row.id,
-                    word: row.word,
-                    translation: row.translation,
-                    language: 'arabic' as const,
-                    content_type: 'word' as const,
-                    transliteration: row.pronunciation_standard || undefined,
-                    hebrew_cognate: row.hebrew_cognate,
-                    letter_breakdown: row.letter_breakdown,
+                // Use adapter to transform SavedWord → PracticeItem → VocabularyItem
+                const practiceItems = adaptSavedWords(savedData || []);
+                
+                // Convert PracticeItem back to VocabularyItem for backward compatibility
+                const items: VocabularyItem[] = practiceItems.map((item) => ({
+                    id: item.id,
+                    word: item.targetText,
+                    translation: item.translation,
+                    language: item.language as any,
+                    content_type: item.contentType as any,
+                    transliteration: item.transliteration,
+                    hebrew_cognate: item.hebrewCognate as any,
+                    letter_breakdown: item.letterBreakdown as any,
                     speaker: undefined,
                     context: undefined,
-                    mastery_level: row.status === 'learned' ? 'practiced' : 'learning',
-                    last_reviewed: row.last_practiced,
-                    next_review: row.next_review,
-                    times_practiced: row.times_practiced,
-                    created_at: row.created_at,
+                    mastery_level: item.masteryLevelRaw as any,
+                    last_reviewed: item.lastReviewed || null,
+                    next_review: item.nextReview || null,
+                    times_practiced: item.timesPracticed || 0,
+                    created_at: item.createdAt || '',
                 }));
 
                 setVocabulary(items);
@@ -89,23 +94,26 @@ export function useVocabulary({ lessonId, itemIds, fromSavedWords }: UseVocabula
                 throw new Error(fetchError.message);
             }
 
-            // Transform to VocabularyItem (remove lesson_id from public interface)
-            const items: VocabularyItem[] = (data || []).map((row) => ({
-                id: row.id,
-                word: row.word,
-                translation: row.translation,
-                language: row.language,
-                content_type: row.content_type || 'word',
-                transliteration: row.transliteration,
-                hebrew_cognate: row.hebrew_cognate,
-                letter_breakdown: row.letter_breakdown,
-                speaker: row.speaker,
-                context: row.context,
-                mastery_level: row.mastery_level,
-                last_reviewed: row.last_reviewed,
-                next_review: row.next_review,
-                times_practiced: row.times_practiced,
-                created_at: row.created_at,
+            // Use adapter to transform DbVocabularyItem → PracticeItem → VocabularyItem
+            const practiceItems = fromVocabularyItems(data || []);
+            
+            // Convert PracticeItem back to VocabularyItem for backward compatibility
+            const items: VocabularyItem[] = practiceItems.map((item) => ({
+                id: item.id,
+                word: item.targetText,
+                translation: item.translation,
+                language: item.language as any,
+                content_type: item.contentType as any,
+                transliteration: item.transliteration,
+                hebrew_cognate: item.hebrewCognate as any,
+                letter_breakdown: item.letterBreakdown as any,
+                speaker: undefined,
+                context: undefined,
+                mastery_level: item.masteryLevelRaw as any,
+                last_reviewed: item.lastReviewed || null,
+                next_review: item.nextReview || null,
+                times_practiced: item.timesPracticed || 0,
+                created_at: item.createdAt || '',
             }));
 
             setVocabulary(items);

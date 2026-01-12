@@ -42,7 +42,7 @@ export interface SaveSentenceInput {
  * Hook for managing saved sentences (spoken Arabic phrases).
  * Provides CRUD operations and filtering.
  */
-export function useSavedSentences() {
+export function useSavedSentences(language?: 'arabic' | 'spanish') {
     const [sentences, setSentences] = useState<SavedSentence[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -53,10 +53,17 @@ export function useSavedSentences() {
         setError(null);
         
         try {
-            const { data, error: fetchError } = await supabase
+            let query = supabase
                 .from('saved_sentences')
                 .select('*')
                 .order('created_at', { ascending: false });
+            
+            // Apply language filter if provided
+            if (language) {
+                query = query.eq('language', language);
+            }
+            
+            const { data, error: fetchError } = await query;
             
             if (fetchError) throw fetchError;
             setSentences(data || []);
@@ -66,7 +73,7 @@ export function useSavedSentences() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [language]);
 
     // Initial fetch
     useEffect(() => {

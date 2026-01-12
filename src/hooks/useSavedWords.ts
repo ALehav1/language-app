@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { SavedWord, WordContext, SavedWordWithContexts, WordStatus, LetterBreakdown, HebrewCognate, ExampleSentence } from '../types';
+import type { SavedWord, WordContext, SavedWordWithContexts, WordStatus, LetterBreakdown, HebrewCognate, ExampleSentence, Language } from '../types';
 
 /**
- * Hook for managing saved Arabic vocabulary words.
- * Provides CRUD operations and filtering for the My Vocabulary feature.
+ * Hook for managing saved vocabulary words.
+ * Provides CRUD operations and filtering for My Vocabulary feature.
+ * Filters by language (arabic/spanish) from global language context.
  */
 export function useSavedWords(options?: {
     status?: WordStatus | 'all';
     topic?: string;
     searchQuery?: string;
+    language?: Language;
 }) {
     const [words, setWords] = useState<SavedWordWithContexts[]>([]);
     const [loading, setLoading] = useState(true);
@@ -33,6 +35,11 @@ export function useSavedWords(options?: {
             } else {
                 // By default, exclude retired words
                 query = query.neq('status', 'retired');
+            }
+
+            // Apply language filter (PHASE 1.3: critical for language mode)
+            if (options?.language) {
+                query = query.eq('language', options.language);
             }
 
             // Apply topic filter
@@ -72,12 +79,15 @@ export function useSavedWords(options?: {
 
             setWords(wordsWithContexts);
         } catch (err) {
-            console.error('Error fetching saved words:', err);
-            setError(err instanceof Error ? err.message : 'Failed to fetch saved words');
+            console.error('[useSavedWords] Error fetching saved words:', err);
+            // Expose actual error for debugging
+            const errorMessage = err instanceof Error ? err.message : 'Failed to fetch saved words';
+            console.error('[useSavedWords] Error details:', errorMessage);
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
-    }, [options?.status, options?.topic, options?.searchQuery]);
+    }, [options?.status, options?.topic, options?.searchQuery, options?.language]);
 
     // Initial fetch
     useEffect(() => {
@@ -102,7 +112,7 @@ export function useSavedWords(options?: {
             memory_image_url?: string; // Optional memory image
         },
         context?: {
-            content_type: 'word' | 'phrase' | 'dialog' | 'paragraph' | 'lookup';
+            content_type: 'word' | 'sentence' | 'dialog' | 'passage' | 'lookup';
             full_text: string;
             full_transliteration?: string;
             full_translation: string;
@@ -123,11 +133,24 @@ export function useSavedWords(options?: {
             let savedWord: SavedWord;
 
             if (existing) {
-                // Word exists - just add new context if provided
+                // Word exists - UPDATE it with new data (status, memory aids, etc)
                 const { data, error } = await supabase
                     .from('saved_words')
-                    .select('*')
+                    .update({
+                        translation: wordData.translation,
+                        pronunciation_standard: wordData.pronunciation_standard || null,
+                        pronunciation_egyptian: wordData.pronunciation_egyptian || null,
+                        letter_breakdown: wordData.letter_breakdown || null,
+                        hebrew_cognate: wordData.hebrew_cognate || null,
+                        example_sentences: wordData.example_sentences || null,
+                        topic: wordData.topic || null,
+                        status: wordData.status || 'active',
+                        memory_note: wordData.memory_note || null,
+                        memory_image_url: wordData.memory_image_url || null,
+                        updated_at: new Date().toISOString(),
+                    })
                     .eq('id', existing.id)
+                    .select()
                     .single();
 
                 if (error) throw error;
@@ -287,7 +310,7 @@ export function useSavedWords(options?: {
             example_sentences?: ExampleSentence[];
         },
         context?: {
-            content_type: 'word' | 'phrase' | 'dialog' | 'paragraph' | 'lookup';
+            content_type: 'word' | 'sentence' | 'dialog' | 'passage' | 'lookup';
             full_text: string;
             full_transliteration?: string;
             full_translation: string;

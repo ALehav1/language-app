@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSavedPassages, type SavedPassage } from '../../hooks/useSavedPassages';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { MemoryAidEditor } from '../../components/MemoryAidEditor';
+import { SentenceDetailModal } from '../../components/modals/SentenceDetailModal';
+import type { SentenceSelectionContext } from '../../types/selection';
+import { makeSentenceSelection } from '../../types/selection-helpers';
+import { splitSentences } from '../../utils/text/splitSentences';
 
 // Shared dialect preference key
 const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
@@ -12,15 +17,23 @@ const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
  */
 export function MyPassagesView() {
     const navigate = useNavigate();
-    const { passages, loading, counts, deletePassage, updateStatus, updateMemoryAids } = useSavedPassages();
+    const { language } = useLanguage();
+    const [searchParams] = useSearchParams();
+    const mode = searchParams.get('mode') || 'practice';
+    const { passages, loading, counts, deletePassage, updateStatus, updateMemoryAids } = useSavedPassages(language);
     const [selectedPassage, setSelectedPassage] = useState<SavedPassage | null>(null);
-    const [filter, setFilter] = useState<'all' | 'active' | 'learned'>('all');
+    const defaultFilter: 'all' | 'active' | 'learned' = mode === 'archive' ? 'learned' : 'active';
+    const [filter, setFilter] = useState<'all' | 'active' | 'learned'>(defaultFilter);
     
     // Dialect preference (shared with Lookup and Sentences)
     const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
         const saved = localStorage.getItem(DIALECT_PREFERENCE_KEY);
         return (saved === 'standard') ? 'standard' : 'egyptian';
     });
+    
+    // Sentence modal state
+    const [sentenceModalOpen, setSentenceModalOpen] = useState(false);
+    const [sentenceSelection, setSentenceSelection] = useState<SentenceSelectionContext | null>(null);
     
     useEffect(() => {
         localStorage.setItem(DIALECT_PREFERENCE_KEY, dialectPreference);
@@ -68,7 +81,7 @@ export function MyPassagesView() {
             {/* Header */}
             <header className="flex items-center justify-between mb-4">
                 <button
-                    onClick={() => navigate('/')}
+                    onClick={() => navigate('/vocabulary')}
                     className="touch-btn w-10 h-10 flex items-center justify-center rounded-xl bg-white/10"
                     aria-label="Back to menu"
                 >
@@ -242,16 +255,53 @@ export function MyPassagesView() {
 
                         {/* Content */}
                         <div className="p-4 space-y-4">
-                            {/* Original text */}
+                            {/* Original text - with sentence-level clicking for multi-sentence passages */}
                             <div>
                                 <div className="text-xs text-white/40 mb-2">
                                     {selectedPassage.source_language === 'english' ? '🇺🇸 Original (English)' : '🇪🇬 Original (Arabic)'}
                                 </div>
-                                <div className={`text-lg text-white ${
-                                    selectedPassage.source_language === 'arabic' ? 'font-arabic' : ''
-                                }`} dir={selectedPassage.source_language === 'arabic' ? 'rtl' : 'ltr'}>
-                                    {selectedPassage.original_text}
-                                </div>
+                                {(() => {
+                                    const language = selectedPassage.source_language === 'arabic' ? 'arabic' : 'spanish';
+                                    const sentences = splitSentences(selectedPassage.original_text, language);
+                                    
+                                    // If single sentence, render as non-clickable text
+                                    if (sentences.length === 1) {
+                                        return (
+                                            <div className={`text-lg text-white ${
+                                                selectedPassage.source_language === 'arabic' ? 'font-arabic' : ''
+                                            }`} dir={selectedPassage.source_language === 'arabic' ? 'rtl' : 'ltr'}>
+                                                {selectedPassage.original_text}
+                                            </div>
+                                        );
+                                    }
+                                    
+                                    // Multi-sentence: make each sentence clickable
+                                    return (
+                                        <div className="space-y-2">
+                                            {sentences.map((sentence, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        setSentenceSelection(makeSentenceSelection(language, {
+                                                            selectedSentence: sentence.text,
+                                                            parentPassage: selectedPassage.original_text,
+                                                            sourceView: 'vocab',
+                                                            dialect: selectedPassage.source_language === 'arabic' ? dialectPreference : undefined,
+                                                            contentType: 'passage',
+                                                        }));
+                                                        setSentenceModalOpen(true);
+                                                    }}
+                                                    className={`w-full text-left p-3 rounded-xl bg-white/5 hover:bg-amber-500/20 transition-colors text-lg text-white ${
+                                                        selectedPassage.source_language === 'arabic' ? 'font-arabic' : ''
+                                                    }`}
+                                                    dir={selectedPassage.source_language === 'arabic' ? 'rtl' : 'ltr'}
+                                                >
+                                                    {sentence.text}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* Translation */}
@@ -317,6 +367,18 @@ export function MyPassagesView() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Sentence Detail Modal */}
+            {sentenceSelection && (
+                <SentenceDetailModal
+                    isOpen={sentenceModalOpen}
+                    onClose={() => {
+                        setSentenceModalOpen(false);
+                        setSentenceSelection(null);
+                    }}
+                    selection={sentenceSelection}
+                />
             )}
         </div>
     );

@@ -187,6 +187,11 @@ const COGNATE_MAP: Record<string, HebrewCognate> = {
  * Uses hebrew_note field to specify which word the cognate relates to (lesson approach)
  */
 export function findHebrewCognate(arabicWord: string): HebrewCognate | null {
+    // Defensive: handle undefined/null/non-string inputs
+    if (!arabicWord || typeof arabicWord !== 'string' || arabicWord.trim() === '') {
+        return null;
+    }
+    
     // Check if input is a phrase (contains spaces)
     if (arabicWord.includes(' ')) {
         return findHebrewCognateForPhrase(arabicWord);
@@ -201,6 +206,11 @@ export function findHebrewCognate(arabicWord: string): HebrewCognate | null {
  * Strips diacritics and tries multiple variations.
  */
 function findHebrewCognateForSingleWord(arabicWord: string): HebrewCognate | null {
+    // Defensive: handle undefined/null/non-string inputs
+    if (!arabicWord || typeof arabicWord !== 'string') {
+        return null;
+    }
+    
     // Remove common diacritics
     const stripped = arabicWord
         .replace(/[\u064B-\u065F\u0670]/g, '') // Remove Arabic diacritics
@@ -245,6 +255,11 @@ function findHebrewCognateForSingleWord(arabicWord: string): HebrewCognate | nul
  * Returns cognate for the first word found, with note specifying which word.
  */
 function findHebrewCognateForPhrase(arabicPhrase: string): HebrewCognate | null {
+    // Defensive: handle undefined/null/non-string inputs
+    if (!arabicPhrase || typeof arabicPhrase !== 'string') {
+        return null;
+    }
+    
     // Split phrase into individual words
     const words = arabicPhrase.trim().split(/\s+/);
     

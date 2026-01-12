@@ -1,6 +1,8 @@
 import OpenAI from 'openai';
-import type { Language, MasteryLevel, ContentType, ArabicDialect } from '../types/database';
+import type { Language, MasteryLevel, ArabicDialect, SpanishDialect, ContentType } from '../types/database';
 import { findHebrewCognate } from '../utils/hebrewCognates';
+import { getEgyptianEquivalent } from '../utils/egyptianDictionary';
+import { shouldShowHebrewCognate } from '../domain/practice/hebrew/shouldShowHebrewCognate';
 
 // Initialize client (dangerouslyAllowBrowser for P1 demo, backend proxy recommended for prod)
 export const openai = new OpenAI({
@@ -64,9 +66,9 @@ export interface AIContent {
 
 const CONTENT_TYPE_COUNTS: Record<ContentType, number> = {
   word: 7,
-  phrase: 5,
+  sentence: 5,
   dialog: 4,
-  paragraph: 2,
+  passage: 2,
 };
 
 const CONTENT_TYPE_INSTRUCTIONS: Record<ContentType, string> = {
@@ -74,10 +76,10 @@ const CONTENT_TYPE_INSTRUCTIONS: Record<ContentType, string> = {
     The "word" field contains the target language word.
     The "translation" field contains the English meaning.`,
 
-  phrase: `Generate common PHRASES and expressions. Each item should be a useful phrase (2-6 words).
+  sentence: `Generate common SENTENCES and expressions. Each item should be a useful sentence (2-6 words).
     Examples: "How are you?", "Nice to meet you", "What time is it?"
-    The "word" field contains the target language phrase.
-    The "translation" field contains the English equivalent phrase.`,
+    The "word" field contains the target language sentence.
+    The "translation" field contains the English equivalent sentence.`,
 
   dialog: `Generate a SHORT DIALOG/CONVERSATION between two speakers (A and B).
     Each item is one line of dialog. Include "speaker" field ("A" or "B").
@@ -86,9 +88,9 @@ const CONTENT_TYPE_INSTRUCTIONS: Record<ContentType, string> = {
     The "translation" field contains the English translation.
     Include "context" field with brief stage direction if helpful (e.g., "pointing at menu").`,
 
-  paragraph: `Generate SHORT READING PASSAGES (2-4 sentences each).
-    Each item is a complete mini-paragraph about the topic.
-    The "word" field contains the target language paragraph.
+  passage: `Generate SHORT READING PASSAGES (2-4 sentences each).
+    Each item is a complete mini-passage about the topic.
+    The "word" field contains the target language passage.
     The "translation" field contains the English translation.
     Make passages progressively more complex.`,
 };
@@ -98,20 +100,20 @@ export async function generateLessonContent(
   language: Language,
   level: MasteryLevel,
   contentType: ContentType = 'word',
-  arabicDialect: ArabicDialect = 'standard',
+  dialect?: ArabicDialect | SpanishDialect,
   excludeWords: string[] = []  // Words the user has already practiced - avoid these
 ): Promise<AIContent> {
   const isArabic = language === 'arabic';
   const itemCount = CONTENT_TYPE_COUNTS[contentType];
   
-  const dialectName = arabicDialect === 'standard' ? 'Modern Standard Arabic (MSA/Fusha)' : 'Egyptian Arabic (Masri)';
-
+  const dialectName = isArabic ? (dialect === 'standard' ? 'Modern Standard Arabic (MSA/Fusha)' : 'Egyptian Arabic (Masri)') : 'Spanish (LatAm)';
+  
   const hebrewCognateInstructions = isArabic ? `
     CRITICAL - Hebrew Cognates:
     Arabic and Hebrew are both Semitic languages sharing trilateral root systems.
     ONLY include hebrew_root/hebrew_meaning/hebrew_note when there is a GENUINE shared Semitic root.
 
-    FOR PHRASES: Check EACH word in the phrase for cognates. If ANY word has a Hebrew cognate,
+    FOR SENTENCES: Check EACH word in the sentence for cognates. If ANY word has a Hebrew cognate,
     include it and specify which Arabic word it relates to in the hebrew_note field.
     Example: "كيف العمل" - العمل (al-'amal/work) → עמל (amal/labor) - include this cognate!
 
@@ -166,8 +168,37 @@ export async function generateLessonContent(
 
   const dialectInstruction = isArabic ? `
     DIALECT: Use ${dialectName} pronunciation and vocabulary.
-    ${arabicDialect === 'egyptian' ? 
-      'Egyptian Arabic features: Use "g" for ج (not "j"), "e" vowels common, colloquial expressions.' : 
+    ${dialect === 'egyptian' ? 
+      `CRITICAL - NATIVE EGYPTIAN VOCABULARY ONLY:
+      Generate words/sentences that Egyptians ACTUALLY USE in daily conversation.
+      
+      ⛔ FORBIDDEN - DO NOT USE THESE MSA WORDS:
+      - ممكن (mumkin) - Use يمكن (yemken) for "can/possible"
+      - مرآة (mir'a) - Use مراية (meraya) for "mirror"  
+      - غرفة (ghurfa) - Use أوضة (oda) for "room"
+      - سيارة (sayyara) - Use عربية (3arabeyya) for "car"
+      - حقيبة (haqiba) - Use شنطة (shanTa) for "bag"
+      - مال (maal) - Use فلوس (feloos) for "money"
+      - ماذا (madha) - Use ايه (eh) for "what"
+      - كيف (kayfa) - Use ازاي (ezzay) for "how"
+      - لأن (li'anna) - Use علشان (3alshan) for "because"
+      
+      ✅ REQUIRED - Native Egyptian words/sentences only:
+      - أوضة (oda) for "room"
+      - عربية (3arabeyya) for "car"
+      - شنطة (shanTa) for "bag"
+      - فلوس (feloos) for "money"
+      - ايه (eh) for "what"
+      - ازاي (ezzay) for "how"
+      - علشان (3alshan) for "because"
+      - يمكن (yemken) for "can/possible"
+      - مراية (meraya) for "mirror"
+      
+      Pronunciation features:
+      - Use "g" for ج (not "j") e.g. جميل = gameel
+      - Short vowels often become "e" or "a" sounds
+      - ق becomes glottal stop or "2" in chat, not "q"
+      - Use colloquial expressions and particles (ya, ba2a, keda, etc.)` : 
       'Modern Standard Arabic: Use formal/classical pronunciation and vocabulary.'}
     ` : '';
 
@@ -194,25 +225,30 @@ export async function generateLessonContent(
       "description": "Short description",
       "items": [
         {
-          "word": "Target language content",
+          "word": "Target language content WITH FULL VOWEL MARKS (harakat) for Arabic",
           "translation": "English translation",
           "transliteration": "Latin script pronunciation (Arabic only)"${isArabic && contentType === 'word' ? `,
           "hebrew_root": "Hebrew cognate root (optional)",
           "hebrew_meaning": "Meaning of Hebrew cognate (optional)",
           "hebrew_note": "Note on connection (optional)",
           "letter_breakdown": [
-             { "letter": "م", "name": "Meem", "sound": "m" }
+             { "letter": "مَ", "name": "Meem + Fatha", "sound": "ma" }
           ]` : ''}${dialogFields}
         }
       ]
     }
+    
+    ${isArabic ? 'CRITICAL FOR ARABIC: Always include vowel diacritics (harakat) in the "word" field: َ ُ ِ ْ ً ٌ ٍ ّ' : ''}
     Generate exactly ${itemCount} items.
   `;
 
   const response = await withRetry(() => 
     openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: "Return valid json only." },
+        { role: "user", content: prompt }
+      ],
       response_format: { type: "json_object" }
     })
   );
@@ -255,7 +291,10 @@ export async function evaluateAnswer(
   const response = await withRetry(() =>
     openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: "Return valid json only." },
+        { role: "user", content: prompt }
+      ],
       response_format: { type: "json_object" }
     })
   );
@@ -279,15 +318,32 @@ export interface ExampleSentence {
 }
 
 /**
+ * Word context information
+ */
+export interface WordContext {
+  root?: string;
+  root_meaning?: string;
+  egyptian_usage: string;
+  msa_comparison: string;
+  cultural_notes?: string;
+}
+
+/**
+ * Detected input language from lookup/analysis.
+ */
+export type DetectedLanguage = 'english' | 'arabic' | 'spanish';
+
+/**
  * Lookup result for a word or phrase.
  */
 export interface LookupResult {
-  detected_language: 'arabic' | 'english';
+  detected_language: DetectedLanguage;
   arabic_word: string;  // MSA word WITH harakat (vowel diacritics)
   arabic_word_egyptian?: string;  // Egyptian word if different from MSA
   translation: string;
   pronunciation_standard: string;  // MSA transliteration
   pronunciation_egyptian: string;  // Egyptian transliteration
+  word_context?: WordContext;
   letter_breakdown: Array<{
     letter: string;  // Letter WITH diacritics
     name: string;
@@ -307,12 +363,19 @@ export interface LookupResult {
 }
 
 /**
- * Look up any word (Arabic or English) and get full breakdown.
- * Returns Arabic word with both dialect pronunciations, letter breakdown, and Hebrew cognate.
+ * Look up any word in the selected language.
+ * For Arabic: Returns word with dialect pronunciations, letter breakdown, and Hebrew cognate.
+ * For Spanish: Returns word with translation only (no transliteration, Hebrew, or letter breakdown).
  */
-export async function lookupWord(input: string): Promise<LookupResult> {
-  const prompt = `
-    Analyze this word/phrase: "${input}"
+export async function lookupWord(
+  input: string,
+  options: { language: Language; dialect?: ArabicDialect | SpanishDialect }
+): Promise<LookupResult> {
+  const { language } = options;
+  const isArabic = language === 'arabic';
+  
+  const prompt = isArabic ? `
+    Analyze this word or sentence: "${input}"
     
     CRITICAL REQUIREMENTS:
     
@@ -320,100 +383,182 @@ export async function lookupWord(input: string): Promise<LookupResult> {
     2. If English: translate to Arabic WITH FULL VOWEL DIACRITICS (harakat)
     3. If Arabic: provide English translation
     
-    4. For EGYPTIAN Arabic - provide the ACTUAL WORD Egyptians use, NOT just a pronunciation variant!
-       Examples:
-       - "work" → MSA: العَمَل (al-'amal), Egyptian: الشُغْل (el-shoghl) - DIFFERENT WORD!
-       - "how" → MSA: كَيْفَ (kayfa), Egyptian: إزَّاي (ezzay) - DIFFERENT WORD!
-       - "what" → MSA: مَاذَا (matha), Egyptian: إيه (eih) - DIFFERENT WORD!
-       - "good" → MSA: جَيِّد (jayyid), Egyptian: كْوَيِّس (kwayyis) - DIFFERENT WORD!
-       - "want" → MSA: أُرِيد (ureed), Egyptian: عَايِز (aayez) - DIFFERENT WORD!
-       - "now" → MSA: الآن (al-aan), Egyptian: دِلْوَقْتِي (dilwa'ti) - DIFFERENT WORD!
+    4. Provide BOTH MSA (Modern Standard Arabic) and Egyptian Arabic versions:
+       - arabic_word = MSA with full harakat
+       - arabic_word_egyptian = Egyptian variant (REQUIRED if different from MSA)
+       - pronunciation_standard = MSA transliteration
+       - pronunciation_egyptian = Egyptian transliteration
     
-    5. Letter breakdown MUST include vowel diacritics:
-       - فَتْحَة (fatha) = a
-       - كَسْرَة (kasra) = i  
-       - ضَمَّة (damma) = u
-       - سُكُون (sukun) = no vowel
-       - شَدَّة (shadda) = doubled consonant
+    5. Letter breakdown for the MSA word:
+       - Break down each letter with its diacritic
+       - Include letter name and sound
+       Example: عَمَل → [{ letter: "عَ", name: "Ayn with fatha", sound: "a" }, ...]
     
-    6. Hebrew cognate - CHECK CAREFULLY for shared Semitic roots! Common examples:
-       - כ-ת-ב (k-t-b) = write: Arabic كَتَبَ (kataba), مَكْتَب (maktab), Hebrew כתב (katav), מכתב (michtav)
-       - ע-מ-ל (ayin-m-l) = work/labor: Arabic عَمَل ('amal), Hebrew עמל (amal)
-       - ש-ל-ם (sh-l-m) = peace/complete: Arabic سَلَام (salaam), Hebrew שלום (shalom)
-       - ב-י-ת (b-y-t) = house: Arabic بَيْت (bayt), Hebrew בית (bayit)
-       - א-כ-ל (alef-k-l) = eat: Arabic أَكَلَ (akala), Hebrew אכל (achal)
-       - ק-ר-א (q-r-alef) = read/call: Arabic قَرَأَ (qara'a), Hebrew קרא (kara)
-       - ס-פ-ר (s-p-r) = book/count: Arabic سِفْر (sifr), Hebrew ספר (sefer)
-       Include hebrew_cognate if ANY genuine Semitic root connection exists!
+    6. Context and usage (word_context):
+       - root: Trilateral root if applicable
+       - egyptian_usage: How Egyptians use this in daily speech
+       - msa_comparison: Key differences between MSA and Egyptian usage
+       - cultural_notes: Any cultural context
     
-    7. Provide 2-3 EXAMPLE SENTENCES showing the word in EVERYDAY SPOKEN context:
-       - CRITICAL: Provide BOTH MSA and Egyptian Arabic versions of EACH sentence
-       - Egyptian version should use the ACTUAL words Egyptians use in daily speech
-       - For "work": MSA uses عَمَل but Egyptian uses شُغْل - the WHOLE sentence changes!
-       - Focus on practical, everyday situations (not formal/literary)
-       - Include transliteration for both versions
-       - Add explanation noting key differences between MSA and Egyptian
+    7. Example sentences (2-3 sentences, BOTH MSA and Egyptian):
+       - arabic_msa: MSA sentence with harakat
+       - arabic_egyptian: Egyptian sentence (actual daily speech)
+       - transliteration_msa: MSA pronunciation
+       - transliteration_egyptian: Egyptian pronunciation
+       - english: English translation
+       - explanation: Note key dialect differences
     
     Return ONLY valid JSON:
     {
       "detected_language": "arabic" | "english",
-      "arabic_word": "MSA word WITH harakat (e.g., عَمَل not عمل)",
-      "arabic_word_egyptian": "Egyptian word if different (e.g., شُغْل) - REQUIRED if different!",
+      "arabic_word": "MSA word WITH harakat",
+      "arabic_word_egyptian": "Egyptian word (if different)",
       "translation": "English translation",
       "pronunciation_standard": "MSA transliteration",
-      "pronunciation_egyptian": "Egyptian transliteration (of Egyptian word)",
+      "pronunciation_egyptian": "Egyptian transliteration",
       "letter_breakdown": [
-        { "letter": "عَ", "name": "Ayn with fatha", "sound": "a" },
-        { "letter": "مَ", "name": "Meem with fatha", "sound": "ma" },
-        { "letter": "ل", "name": "Lam", "sound": "l" }
+        { "letter": "عَ", "name": "Ayn with fatha", "sound": "a" }
       ],
-      "letter_breakdown_egyptian": [
-        { "letter": "شُ", "name": "Sheen with damma", "sound": "shu" },
-        { "letter": "غْ", "name": "Ghayn with sukun", "sound": "gh" },
-        { "letter": "ل", "name": "Lam", "sound": "l" }
-      ],
-      "hebrew_cognate": {
-        "root": "Hebrew root if exists",
-        "meaning": "meaning",
-        "notes": "connection notes"
-      }, // OMIT if no genuine cognate
+      "word_context": {
+        "root": "trilateral root",
+        "egyptian_usage": "usage notes",
+        "msa_comparison": "dialect differences",
+        "cultural_notes": "cultural context"
+      },
       "example_sentences": [
         {
-          "arabic_msa": "أَنَا أُحِبُّ العَمَلَ",
-          "transliteration_msa": "ana uhibbu al-'amala",
-          "arabic_egyptian": "أَنَا بَحِبّ الشُغْل",
-          "transliteration_egyptian": "ana bahibb el-shoghl",
-          "english": "I love work",
-          "explanation": "Egyptian uses بَحِبّ (bahibb) instead of أُحِبُّ, and شُغْل (shoghl) instead of عَمَل"
+          "arabic_msa": "MSA sentence with harakat",
+          "transliteration_msa": "MSA pronunciation",
+          "arabic_egyptian": "Egyptian sentence",
+          "transliteration_egyptian": "Egyptian pronunciation",
+          "english": "English translation",
+          "explanation": "dialect notes"
+        }
+      ]
+    }` : `
+    Analyze this Spanish/English word or sentence: "${input}"
+    
+    CRITICAL REQUIREMENTS:
+    
+    1. Detect the language (Spanish or English)
+    2. If English: translate to Spanish (LatAm neutral - Mexican/Colombian/Argentine common usage)
+    3. If Spanish: provide English translation
+    
+    4. Context and usage notes (in English):
+       - Common usage contexts
+       - Register (formal/informal/slang)
+       - Regional variations if significant (LatAm vs Spain)
+    
+    5. Provide 2-3 example sentences in EVERYDAY SPOKEN Spanish:
+       - Natural, conversational examples
+       - Include English translations
+    
+    Return ONLY valid JSON:
+    {
+      "detected_language": "spanish" | "english",
+      "arabic_word": "",  // Leave empty for Spanish
+      "translation": "English translation",
+      "word_context": {
+        "root": "",
+        "root_meaning": "",
+        "egyptian_usage": "Common usage context and notes",
+        "msa_comparison": "",
+        "cultural_notes": "Regional/register notes"
+      },
+      "example_sentences": [
+        {
+          "arabic_msa": "",
+          "transliteration_msa": "",
+          "arabic_egyptian": "Spanish sentence here",
+          "transliteration_egyptian": "",
+          "english": "English translation",
+          "explanation": "Usage notes"
         }
       ]
     }
+    
+    DO NOT include: pronunciation_standard, pronunciation_egyptian, letter_breakdown, letter_breakdown_egyptian, hebrew_cognate
   `;
 
   const response = await withRetry(() =>
     openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: "Return valid json only." },
+        { role: "user", content: prompt }
+      ],
       response_format: { type: "json_object" }
     })
   );
 
   const result = JSON.parse(response.choices[0].message.content || '{}') as LookupResult;
   
-  // Override AI's hebrew_cognate with static lookup table (more reliable)
-  const arabicWord = result.arabic_word || result.arabic_word_egyptian || input;
-  const staticCognate = findHebrewCognate(arabicWord);
+  // Check Egyptian dictionary for reliable Egyptian equivalents
+  if (result.arabic_word) {
+    const egyptianEquivalent = getEgyptianEquivalent(result.arabic_word);
+    if (egyptianEquivalent) {
+      result.arabic_word_egyptian = egyptianEquivalent.egyptian;
+      result.pronunciation_egyptian = egyptianEquivalent.transliteration;
+      console.log('[lookupWord] Using Egyptian dictionary for:', result.arabic_word, '→', egyptianEquivalent.egyptian);
+    }
+  }
   
-  if (staticCognate) {
+  // Override AI's hebrew_cognate with static lookup table (more reliable)
+  // BUT only attach if shouldShowHebrewCognate allows (Arabic + single word)
+  // Try BOTH Egyptian and MSA forms (either may have a cognate match)
+  let staticCognate = null;
+  let matchedForm = null;
+  
+  // Try Egyptian form first (if available)
+  if (result.arabic_word_egyptian) {
+    staticCognate = findHebrewCognate(result.arabic_word_egyptian);
+    if (staticCognate) {
+      matchedForm = 'egyptian';
+      console.log('[lookupWord] Found Hebrew cognate for Egyptian form:', result.arabic_word_egyptian);
+    }
+  }
+  
+  // If no Egyptian match, try MSA form
+  if (!staticCognate && result.arabic_word) {
+    staticCognate = findHebrewCognate(result.arabic_word);
+    if (staticCognate) {
+      matchedForm = 'msa';
+      console.log('[lookupWord] Found Hebrew cognate for MSA form:', result.arabic_word);
+    }
+  }
+  
+  // Fallback: try raw input if no MSA/Egyptian forms available
+  if (!staticCognate && !result.arabic_word && !result.arabic_word_egyptian) {
+    staticCognate = findHebrewCognate(input);
+    if (staticCognate) {
+      matchedForm = 'input';
+      console.log('[lookupWord] Found Hebrew cognate for input:', input);
+    }
+  }
+  
+  // Gate Hebrew attachment: only for Arabic, single-word inputs
+  const shouldAttach = shouldShowHebrewCognate({
+    language: result.detected_language === 'arabic' ? 'arabic' : 'spanish',
+    contentType: 'word',
+    hebrewCandidate: staticCognate || result.hebrew_cognate || null,
+    selectedText: input
+  });
+  
+  if (shouldAttach && staticCognate) {
     // Use static lookup - always more reliable than AI
     result.hebrew_cognate = staticCognate;
-    console.log('[lookupWord] Found static Hebrew cognate for:', arabicWord, staticCognate);
-  } else if (!result.hebrew_cognate) {
-    // No static match and AI didn't find one either - that's fine
-    console.log('[lookupWord] No Hebrew cognate found for:', arabicWord);
-  } else {
+    console.log('[lookupWord] Attaching Hebrew cognate (matched via', matchedForm, '):', staticCognate);
+  } else if (shouldAttach && result.hebrew_cognate) {
     // AI found one but we don't have it in static table - keep AI's but log it
-    console.log('[lookupWord] Using AI Hebrew cognate (not in static table):', arabicWord, result.hebrew_cognate);
+    console.log('[lookupWord] Using AI Hebrew cognate (not in static table)');
+  } else {
+    // Don't attach Hebrew (either not eligible or no cognate found)
+    result.hebrew_cognate = undefined;
+    if (!shouldAttach && staticCognate) {
+      console.log('[lookupWord] Hebrew cognate found but not eligible (multi-word or non-Arabic):', input);
+    } else {
+      console.log('[lookupWord] No Hebrew cognate found for input:', input);
+    }
   }
   
   return result;
@@ -448,7 +593,7 @@ export interface PassageSentence {
  * Result from analyzing a passage.
  */
 export interface PassageResult {
-  detected_language?: 'arabic' | 'english';
+  detected_language?: DetectedLanguage;
   original_text?: string;
   full_translation: string;
   full_transliteration: string;
@@ -456,15 +601,22 @@ export interface PassageResult {
 }
 
 /**
- * Analyze a passage - works with both Arabic and English input.
+ * Analyze a full passage (multiple sentences).
  * For Arabic: breaks down sentence by sentence, word by word.
- * For English: translates to Arabic and provides full breakdown.
+ * For Spanish: breaks down sentence by sentence.
+ * For English: translates to selected language and provides breakdown.
  */
-export async function analyzePassage(text: string): Promise<PassageResult> {
-  // Detect if input is primarily Arabic or English
+export async function analyzePassage(
+  text: string,
+  options: { language: Language; dialect?: ArabicDialect | SpanishDialect }
+): Promise<PassageResult> {
+  const { language } = options;
+  const isArabic = language === 'arabic';
+  // Detect if input is in target language or English
   const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
   const latinChars = (text.match(/[a-zA-Z]/g) || []).length;
-  const isArabicInput = arabicChars > latinChars;
+  
+  const isArabicInput = isArabic && arabicChars > latinChars;
   
   const prompt = isArabicInput ? `
     Analyze this Arabic passage and break it down sentence by sentence, word by word.
@@ -580,7 +732,10 @@ export async function analyzePassage(text: string): Promise<PassageResult> {
   const response = await withRetry(() =>
     openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "system", content: "Return valid json only." },
+        { role: "user", content: prompt }
+      ],
       response_format: { type: "json_object" }
     })
   );
@@ -607,9 +762,9 @@ export async function analyzePassage(text: string): Promise<PassageResult> {
 
 /**
  * Generate a memory aid image using DALL-E.
- * Creates a simple, cartoon-style illustration to help remember a word or phrase.
+ * Creates a simple, cartoon-style illustration to help remember a word or sentence.
  * 
- * @param word - The word or phrase to illustrate
+ * @param word - The word or sentence to illustrate
  * @param translation - The English translation/meaning
  * @param customPrompt - Optional custom prompt from user (replaces auto-generated prompt)
  * @returns Base64 image data or null if generation fails

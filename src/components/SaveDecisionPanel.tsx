@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { MemoryAidEditor } from './MemoryAidEditor';
 
 /**
  * Save decision options for vocabulary items.
@@ -44,26 +43,30 @@ interface SaveDecisionPanelProps {
  * This replaces auto-save behavior with explicit user control.
  */
 export function SaveDecisionPanel({
-    primaryText,
-    translation,
     onDecision,
     alreadySaved = false,
     currentStatus,
-    existingMemoryAid,
     compact = false,
 }: SaveDecisionPanelProps) {
-    // Memory aid state (temporary, before save)
-    const [memoryImageUrl, setMemoryImageUrl] = useState<string | null>(existingMemoryAid?.imageUrl || null);
-    const [memoryNote, setMemoryNote] = useState<string | null>(existingMemoryAid?.note || null);
-    const [showMemoryAid, setShowMemoryAid] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadingDecision, setLoadingDecision] = useState<SaveDecision | null>(null);
+    const [justSaved, setJustSaved] = useState<SaveDecision | null>(null);
 
-    // Handle decision with memory aids
-    const handleDecision = (decision: SaveDecision) => {
-        const memoryAid = (memoryImageUrl || memoryNote) 
-            ? { note: memoryNote || undefined, imageUrl: memoryImageUrl || undefined }
-            : undefined;
-        onDecision(decision, memoryAid);
+    // Handle decision
+    const handleDecision = async (decision: SaveDecision) => {
+        setIsLoading(true);
+        setLoadingDecision(decision);
+        setJustSaved(null);
+        
+        try {
+            await onDecision(decision);
+            setJustSaved(decision);
+            setTimeout(() => setJustSaved(null), 2000);
+        } finally {
+            setIsLoading(false);
+            setLoadingDecision(null);
+        }
     };
 
     // For already-saved words, show different UI with options
@@ -82,67 +85,6 @@ export function SaveDecisionPanel({
                     </div>
                 </div>
 
-                {/* Memory Aid Display - Large image with Arabic word */}
-                {existingMemoryAid?.imageUrl && (
-                    <div className="glass-card p-4 bg-purple-500/10">
-                        <div className="flex items-center gap-4">
-                            <img 
-                                src={existingMemoryAid.imageUrl} 
-                                alt="Memory aid" 
-                                className="w-32 h-32 rounded-xl object-cover flex-shrink-0"
-                            />
-                            <div className="flex-1">
-                                <div className="text-4xl font-arabic text-white mb-2" dir="rtl">
-                                    {primaryText}
-                                </div>
-                                <div className="text-lg text-white/70">
-                                    {translation}
-                                </div>
-                                {existingMemoryAid.note && (
-                                    <div className="text-sm text-purple-300/70 italic mt-2">
-                                        📝 {existingMemoryAid.note}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Memory Aid Section for already-saved words */}
-                {showMemoryAid ? (
-                    <div className="glass-card p-3">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-purple-400/70 text-xs font-bold uppercase tracking-wider">
-                                🧠 Memory Aid
-                            </span>
-                            <button
-                                onClick={() => setShowMemoryAid(false)}
-                                className="text-white/40 hover:text-white/60 text-xs"
-                            >
-                                Hide
-                            </button>
-                        </div>
-                        <MemoryAidEditor
-                            primaryText={primaryText}
-                            translation={translation}
-                            currentImageUrl={memoryImageUrl}
-                            currentNote={memoryNote}
-                            onImageGenerated={setMemoryImageUrl}
-                            onNoteChanged={setMemoryNote}
-                            compact
-                        />
-                    </div>
-                ) : (
-                    <button
-                        onClick={() => setShowMemoryAid(true)}
-                        className="w-full py-2 text-sm text-purple-300/70 hover:text-purple-300 transition-colors"
-                    >
-                        {existingMemoryAid?.imageUrl || existingMemoryAid?.note 
-                            ? '🧠 View/Edit Memory Aid' 
-                            : '🧠 Add Memory Aid'}
-                    </button>
-                )}
-
                 {/* Remove confirmation */}
                 {showRemoveConfirm ? (
                     <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 space-y-2">
@@ -150,13 +92,13 @@ export function SaveDecisionPanel({
                         <div className="grid grid-cols-2 gap-2">
                             <button
                                 onClick={() => handleDecision('remove')}
-                                className="py-2 bg-red-500/20 text-red-300 rounded-lg text-sm hover:bg-red-500/30"
+                                className="py-2 bg-red-500/20 text-red-300 rounded-lg text-sm hover:bg-red-500/30 active:scale-95 active:bg-red-500/40 transition-all duration-100"
                             >
                                 Yes, Remove
                             </button>
                             <button
                                 onClick={() => setShowRemoveConfirm(false)}
-                                className="py-2 bg-white/10 text-white/60 rounded-lg text-sm hover:bg-white/20"
+                                className="py-2 bg-white/10 text-white/60 rounded-lg text-sm hover:bg-white/20 active:scale-95 active:bg-white/30 transition-all duration-100"
                             >
                                 Cancel
                             </button>
@@ -164,135 +106,90 @@ export function SaveDecisionPanel({
                     </div>
                 ) : (
                     <>
-                        {/* Status change buttons */}
-                        <div className="grid grid-cols-2 gap-2">
-                            {isPractice ? (
-                                <button
-                                    onClick={() => handleDecision('archive')}
-                                    className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-colors text-sm"
-                                >
-                                    <span>📦</span>
-                                    <span>Move to Archive</span>
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => handleDecision('practice')}
-                                    className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-teal-500/20 text-teal-300 hover:bg-teal-500/30 transition-colors text-sm"
-                                >
+                        {/* Save buttons - always show both options */}
+                        <div className="grid grid-cols-3 gap-2">
+                            <button
+                                onClick={() => handleDecision('practice')}
+                                disabled={isLoading}
+                                className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-teal-500/20 text-teal-300 hover:bg-teal-500/30 active:scale-95 active:bg-teal-500/40 transition-all duration-100 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isLoading && loadingDecision === 'practice' ? (
+                                    <span className="animate-spin">⏳</span>
+                                ) : justSaved === 'practice' ? (
+                                    <span className="text-green-400">✓</span>
+                                ) : (
                                     <span>📚</span>
-                                    <span>Move to Practice</span>
-                                </button>
-                            )}
+                                )}
+                                <span>{justSaved === 'practice' ? 'Saved!' : 'Save to Practice'}</span>
+                            </button>
+                            <button
+                                onClick={() => handleDecision('archive')}
+                                disabled={isLoading}
+                                className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 active:scale-95 active:bg-amber-500/40 transition-all duration-100 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isLoading && loadingDecision === 'archive' ? (
+                                    <span className="animate-spin">⏳</span>
+                                ) : justSaved === 'archive' ? (
+                                    <span className="text-green-400">✓</span>
+                                ) : (
+                                    <span>📦</span>
+                                )}
+                                <span>{justSaved === 'archive' ? 'Saved!' : 'Save to Archive'}</span>
+                            </button>
                             <button
                                 onClick={() => setShowRemoveConfirm(true)}
-                                className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-red-500/10 text-red-300/70 hover:bg-red-500/20 transition-colors text-sm"
+                                disabled={isLoading}
+                                className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-red-500/10 text-red-300/70 hover:bg-red-500/20 active:scale-95 active:bg-red-500/30 transition-all duration-100 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <span>🗑️</span>
-                                <span>Remove</span>
+                                <span>Delete</span>
                             </button>
                         </div>
                     </>
                 )}
-                
-                {/* Continue button */}
-                <button
-                    onClick={() => onDecision('discard')}
-                    className="w-full py-4 text-lg font-semibold rounded-xl btn-primary"
-                >
-                    Continue
-                </button>
             </div>
         );
     }
 
     return (
         <div className={`${compact ? 'space-y-3' : 'space-y-4'}`}>
-            {/* Memory Aid Display - Large image with Arabic word (for new saves) */}
-            {memoryImageUrl && !alreadySaved && (
-                <div className="glass-card p-4 bg-purple-500/10 mb-3">
-                    <div className="flex items-center gap-4">
-                        <img 
-                            src={memoryImageUrl} 
-                            alt="Memory aid" 
-                            className="w-32 h-32 rounded-xl object-cover flex-shrink-0"
-                        />
-                        <div className="flex-1">
-                            <div className="text-4xl font-arabic text-white mb-2" dir="rtl">
-                                {primaryText}
-                            </div>
-                            <div className="text-lg text-white/70">
-                                {translation}
-                            </div>
-                            {memoryNote && (
-                                <div className="text-sm text-purple-300/70 italic mt-2">
-                                    📝 {memoryNote}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Memory Aid Section (collapsible) */}
-            {showMemoryAid ? (
-                <div className="glass-card p-3">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-purple-400/70 text-xs font-bold uppercase tracking-wider">
-                            🧠 Memory Aid (Optional)
-                        </span>
-                        <button
-                            onClick={() => setShowMemoryAid(false)}
-                            className="text-white/40 hover:text-white/60 text-xs"
-                        >
-                            Hide
-                        </button>
-                    </div>
-                    <MemoryAidEditor
-                        primaryText={primaryText}
-                        translation={translation}
-                        currentImageUrl={memoryImageUrl}
-                        currentNote={memoryNote}
-                        onImageGenerated={setMemoryImageUrl}
-                        onNoteChanged={setMemoryNote}
-                        compact
-                    />
-                </div>
-            ) : (
-                <button
-                    onClick={() => setShowMemoryAid(true)}
-                    className="w-full py-2 text-sm text-purple-300/70 hover:text-purple-300 transition-colors"
-                >
-                    🧠 Add Memory Aid (optional)
-                </button>
-            )}
-
-            {/* Memory aid indicators if added */}
-            {(memoryImageUrl || memoryNote) && !showMemoryAid && (
-                <div className="flex items-center justify-center gap-2 text-xs text-purple-300/60">
-                    {memoryImageUrl && <span>🖼️ Visual added</span>}
-                    {memoryNote && <span>📝 Note added</span>}
-                </div>
-            )}
-
             {/* Save Decision Buttons */}
             <div className={`grid grid-cols-3 gap-2 ${compact ? '' : 'pt-2'}`}>
                 <button
                     onClick={() => handleDecision('practice')}
-                    className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl bg-teal-500/20 text-teal-300 hover:bg-teal-500/30 transition-colors"
+                    disabled={isLoading}
+                    className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl bg-teal-500/20 text-teal-300 hover:bg-teal-500/30 active:scale-95 active:bg-teal-500/40 transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <span className="text-lg">📚</span>
-                    <span className={`font-medium ${compact ? 'text-xs' : 'text-sm'}`}>Save to Practice</span>
+                    {isLoading && loadingDecision === 'practice' ? (
+                        <span className="text-lg animate-spin">⏳</span>
+                    ) : justSaved === 'practice' ? (
+                        <span className="text-lg text-green-400">✓</span>
+                    ) : (
+                        <span className="text-lg">📚</span>
+                    )}
+                    <span className={`font-medium ${compact ? 'text-xs' : 'text-sm'}`}>
+                        {justSaved === 'practice' ? 'Saved!' : 'Save to Practice'}
+                    </span>
                 </button>
                 <button
                     onClick={() => handleDecision('archive')}
-                    className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-colors"
+                    disabled={isLoading}
+                    className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 active:scale-95 active:bg-amber-500/40 transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <span className="text-lg">📦</span>
-                    <span className={`font-medium ${compact ? 'text-xs' : 'text-sm'}`}>Save to Archive</span>
+                    {isLoading && loadingDecision === 'archive' ? (
+                        <span className="text-lg animate-spin">⏳</span>
+                    ) : justSaved === 'archive' ? (
+                        <span className="text-lg text-green-400">✓</span>
+                    ) : (
+                        <span className="text-lg">📦</span>
+                    )}
+                    <span className={`font-medium ${compact ? 'text-xs' : 'text-sm'}`}>
+                        {justSaved === 'archive' ? 'Saved!' : 'Save to Archive'}
+                    </span>
                 </button>
                 <button
                     onClick={() => handleDecision('discard')}
-                    className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl bg-white/10 text-white/50 hover:bg-white/20 transition-colors"
+                    className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl bg-white/10 text-white/50 hover:bg-white/20 active:scale-95 active:bg-white/30 transition-all duration-100"
                 >
                     <span className="text-lg">⏭️</span>
                     <span className={`font-medium ${compact ? 'text-xs' : 'text-sm'}`}>Skip</span>

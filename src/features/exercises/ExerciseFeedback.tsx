@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
 import type { AnswerResult, VocabularyItem } from '../../types';
 import { lookupWord, type LookupResult } from '../../lib/openai';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecisionPanel';
 import { WordDisplay } from '../../components/WordDisplay';
+import { ContextTile } from '../../components/ContextTile';
+import { MemoryAidTile } from '../../components/MemoryAidTile';
+import { ChatTile, type ChatMessage } from '../../components/ChatTile';
+import { ClickableText } from '../../components/text/ClickableText';
+import { WordDetailModal } from '../../components/modals/WordDetailModal';
+import type { WordSelectionContext } from '../../types/selection';
 
 interface ExerciseFeedbackProps {
     result: AnswerResult;
@@ -45,10 +52,21 @@ export function ExerciseFeedback({
 }: ExerciseFeedbackProps) {
     const { correct, userAnswer, correctAnswer } = result;
     const isArabic = item.language === 'arabic';
+    const { language } = useLanguage();
 
     // State for enhanced word data (both dialects, Hebrew cognate)
     const [enhancedData, setEnhancedData] = useState<LookupResult | null>(null);
     const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(isArabic);
+    
+    // State for memory aid
+    const [memoryNote, setMemoryNote] = useState<string | null>(savedWordMemoryAid?.note || null);
+    const [memoryImageUrl, setMemoryImageUrl] = useState<string | null>(savedWordMemoryAid?.imageUrl || null);
+    
+    // State for chat messages
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+    const [exampleSentencesExpanded, setExampleSentencesExpanded] = useState(false);
+    const [wordModalOpen, setWordModalOpen] = useState(false);
+    const [wordSelection, setWordSelection] = useState<WordSelectionContext | null>(null);
 
     // Fetch enhanced data for Arabic words (both dialects + Hebrew cognate)
     useEffect(() => {
@@ -60,7 +78,7 @@ export function ExerciseFeedback({
         // Always fetch for Arabic words to get both dialects
         console.log('[ExerciseFeedback] Fetching enhanced data for:', item.word);
         setIsLoadingEnhanced(true);
-        lookupWord(item.word)
+        lookupWord(item.word, { language })
             .then(data => {
                 console.log('[ExerciseFeedback] Got enhanced data:', data);
                 setEnhancedData(data);
@@ -73,11 +91,6 @@ export function ExerciseFeedback({
     }, [item.word, isArabic]);
 
     // Use enhanced data if available, otherwise fall back to item data
-    const hebrewCognate = enhancedData?.hebrew_cognate || item.hebrew_cognate;
-    const pronunciationStandard = enhancedData?.pronunciation_standard || item.transliteration;
-    const pronunciationEgyptian = enhancedData?.pronunciation_egyptian;
-    const arabicWordWithHarakat = enhancedData?.arabic_word || item.word;
-    const arabicWordEgyptian = enhancedData?.arabic_word_egyptian || item.word;
 
     // Generate letter breakdown - WordDisplay will handle this internally
     // We don't need to pass it explicitly since WordDisplay generates it when showLetterBreakdown=true
@@ -176,25 +189,21 @@ export function ExerciseFeedback({
                         <div className="h-6 bg-white/10 rounded mb-2 w-3/4"></div>
                         <div className="h-6 bg-white/10 rounded w-1/2"></div>
                     </div>
-                ) : isArabic ? (
+                ) : isArabic && enhancedData ? (
                     <WordDisplay
                         word={{
-                            arabic: arabicWordWithHarakat,
-                            arabicEgyptian: arabicWordEgyptian,
+                            arabic: item.word,
+                            arabicEgyptian: enhancedData.arabic_word_egyptian || item.word,
                             translation: item.translation,
-                            transliteration: pronunciationStandard,
-                            transliterationEgyptian: pronunciationEgyptian,
-                            hebrewCognate: hebrewCognate,
-                            exampleSentences: enhancedData?.example_sentences,
-                            letterBreakdown: enhancedData?.letter_breakdown ? [{
-                                word: arabicWordEgyptian || arabicWordWithHarakat,
-                                letters: enhancedData.letter_breakdown as any
-                            }] as any : undefined,
+                            transliteration: enhancedData.pronunciation_standard || item.transliteration,
+                            transliterationEgyptian: enhancedData.pronunciation_egyptian,
+                            hebrewCognate: enhancedData.hebrew_cognate,
+                            exampleSentences: enhancedData.example_sentences,
                         }}
                         size="large"
-                        showHebrewCognate={true}
-                        showLetterBreakdown={true}
-                        showExampleSentences={true}
+                        showHebrewCognate={language === 'arabic'}
+                        showLetterBreakdown={language === 'arabic'}
+                        showExampleSentences={false}
                         showSaveOption={false}
                         dialectPreference="egyptian"
                     />
@@ -215,18 +224,134 @@ export function ExerciseFeedback({
                         )}
                     </div>
                 )}
+                
+                {/* Context and tiles for Arabic words */}
+                {isArabic && !isLoadingEnhanced && enhancedData && (
+                    <div className="space-y-3 mt-4">
+                        {/* Context Tile - Root, Usage, Cultural Notes */}
+                        <ContextTile context={enhancedData.word_context} language={language} />
+                        
+                        {/* Memory Aid Tile - Separate dropdown */}
+                        <MemoryAidTile
+                            primaryText={item.word}
+                            translation={item.translation}
+                            currentNote={memoryNote}
+                            currentImageUrl={memoryImageUrl}
+                            onImageGenerated={(imageUrl) => setMemoryImageUrl(imageUrl)}
+                            onNoteChanged={(note) => setMemoryNote(note)}
+                        />
+                        
+                        {/* Example Sentences - Collapsible (default collapsed) */}
+                        {enhancedData.example_sentences && enhancedData.example_sentences.length > 0 && (
+                            <div className="glass-card p-4">
+                                <button
+                                    onClick={() => setExampleSentencesExpanded(!exampleSentencesExpanded)}
+                                    className="w-full flex items-center justify-between text-left"
+                                >
+                                    <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider">
+                                        Example Sentences ({enhancedData.example_sentences.length})
+                                    </div>
+                                    <svg
+                                        className={`w-4 h-4 text-teal-400/70 transition-transform ${exampleSentencesExpanded ? 'rotate-180' : ''}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                
+                                {exampleSentencesExpanded && (
+                                    <div className="space-y-3 mt-3">
+                                        {enhancedData.example_sentences.map((sentence, idx) => (
+                                            <div key={idx} className="bg-white/5 rounded-xl p-3 space-y-2">
+                                                {sentence.arabic_egyptian && (
+                                                    <div className="space-y-1">
+                                                        <div className="text-sm text-white/50">Egyptian</div>
+                                                        <div className="text-2xl font-arabic text-white">
+                                                            <ClickableText
+                                                                text={sentence.arabic_egyptian}
+                                                                language="arabic"
+                                                                dir="rtl"
+                                                                mode="word"
+                                                                sourceView="exercise"
+                                                                dialect="egyptian"
+                                                                contentType="sentence"
+                                                                onWordClick={(context) => {
+                                                                    setWordSelection(context);
+                                                                    setWordModalOpen(true);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        {sentence.transliteration_egyptian && (
+                                                            <div className="text-base text-white/40 italic">
+                                                                {sentence.transliteration_egyptian}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {sentence.arabic_msa && (
+                                                    <div className="space-y-1">
+                                                        <div className="text-sm text-white/50">MSA</div>
+                                                        <div className="text-xl font-arabic text-white/70">
+                                                            <ClickableText
+                                                                text={sentence.arabic_msa}
+                                                                language="arabic"
+                                                                dir="rtl"
+                                                                mode="word"
+                                                                sourceView="exercise"
+                                                                dialect="standard"
+                                                                contentType="sentence"
+                                                                onWordClick={(context) => {
+                                                                    setWordSelection(context);
+                                                                    setWordModalOpen(true);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        {sentence.transliteration_msa && (
+                                                            <div className="text-base text-white/30 italic">
+                                                                {sentence.transliteration_msa}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                <div className="text-white/60 text-base pt-1">
+                                                    {sentence.english}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* Chat Tile - After Example Sentences */}
+                        <ChatTile
+                            word={item.word}
+                            translation={item.translation}
+                            context={enhancedData.word_context?.egyptian_usage}
+                            savedMessages={chatMessages}
+                            onMessagesChange={setChatMessages}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Save Decision Panel for Arabic words */}
             {isArabic && !isLoadingEnhanced && (
                 <div className="glass-card p-4">
                     <SaveDecisionPanel
-                        primaryText={arabicWordEgyptian || arabicWordWithHarakat}
+                        primaryText={item.word}
                         translation={item.translation}
                         onDecision={(decision, memoryAid) => {
+                            // Merge memory aid from tile with SaveDecisionPanel
+                            const finalMemoryAid = {
+                                note: memoryNote || memoryAid?.note,
+                                imageUrl: memoryImageUrl || memoryAid?.imageUrl,
+                            };
                             onContinue({ 
                                 decision, 
-                                memoryAid,
+                                memoryAid: finalMemoryAid,
                                 enhancedData: enhancedData ? {
                                     arabicWordEgyptian: enhancedData.arabic_word_egyptian,
                                     arabicWordMSA: enhancedData.arabic_word,
@@ -255,6 +380,18 @@ export function ExerciseFeedback({
                         {isLastQuestion ? 'See Results' : 'Next'}
                     </button>
                 </div>
+            )}
+
+            {/* Word Detail Modal */}
+            {wordSelection && (
+                <WordDetailModal
+                    isOpen={wordModalOpen}
+                    onClose={() => {
+                        setWordModalOpen(false);
+                        setWordSelection(null);
+                    }}
+                    selection={wordSelection}
+                />
             )}
 
         </div>

@@ -6,9 +6,9 @@ import type { ContentType } from '../types';
 
 const CONTENT_TYPE_LABELS: Record<ContentType, { label: string; icon: string }> = {
     word: { label: 'Words', icon: 'Aa' },
-    phrase: { label: 'Phrases', icon: '""' },
+    sentence: { label: 'Sentences', icon: '""' },
     dialog: { label: 'Dialog', icon: '' },
-    paragraph: { label: 'Reading', icon: '' },
+    passage: { label: 'Passages', icon: '' },
 };
 
 interface LessonCardProps {

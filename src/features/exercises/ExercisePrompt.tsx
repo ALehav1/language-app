@@ -8,9 +8,9 @@ interface ExercisePromptProps {
 
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
     word: 'Write in English',
-    phrase: 'Write in English',
+    sentence: 'Write in English',
     dialog: 'Write in English',
-    paragraph: 'Write in English',
+    passage: 'Write in English',
 };
 
 /**
@@ -27,7 +27,7 @@ export function ExercisePrompt({ item, questionNumber, totalQuestions }: Exercis
         if (contentType === 'word') {
             return 'text-5xl lg:text-7xl';
         }
-        if (contentType === 'phrase') {
+        if (contentType === 'sentence') {
             return length > 30 ? 'text-2xl lg:text-3xl' : 'text-3xl lg:text-4xl';
         }
         if (contentType === 'dialog') {
@@ -87,7 +87,7 @@ export function ExercisePrompt({ item, questionNumber, totalQuestions }: Exercis
             )}
 
             {/* Main content */}
-            <div className={`text-center ${contentType === 'paragraph' ? 'py-4 lg:py-6' : 'py-8 lg:py-12'}`}>
+            <div className={`text-center ${contentType === 'passage' ? 'py-4 lg:py-6' : 'py-8 lg:py-12'}`}>
                 <p
                     className={`${getTextSize()} font-bold text-white mb-4 ${isArabic ? 'font-arabic' : ''}`}
                     dir={isArabic ? 'rtl' : 'ltr'}

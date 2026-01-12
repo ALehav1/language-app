@@ -4,9 +4,12 @@ import { lookupWord, analyzePassage, type LookupResult, type PassageResult, type
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { useSavedSentences } from '../../hooks/useSavedSentences';
 import { useSavedPassages } from '../../hooks/useSavedPassages';
-import { WordDetailCard } from '../../components/WordDetailCard';
+import { WordDisplay } from '../../components/WordDisplay';
 import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecisionPanel';
+import { MemoryAidTile } from '../../components/MemoryAidTile';
+import { ContextTile } from '../../components/ContextTile';
 import { findHebrewCognate } from '../../utils/hebrewCognates';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 // Dialect preference storage key
 const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
@@ -23,6 +26,7 @@ const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
  */
 export function LookupView() {
     const navigate = useNavigate();
+    const { language } = useLanguage();
     const { saveWord, isWordSaved } = useSavedWords();
     const { saveSentence, isSentenceSaved } = useSavedSentences();
     const { savePassage, isPassageSaved } = useSavedPassages();
@@ -36,6 +40,8 @@ export function LookupView() {
     const [savedSentences, setSavedSentences] = useState<Set<string>>(new Set());
     const [passageSaved, setPassageSaved] = useState(false);
     const [mode, setMode] = useState<'word' | 'passage'>('word');
+    const [memoryNote, setMemoryNote] = useState<string | null>(null);
+    const [memoryImageUrl, setMemoryImageUrl] = useState<string | null>(null);
     
     // Dialect preference: 'egyptian' (default) or 'standard'
     const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
@@ -72,18 +78,20 @@ export function LookupView() {
         try {
             if (isPassage) {
                 console.log('[LookupView] Analyzing passage:', input);
-                const data = await analyzePassage(input.trim());
+                const data = await analyzePassage(input.trim(), { language });
                 console.log('[LookupView] Passage result:', data);
                 setPassageResult(data);
             } else {
                 console.log('[LookupView] Looking up word:', input);
-                const data = await lookupWord(input.trim());
+                const data = await lookupWord(input.trim(), { language });
                 console.log('[LookupView] Word result:', data);
                 setResult(data);
             }
         } catch (err) {
             console.error('[LookupView] Error:', err);
-            setError('Failed to analyze. Please try again.');
+            const errorMessage = err instanceof Error ? err.message : 'Failed to analyze. Please try again.';
+            console.error('[LookupView] Error details:', errorMessage);
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -187,7 +195,7 @@ export function LookupView() {
             <header className="flex items-center justify-between mb-6">
                 <button
                     onClick={() => navigate('/')}
-                    className="touch-btn w-10 h-10 flex items-center justify-center rounded-xl bg-white/10"
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-200"
                     aria-label="Back to menu"
                 >
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,7 +211,7 @@ export function LookupView() {
                 <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Paste Arabic text or type English..."
+                    placeholder={language === 'arabic' ? 'Paste Arabic text or type English...' : 'Paste Spanish text or type English...'}
                     className="w-full h-32 p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 resize-none focus:outline-none focus:border-teal-500/50 text-lg"
                     dir="auto"
                 />
@@ -239,30 +247,43 @@ export function LookupView() {
                     {/* Quick summary */}
                     <div className="glass-card p-4 text-center">
                         <div className="text-sm text-white/50 mb-1">
-                            {result.detected_language === 'arabic' ? 'Arabic → English' : 'English → Arabic'}
+                            {language === 'arabic'
+                                ? (result.detected_language === 'arabic' ? 'Arabic → English' : 'English → Arabic')
+                                : (result.detected_language === 'spanish' ? 'Spanish → English' : 'English → Spanish')
+                            }
                         </div>
                     </div>
 
                     {/* Full word details using shared component */}
-                    <WordDetailCard
-                        word={result.arabic_word}
-                        translation={result.translation}
-                        language="arabic"
-                        pronunciationStandard={result.pronunciation_standard}
-                        pronunciationEgyptian={result.pronunciation_egyptian}
-                        hebrewCognate={result.hebrew_cognate}
-                        exampleSentences={result.example_sentences}
+                    <WordDisplay
+                        word={{
+                            arabic: result.arabic_word,
+                            arabicEgyptian: result.arabic_word_egyptian,
+                            translation: result.translation,
+                            transliteration: result.pronunciation_standard,
+                            transliterationEgyptian: result.pronunciation_egyptian,
+                            hebrewCognate: result.hebrew_cognate,
+                        }}
+                        size="large"
+                        showHebrewCognate={language === 'arabic'}
+                        showLetterBreakdown={language === 'arabic'}
+                        showExampleSentences={false}
+                        showPronunciations={true}
+                        dialectPreference="egyptian"
                     />
 
-                    {/* Save decision panel */}
-                    <div className="glass-card p-4">
-                        <SaveDecisionPanel
-                            primaryText={result.arabic_word}
-                            translation={result.translation}
-                            onDecision={handleWordDecision}
-                            alreadySaved={isCurrentWordSaved}
-                        />
-                    </div>
+                    {/* Added Context */}
+                    <ContextTile context={result.word_context} language={language} />
+
+                    {/* Memory Aid */}
+                    <MemoryAidTile
+                        primaryText={result.arabic_word}
+                        translation={result.translation}
+                        currentNote={memoryNote}
+                        currentImageUrl={memoryImageUrl}
+                        onImageGenerated={setMemoryImageUrl}
+                        onNoteChanged={setMemoryNote}
+                    />
 
                     {/* Save example sentences */}
                     {result.example_sentences && result.example_sentences.length > 0 && (
@@ -272,7 +293,7 @@ export function LookupView() {
                                 const isSaved = isSentenceAlreadySaved(sentence.arabic_msa);
                                 return (
                                     <div key={idx} className="glass-card p-3">
-                                        <div className="text-white font-arabic text-lg mb-1" dir="rtl">
+                                        <div className="text-white font-arabic text-lg mb-1" dir={language === 'arabic' ? 'rtl' : 'ltr'}>
                                             {sentence.arabic_egyptian || sentence.arabic_msa}
                                         </div>
                                         <div className="text-white/60 text-sm mb-2">
@@ -294,6 +315,16 @@ export function LookupView() {
                             })}
                         </div>
                     )}
+
+                    {/* Save decision panel - MOVED TO BOTTOM */}
+                    <div className="glass-card p-4">
+                        <SaveDecisionPanel
+                            primaryText={result.arabic_word}
+                            translation={result.translation}
+                            onDecision={handleWordDecision}
+                            alreadySaved={isCurrentWordSaved}
+                        />
+                    </div>
                 </div>
             )}
 

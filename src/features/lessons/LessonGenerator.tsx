@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { generateLessonContent } from '../../lib/openai';
+import { useLanguage } from '../../contexts/LanguageContext';
 import type { Language, MasteryLevel, ContentType, ArabicDialect } from '../../types';
 
 interface LessonGeneratorProps {
@@ -13,27 +14,28 @@ interface LessonGeneratorProps {
 
 const CONTENT_TYPE_INFO: Record<ContentType, { label: string; description: string; icon: string }> = {
     word: { label: 'Words', description: 'Individual vocabulary', icon: 'Aa' },
-    phrase: { label: 'Phrases', description: 'Common expressions', icon: '""' },
+    sentence: { label: 'Sentences', description: 'Common expressions', icon: '""' },
     dialog: { label: 'Dialog', description: 'Short conversations', icon: '💬' },
-    paragraph: { label: 'Paragraphs', description: 'Reading passages', icon: '📄' },
+    passage: { label: 'Passages', description: 'Reading passages', icon: '📄' },
 };
 
 export function LessonGenerator({
     onLessonCreated,
-    defaultLanguage = 'arabic',
     defaultContentType,
     externalOpen,
     onOpenChange
 }: LessonGeneratorProps) {
+    const { language } = useLanguage();
     const [internalOpen, setInternalOpen] = useState(false);
     const [topic, setTopic] = useState('');
-    const [language, setLanguage] = useState<Language>(defaultLanguage);
-    const [arabicDialect, setArabicDialect] = useState<ArabicDialect>('standard');
-    const [level, setLevel] = useState<MasteryLevel>('new');
+    const [arabicDialect, setArabicDialect] = useState<ArabicDialect>('egyptian');
+    const [level, setLevel] = useState<MasteryLevel>(language === 'spanish' ? 'learning' : 'new');
     const [contentType, setContentType] = useState<ContentType>(defaultContentType || 'word');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [status, setStatus] = useState<string>('');
+    const [existingLessons, setExistingLessons] = useState<any[]>([]);
+    const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
     // Use external open state if provided, otherwise use internal
     const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -45,10 +47,10 @@ export function LessonGenerator({
         }
     };
 
-    // Update language when defaultLanguage changes (e.g., user switches filter)
+    // Update level when language changes
     useEffect(() => {
-        setLanguage(defaultLanguage);
-    }, [defaultLanguage]);
+        setLevel(language === 'spanish' ? 'learning' : 'new');
+    }, [language]);
 
     // Update content type when defaultContentType changes
     useEffect(() => {
@@ -57,10 +59,54 @@ export function LessonGenerator({
         }
     }, [defaultContentType]);
 
-    const handleGenerate = async (e: React.FormEvent) => {
+    // Check for duplicate lessons before generating
+    const checkForDuplicates = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!topic.trim()) return;
 
+        setIsGenerating(true);
+        setError(null);
+        setStatus('Checking for existing lessons...');
+
+        try {
+            // Search for existing lessons with similar topics
+            const { data: lessons, error: searchError } = await supabase
+                .from('lessons')
+                .select('id, title, description, vocab_count, created_at, content_type')
+                .eq('language', language)
+                .eq('content_type', contentType)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (searchError) throw searchError;
+
+            // Simple similarity check: case-insensitive topic matching in title
+            const topicLower = topic.toLowerCase().trim();
+            const similar = lessons?.filter(lesson => 
+                lesson.title.toLowerCase().includes(topicLower) ||
+                topicLower.split(' ').some(word => word.length > 3 && lesson.title.toLowerCase().includes(word))
+            ) || [];
+
+            if (similar.length > 0) {
+                // Found similar lessons - show dialog
+                setExistingLessons(similar);
+                setShowDuplicateDialog(true);
+                setIsGenerating(false);
+                setStatus('');
+            } else {
+                // No duplicates, proceed with generation
+                await generateAndSaveLesson();
+            }
+        } catch (err) {
+            console.error('Duplicate check failed:', err);
+            setError(err instanceof Error ? err.message : 'Failed to check for duplicates');
+            setIsGenerating(false);
+            setStatus('');
+        }
+    };
+
+    // Generate and save new lesson
+    const generateAndSaveLesson = async (versionNumber?: number) => {
         setIsGenerating(true);
         setError(null);
         setStatus('Fetching your vocabulary...');
@@ -83,15 +129,18 @@ export function LessonGenerator({
 
             // Estimate time based on content type
             const estimatedMinutes = contentType === 'word' ? 5
-                : contentType === 'phrase' ? 7
+                : contentType === 'sentence' ? 7
                 : contentType === 'dialog' ? 10
                 : 15;
+
+            // Append version number to title if creating a duplicate
+            const finalTitle = versionNumber ? `${content.title} ${versionNumber}` : content.title;
 
             // 2. Insert Lesson
             const { data: lessonData, error: lessonError } = await supabase
                 .from('lessons')
                 .insert({
-                    title: content.title,
+                    title: finalTitle,
                     description: content.description,
                     language,
                     difficulty: level,
@@ -129,7 +178,10 @@ export function LessonGenerator({
 
             if (vocabError) throw new Error(vocabError.message);
 
-            // Success - pass the lesson ID so we can navigate directly to exercise
+            // Success - auto-start exercise
+            setShowDuplicateDialog(false);
+            setIsGenerating(false);
+            setStatus('');
             setIsOpen(false);
             setTopic('');
             onLessonCreated(lessonData.id);
@@ -137,10 +189,25 @@ export function LessonGenerator({
         } catch (err) {
             console.error('Generation failed:', err);
             setError(err instanceof Error ? err.message : 'Failed to generate lesson');
-        } finally {
             setIsGenerating(false);
             setStatus('');
         }
+    };
+
+    // Resume existing lesson
+    const handleResumeLesson = (lessonId: string) => {
+        setShowDuplicateDialog(false);
+        setIsOpen(false);
+        setTopic('');
+        onLessonCreated(lessonId);
+    };
+
+    // Create new version of lesson
+    const handleCreateNew = async () => {
+        // Count existing similar lessons to determine version number
+        const versionNumber = existingLessons.length + 1;
+        setShowDuplicateDialog(false);
+        await generateAndSaveLesson(versionNumber);
     };
 
     // Don't render anything when closed - menu handles the open trigger
@@ -169,7 +236,7 @@ export function LessonGenerator({
                     <span className="text-white/60">{language === 'arabic' ? 'العربية' : 'Español'}</span>
                 </div>
 
-                <form onSubmit={handleGenerate} className="space-y-4">
+                <form onSubmit={checkForDuplicates} className="space-y-4">
                     <div>
                         <label className="block text-sm text-white/70 mb-1">Topic</label>
                         <input
@@ -177,12 +244,29 @@ export function LessonGenerator({
                             value={topic}
                             onChange={e => setTopic(e.target.value)}
                             placeholder={contentType === 'word' ? 'e.g. Colors, Animals, Food'
-                                : contentType === 'phrase' ? 'e.g. Ordering at a restaurant'
+                                : contentType === 'sentence' ? 'e.g. Ordering at a restaurant'
                                 : contentType === 'dialog' ? 'e.g. Meeting someone new'
                                 : 'e.g. A day at the market'}
                             className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
                             autoFocus
                         />
+                        
+                        {/* Quick Topics */}
+                        <div className="mt-2">
+                            <div className="text-xs text-white/50 mb-1.5">Or choose a suggested topic:</div>
+                            <div className="flex flex-wrap gap-1.5">
+                                {['Restaurant', 'Travel', 'Work', 'Family', 'Shopping'].map((suggestedTopic) => (
+                                    <button
+                                        key={suggestedTopic}
+                                        type="button"
+                                        onClick={() => setTopic(suggestedTopic)}
+                                        className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs rounded-full transition-all"
+                                    >
+                                        {suggestedTopic}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -215,8 +299,8 @@ export function LessonGenerator({
                             <label className="block text-sm text-white/70 mb-1">Dialect</label>
                             <div className="flex gap-2">
                                 {[
-                                    { value: 'standard', label: 'Standard (MSA)' },
                                     { value: 'egyptian', label: 'Egyptian' },
+                                    { value: 'standard', label: 'Standard (MSA)' },
                                 ].map(opt => (
                                     <button
                                         key={opt.value}
@@ -256,6 +340,58 @@ export function LessonGenerator({
                     </button>
                 </form>
             </div>
+
+            {/* Duplicate Lesson Dialog */}
+            {showDuplicateDialog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                    <div className="glass-card w-full max-w-md p-6 space-y-4">
+                        <h3 className="text-xl font-bold text-white">Similar Lesson Found</h3>
+                        <p className="text-white/70 text-sm">
+                            You already have {existingLessons.length} lesson{existingLessons.length > 1 ? 's' : ''} with a similar topic:
+                        </p>
+                        
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {existingLessons.map(lesson => (
+                                <button
+                                    key={lesson.id}
+                                    onClick={() => handleResumeLesson(lesson.id)}
+                                    className="w-full glass-card p-3 hover:bg-white/10 text-left transition-all"
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-medium text-white truncate">{lesson.title}</h4>
+                                            <div className="flex items-center gap-2 text-xs text-white/40 mt-1">
+                                                <span>{lesson.vocab_count} items</span>
+                                                <span>•</span>
+                                                <span>{new Date(lesson.created_at).toLocaleDateString()}</span>
+                                            </div>
+                                        </div>
+                                        <svg className="w-5 h-5 text-white/40 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="pt-2 space-y-2">
+                            <button
+                                onClick={handleCreateNew}
+                                disabled={isGenerating}
+                                className="w-full py-3 bg-white text-surface-300 font-bold rounded-xl hover:bg-white/90 transition-colors disabled:opacity-50"
+                            >
+                                {isGenerating ? 'Creating...' : `Create New Version (${existingLessons.length + 1})`}
+                            </button>
+                            <button
+                                onClick={() => setShowDuplicateDialog(false)}
+                                className="w-full py-3 text-white/70 font-medium hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

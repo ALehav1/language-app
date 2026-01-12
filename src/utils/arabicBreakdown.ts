@@ -54,7 +54,12 @@ const ARABIC_LETTER_NAMES: Record<string, { name: string; sound: string }> = {
   'ٍ': { name: 'tanwin kasra', sound: 'in' },
 };
 
-export function generateArabicBreakdownByWord(arabic: string): LetterBreakdown[][] {
+export interface WordBreakdown {
+  word: string;
+  letters: LetterBreakdown[];
+}
+
+export function generateArabicBreakdownByWord(arabic: string): WordBreakdown[] {
   // Split by spaces to get individual words
   const words = arabic.split(' ');
   
@@ -72,6 +77,9 @@ export function generateArabicBreakdownByWord(arabic: string): LetterBreakdown[]
       }
     }
     
-    return breakdown;
+    return {
+      word: word,
+      letters: breakdown
+    };
   });
 }

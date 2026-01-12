@@ -20,7 +20,7 @@
 @layer components {
   /* Glassmorphism Card */
   .glass-card {
-    @apply relative overflow-hidden rounded-3xl;
+    @apply relative overflow-hidden rounded-2xl;
     background: linear-gradient(
       135deg,
       rgba(255, 255, 255, 0.1) 0%,

@@ -1,23 +1,28 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { LookupModal } from './LookupModal';
 import { WordDisplay, type ArabicWordData } from '../../components/WordDisplay';
 import { MemoryAidEditor } from '../../components/MemoryAidEditor';
 import { findHebrewCognate } from '../../utils/hebrewCognates';
+import { useLanguage } from '../../contexts/LanguageContext';
 import type { SavedWordWithContexts, WordStatus } from '../../types';
 
 type SortOption = 'recent' | 'alphabetical' | 'alphabetical-en';
 
 /**
- * My Vocabulary - Arabic word collection with search, filters, and organization.
- * Phase 12C: Central hub for saved Arabic vocabulary.
+ * My Saved Words - Single-word vocabulary only (not sentences/passages).
+ * Filtered by selected language from global context.
  */
 export function MyVocabularyView() {
     const navigate = useNavigate();
+    const { language } = useLanguage();
+    const [searchParams] = useSearchParams();
+    const mode = searchParams.get('mode') || 'practice';
     
-    // State for filters and search
-    const [statusFilter, setStatusFilter] = useState<WordStatus | 'all'>('active');
+    // State for filters and search - default based on mode
+    const defaultStatus: WordStatus = mode === 'archive' ? 'learned' : 'active';
+    const [statusFilter, setStatusFilter] = useState<WordStatus | 'all'>(defaultStatus);
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<SortOption>('recent');
     const [selectedWord, setSelectedWord] = useState<SavedWordWithContexts | null>(null);
@@ -25,7 +30,7 @@ export function MyVocabularyView() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [showLookup, setShowLookup] = useState(false);
 
-    // Fetch words with filters
+    // Fetch words with filters - now filtered by language
     const { 
         words, 
         loading, 
@@ -38,22 +43,38 @@ export function MyVocabularyView() {
     } = useSavedWords({
         status: statusFilter,
         searchQuery: searchQuery.trim() || undefined,
+        language, // Filter by selected language
     });
 
-    // Sort words
-    const sortedWords = useMemo(() => {
-        const sorted = [...words];
+    // Filter and sort words
+    const filteredWords = useMemo(() => {
+        if (!words) return [];
+        
+        // First: only single-word entries (not phrases/sentences)
+        let filtered = words.filter(word => {
+            // Filter by content type if available, or by word count
+            const isSingleWord = word.word && word.word.trim().split(/\s+/).length === 1;
+            return isSingleWord;
+        });
+        
+        // Then: apply status filter
+        filtered = filtered.filter(word => {
+            if (statusFilter === 'all') return true;
+            return word.status === statusFilter;
+        });
+        
+        // Then sort
+        const sorted = [...filtered];
         switch (sortBy) {
             case 'alphabetical':
-                return sorted.sort((a, b) => a.word.localeCompare(b.word, 'ar'));
+                return sorted.sort((a, b) => a.word.localeCompare(b.word, language === 'arabic' ? 'ar' : 'es'));
             case 'alphabetical-en':
                 return sorted.sort((a, b) => a.translation.localeCompare(b.translation, 'en'));
             case 'recent':
             default:
                 return sorted; // Already sorted by created_at DESC from hook
         }
-    }, [words, sortBy]);
-
+    }, [words, sortBy, statusFilter]);
 
     // Selection handlers
     const toggleSelection = (id: string) => {
@@ -69,7 +90,7 @@ export function MyVocabularyView() {
     };
 
     const selectAll = () => {
-        setSelectedIds(new Set(sortedWords.map(w => w.id)));
+        setSelectedIds(new Set(filteredWords.map(w => w.id)));
     };
 
     const clearSelection = () => {
@@ -91,7 +112,7 @@ export function MyVocabularyView() {
         
         return (
             <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${styles[status]}`}>
-                {status === 'active' ? '📚 Practice' : '📦 Archive'}
+                {status === 'active' ? ' Practice' : ' Archive'}
             </span>
         );
     };
@@ -119,25 +140,23 @@ export function MyVocabularyView() {
             <header className="sticky top-0 z-40 bg-surface-300/95 backdrop-blur-sm border-b border-white/10">
                 <div className="flex items-center gap-4 p-4">
                     <button
-                        onClick={() => selectionMode ? setSelectionMode(false) : navigate('/')}
+                        onClick={() => selectionMode ? setSelectionMode(false) : navigate('/vocabulary')}
                         className="touch-btn w-10 h-10 bg-white/10 text-white/70 flex items-center justify-center rounded-xl"
-                        aria-label={selectionMode ? 'Exit selection' : 'Back to menu'}
+                        aria-label={selectionMode ? 'Exit selection' : 'Back to vocabulary'}
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                     <div className="flex-1">
-                        <h1 className="text-xl font-bold text-white">
-                            {selectionMode ? `${selectedIds.size} selected` : 'My Vocabulary'}
-                        </h1>
+                        <h1 className="text-xl font-bold text-white">Words</h1>
                         {!selectionMode && (
                             <p className="text-white/50 text-sm">
                                 {counts.total} words • {counts.active} active
                             </p>
                         )}
                     </div>
-                    {!selectionMode && sortedWords.length > 0 && (
+                    {!selectionMode && filteredWords.length > 0 && (
                         <button
                             onClick={() => { setSelectionMode(true); clearSelection(); }}
                             className="touch-btn px-4 py-2 bg-white/10 text-white/70 rounded-xl text-sm font-medium hover:bg-white/20"
@@ -192,40 +211,42 @@ export function MyVocabularyView() {
                         </button>
                     </div>
                 ) : (
-                    <div className="flex gap-2 px-4 pb-3 overflow-x-auto">
+                    <>
                         {/* Status filters - Practice and Archive only */}
-                        <button
-                            onClick={() => setStatusFilter('active')}
-                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                                statusFilter === 'active'
-                                    ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
-                                    : 'bg-white/10 text-white/70 hover:bg-white/20'
-                            }`}
-                        >
-                            📚 Practice ({counts.active})
-                        </button>
-                        <button
-                            onClick={() => setStatusFilter('learned')}
-                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                                statusFilter === 'learned'
-                                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
-                                    : 'bg-white/10 text-white/70 hover:bg-white/20'
-                            }`}
-                        >
-                            📦 Archive ({counts.learned})
-                        </button>
+                        <div className="flex gap-2 px-4 pb-3 overflow-x-auto">
+                            <button
+                                onClick={() => setStatusFilter('active')}
+                                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                                    statusFilter === 'active'
+                                        ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
+                                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                                }`}
+                            >
+                                Practice ({counts.active})
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter('learned')}
+                                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                                    statusFilter === 'learned'
+                                        ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
+                                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                                }`}
+                            >
+                                Archive ({counts.learned})
+                            </button>
 
-                        {/* Sort dropdown */}
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as SortOption)}
-                            className="px-3 py-2 rounded-full text-sm font-medium bg-white/10 text-white/70 border-none focus:outline-none focus:ring-2 focus:ring-white/20 cursor-pointer"
-                        >
-                            <option value="recent">Recent</option>
-                            <option value="alphabetical">A-Z (Arabic)</option>
-                            <option value="alphabetical-en">A-Z (English)</option>
-                        </select>
-                    </div>
+                            {/* Sort dropdown */}
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                                className="px-3 py-2 rounded-full text-sm font-medium bg-white/10 text-white/70 border-none focus:outline-none focus:ring-2 focus:ring-white/20 cursor-pointer"
+                            >
+                                <option value="recent">Recent</option>
+                                <option value="alphabetical">A-Z (Arabic)</option>
+                                <option value="alphabetical-en">A-Z (English)</option>
+                            </select>
+                        </div>
+                    </>
                 )}
             </header>
 
@@ -238,7 +259,7 @@ export function MyVocabularyView() {
             )}
 
             {/* Empty state */}
-            {sortedWords.length === 0 && !loading && (
+            {filteredWords.length === 0 && !loading && (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
                     <div className="w-20 h-20 mb-4 rounded-full bg-white/10 flex items-center justify-center">
                         <svg className="w-10 h-10 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -268,7 +289,7 @@ export function MyVocabularyView() {
             {/* Word list */}
             <main className="flex-1 overflow-y-auto px-4 pb-24">
                 <div className="space-y-3 py-4">
-                    {sortedWords.map((word) => {
+                    {filteredWords.map((word) => {
                         const isSelected = selectedIds.has(word.id);
 
                         return (
@@ -391,12 +412,12 @@ export function MyVocabularyView() {
                                 {/* Previous button */}
                                 <button
                                     onClick={() => {
-                                        const currentIndex = sortedWords.findIndex(w => w.id === selectedWord.id);
+                                        const currentIndex = filteredWords.findIndex(w => w.id === selectedWord.id);
                                         if (currentIndex > 0) {
-                                            setSelectedWord(sortedWords[currentIndex - 1]);
+                                            setSelectedWord(filteredWords[currentIndex - 1]);
                                         }
                                     }}
-                                    disabled={sortedWords.findIndex(w => w.id === selectedWord.id) === 0}
+                                    disabled={filteredWords.findIndex(w => w.id === selectedWord.id) === 0}
                                     className="p-2 rounded-lg bg-white/10 text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
                                     aria-label="Previous word"
                                 >
@@ -408,12 +429,12 @@ export function MyVocabularyView() {
                                 {/* Next button */}
                                 <button
                                     onClick={() => {
-                                        const currentIndex = sortedWords.findIndex(w => w.id === selectedWord.id);
-                                        if (currentIndex < sortedWords.length - 1) {
-                                            setSelectedWord(sortedWords[currentIndex + 1]);
+                                        const currentIndex = filteredWords.findIndex(w => w.id === selectedWord.id);
+                                        if (currentIndex < filteredWords.length - 1) {
+                                            setSelectedWord(filteredWords[currentIndex + 1]);
                                         }
                                     }}
-                                    disabled={sortedWords.findIndex(w => w.id === selectedWord.id) === sortedWords.length - 1}
+                                    disabled={filteredWords.findIndex(w => w.id === selectedWord.id) === filteredWords.length - 1}
                                     className="p-2 rounded-lg bg-white/10 text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
                                     aria-label="Next word"
                                 >
@@ -454,8 +475,8 @@ export function MyVocabularyView() {
                                 exampleSentences: selectedWord.example_sentences || undefined,
                             } as ArabicWordData}
                             size="large"
-                            showHebrewCognate={true}
-                            showLetterBreakdown={true}
+                            showHebrewCognate={language === 'arabic'}
+                            showLetterBreakdown={language === 'arabic'}
                             showExampleSentences={true}
                             dialectPreference="egyptian"
                         />

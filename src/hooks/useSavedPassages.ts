@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 export interface SavedPassage {
     id: string;
     original_text: string;
-    source_language: 'arabic' | 'english';
+    source_language: 'arabic' | 'english' | 'spanish';
     full_translation: string;
     full_transliteration?: string;
     sentence_count: number;
@@ -24,7 +24,7 @@ export interface SavedPassage {
  */
 export interface SavePassageInput {
     original_text: string;
-    source_language: 'arabic' | 'english';
+    source_language: 'arabic' | 'english' | 'spanish';
     full_translation: string;
     full_transliteration?: string;
     sentence_count?: number;
@@ -38,7 +38,7 @@ export interface SavePassageInput {
  * Hook for managing saved passages (full texts).
  * Provides CRUD operations and filtering.
  */
-export function useSavedPassages() {
+export function useSavedPassages(language?: 'arabic' | 'spanish') {
     const [passages, setPassages] = useState<SavedPassage[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -49,10 +49,17 @@ export function useSavedPassages() {
         setError(null);
         
         try {
-            const { data, error: fetchError } = await supabase
+            let query = supabase
                 .from('saved_passages')
                 .select('*')
                 .order('created_at', { ascending: false });
+            
+            // Apply language filter if provided
+            if (language) {
+                query = query.eq('source_language', language);
+            }
+            
+            const { data, error: fetchError } = await query;
             
             if (fetchError) throw fetchError;
             setPassages(data || []);
@@ -63,7 +70,7 @@ export function useSavedPassages() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [language]);
 
     // Initial fetch
     useEffect(() => {

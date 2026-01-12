@@ -2,16 +2,7 @@ import { useState } from 'react';
 import { findHebrewCognate } from '../utils/hebrewCognates';
 import { SaveDecisionPanel, type SaveDecision } from './SaveDecisionPanel';
 import type { HebrewCognate } from '../types';
-import { generateArabicBreakdownByWord } from '../utils/arabicBreakdown';
-
-/**
- * Letter breakdown structure
- */
-export interface WordBreakdown {
-  letter: string;
-  name: string;
-  sound: string;
-}
+import { generateArabicBreakdown, type WordBreakdown } from '../utils/arabicLetters';
 
 /**
  * Example sentence structure - both dialects
@@ -37,6 +28,14 @@ export interface MemoryAid {
  * Core word data - the canonical structure for Arabic words throughout the app.
  * All components that display words should accept this interface.
  */
+export interface WordContext {
+  root?: string;
+  root_meaning?: string;
+  egyptian_usage: string;
+  msa_comparison: string;
+  cultural_notes?: string;
+}
+
 export interface ArabicWordData {
   // Required
   arabic: string;              // MSA with harakat (vowel diacritics)
@@ -49,6 +48,7 @@ export interface ArabicWordData {
   
   // Optional - enrichments (can be fetched or provided)
   hebrewCognate?: HebrewCognate | null;
+  wordContext?: WordContext;   // Root, usage, and dialect context
   letterBreakdown?: WordBreakdown[];
   exampleSentences?: ExampleSentence[];
   
@@ -79,6 +79,8 @@ interface WordDisplayProps {
   
   // Callbacks
   onSave?: (decision: SaveDecision, memoryAid?: MemoryAid) => void;
+  onSaveSentence?: (sentence: ExampleSentence) => void;
+  isSentenceSaved?: (sentenceArabic: string) => boolean;
   onTap?: () => void;
 }
 
@@ -128,52 +130,46 @@ const FONT_SIZES = {
 export function WordDisplay({
   word,
   size = 'normal',
-  showHebrewCognate = true,
+  showHebrewCognate = false,
   showLetterBreakdown = false,
   showExampleSentences = false,
   showSaveOption = false,
   showPronunciations = true,
-  dialectPreference = 'egyptian',
+  onSave,
+  onSaveSentence,
+  isSentenceSaved,
+  onTap,
   isSaved = false,
   savedStatus,
   savedMemoryAid,
-  onSave,
-  onTap,
+  dialectPreference = 'egyptian',
 }: WordDisplayProps) {
   const fonts = FONT_SIZES[size];
   
   // State for expanded sections
   const [showSentenceModal, setShowSentenceModal] = useState<ExampleSentence | null>(null);
+  const [exampleSentencesExpanded, setExampleSentencesExpanded] = useState(false);
   
   // Determine which dialect to show first based on preference
   const primaryArabic = dialectPreference === 'egyptian' 
     ? (word.arabicEgyptian || word.arabic) 
     : word.arabic;
     
-  // Determine Hebrew cognate - use provided or lookup from static table for both MSA and Egyptian
-  const hebrewCognate = word.hebrewCognate !== undefined 
-    ? word.hebrewCognate 
-    : (findHebrewCognate(word.arabic) || findHebrewCognate(word.arabicEgyptian || ''));
+  // Determine Hebrew cognate - only lookup in Arabic mode
+  const hebrewCognate = showHebrewCognate 
+    ? (word.hebrewCognate !== undefined 
+        ? word.hebrewCognate 
+        : (findHebrewCognate(word.arabic) || findHebrewCognate(word.arabicEgyptian || '')))
+    : null;
   
-  // Generate letter breakdown if needed and not provided
-  console.log('[WordDisplay] Before generating breakdown:', {
-    'word.letterBreakdown': word.letterBreakdown,
-    showLetterBreakdown,
-    primaryArabic,
-    'should generate': showLetterBreakdown && primaryArabic && !word.letterBreakdown
-  });
-  
-  const letterBreakdown = word.letterBreakdown || 
-    (showLetterBreakdown && primaryArabic ? generateArabicBreakdownByWord(primaryArabic) : []);
-  
-  console.log('[WordDisplay] After generating breakdown:', {
-    letterBreakdown,
-    'letterBreakdown.length': letterBreakdown.length,
-    'letterBreakdown type': typeof letterBreakdown,
-    'is array': Array.isArray(letterBreakdown),
-    'first item': letterBreakdown[0],
-    'first item letters': (letterBreakdown[0] as any)?.letters
-  });
+  // Generate letter breakdown only if needed and showLetterBreakdown is true
+  const letterBreakdown = showLetterBreakdown 
+    ? (word.letterBreakdown || 
+        (primaryArabic ? primaryArabic.split(' ').map(w => ({
+          word: w,
+          letters: generateArabicBreakdown(w)
+        })) : []))
+    : [];
   
   const primaryTranslit = dialectPreference === 'egyptian'
     ? (word.transliterationEgyptian || word.transliteration)
@@ -209,20 +205,20 @@ export function WordDisplay({
               {/* Pronunciations */}
               {showPronunciations && (primaryTranslit || secondaryTranslit) && (
                 <div className="space-y-1">
-                  {/* Primary dialect pronunciation */}
+                  {/* Primary dialect pronunciation - Egyptian first */}
                   {primaryTranslit && (
                     <div className="text-amber-400">
-                      <span className="text-amber-400/60 text-sm">
-                        {dialectPreference === 'egyptian' ? '🇪🇬' : '📖'}
+                      <span className="text-amber-400/60 text-xs font-semibold">
+                        {dialectPreference === 'egyptian' ? 'Egyptian' : 'MSA'}
                       </span>{' '}
                       <span className={`${fonts.transliteration} font-medium`}>'{primaryTranslit}</span>
                     </div>
                   )}
-                  {/* Secondary dialect pronunciation - smaller */}
+                  {/* Secondary dialect pronunciation - MSA as reference */}
                   {secondaryTranslit && (
                     <div className="text-white/40 text-sm">
-                      <span className="text-white/30 text-xs">
-                        {dialectPreference === 'egyptian' ? '📖' : '🇪🇬'}
+                      <span className="text-white/30 text-xs font-semibold">
+                        {dialectPreference === 'egyptian' ? 'MSA' : 'Egyptian'}
                       </span>{' '}
                       <span className="text-sm">'{secondaryTranslit}</span>
                     </div>
@@ -251,6 +247,55 @@ export function WordDisplay({
             )}
           </div>
           
+          {/* Word Context - Root, Usage, MSA Comparison */}
+          {word.wordContext && (
+            <div className="glass-card p-3">
+              <div className="text-orange-400/70 text-xs font-bold uppercase tracking-wider mb-3">
+                💡 Word Context
+              </div>
+              <div className="space-y-3">
+                {/* Root */}
+                {word.wordContext.root && (
+                  <div className="bg-white/5 rounded-lg p-2.5">
+                    <div className="text-orange-300/60 text-xs font-semibold mb-1">Root</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-arabic text-white">{word.wordContext.root}</span>
+                      {word.wordContext.root_meaning && (
+                        <span className="text-sm text-white/60">• {word.wordContext.root_meaning}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Egyptian Usage */}
+                <div className="bg-white/5 rounded-lg p-2.5">
+                  <div className="text-amber-300/60 text-xs font-semibold mb-1">🇪🇬 Everyday Egyptian Usage</div>
+                  <div className="text-sm text-white/80 leading-relaxed">
+                    {word.wordContext.egyptian_usage}
+                  </div>
+                </div>
+                
+                {/* MSA Comparison */}
+                <div className="bg-white/5 rounded-lg p-2.5">
+                  <div className="text-teal-300/60 text-xs font-semibold mb-1">📖 Modern Standard Arabic</div>
+                  <div className="text-sm text-white/80 leading-relaxed">
+                    {word.wordContext.msa_comparison}
+                  </div>
+                </div>
+                
+                {/* Cultural Notes */}
+                {word.wordContext.cultural_notes && (
+                  <div className="bg-purple-500/10 rounded-lg p-2.5 border border-purple-500/20">
+                    <div className="text-purple-300/60 text-xs font-semibold mb-1">🌍 Cultural Note</div>
+                    <div className="text-sm text-purple-200/80 leading-relaxed italic">
+                      {word.wordContext.cultural_notes}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
           {/* Letter breakdown */}
           {showLetterBreakdown && (
             <div className="glass-card p-3">
@@ -260,15 +305,15 @@ export function WordDisplay({
               {letterBreakdown && letterBreakdown.length > 0 ? (
                 <div className="space-y-2">
                   {letterBreakdown.map((wordBreakdown: any, wordIdx: number) => (
-                    <div key={wordIdx} className="flex flex-wrap justify-end gap-1" dir="rtl">
+                    <div key={wordIdx} className="flex flex-wrap justify-start gap-1" dir="rtl">
                       {(wordBreakdown.letters || []).map((letter: any, letterIdx: number) => (
                         <div 
                           key={letterIdx}
-                          className="flex flex-col items-center bg-white/5 rounded-lg px-3 py-2 min-w-[50px]"
+                          className="flex flex-col items-center bg-white/5 rounded-lg px-4 py-3 min-w-[60px]"
                         >
-                          <span className="text-2xl font-arabic text-white mb-1">{letter.letter}</span>
-                          <span className="text-xs text-white/60 text-center leading-tight">{letter.name}</span>
-                          <span className="text-sm text-teal-400/80 font-mono">/{letter.sound}/</span>
+                          <span className="text-4xl font-arabic text-white mb-1">{letter.letter}</span>
+                          <span className="text-sm text-white/60 text-center leading-tight">{letter.name}</span>
+                          <span className="text-base text-teal-400/80 font-mono">/{letter.sound}/</span>
                         </div>
                       ))}
                     </div>
@@ -282,38 +327,76 @@ export function WordDisplay({
             </div>
           )}
           
-          {/* Example sentences */}
+          {/* Example sentences - Collapsible (default collapsed) */}
           {showExampleSentences && word.exampleSentences && word.exampleSentences.length > 0 && (
             <div className="glass-card p-3">
-              <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-2">
-                Example Sentences
-              </div>
-              <div className="space-y-2">
-                {word.exampleSentences.map((sentence, idx) => (
-                  <button
-                    key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowSentenceModal(sentence);
-                    }}
-                    className="w-full text-left bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors"
-                  >
-                    {/* Egyptian version first - LARGER */}
-                    <div className="text-2xl font-arabic text-white text-right mb-2" dir="rtl">
-                      {sentence.arabic_egyptian}
-                    </div>
-                    <div className="text-base text-amber-400/80 italic mb-1">
-                      {sentence.transliteration_egyptian}
-                    </div>
-                    <div className="text-white/80 text-base">
-                      {sentence.english}
-                    </div>
-                    <div className="text-xs text-purple-300/50 text-center mt-2">
-                      Tap to view details
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <button
+                onClick={() => setExampleSentencesExpanded(!exampleSentencesExpanded)}
+                className="w-full flex items-center justify-between text-left"
+              >
+                <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider">
+                  Example Sentences ({word.exampleSentences.length})
+                </div>
+                <svg
+                  className={`w-4 h-4 text-teal-400/70 transition-transform ${exampleSentencesExpanded ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {exampleSentencesExpanded && (
+                <div className="space-y-2 mt-2">
+                  {word.exampleSentences.map((sentence, idx) => {
+                    const isSaved = isSentenceSaved?.(sentence.arabic_msa) ?? false;
+                    return (
+                      <div key={idx} className="bg-white/5 rounded-xl p-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowSentenceModal(sentence);
+                          }}
+                          className="w-full text-left hover:bg-white/5 rounded-lg p-2 -m-2 transition-colors"
+                        >
+                          {/* Egyptian version first - LARGER */}
+                          <div className="text-2xl font-arabic text-white text-right mb-2" dir="rtl">
+                            {sentence.arabic_egyptian}
+                          </div>
+                          <div className="text-base text-amber-400/80 italic mb-1">
+                            {sentence.transliteration_egyptian}
+                          </div>
+                          <div className="text-white/80 text-base">
+                            {sentence.english}
+                          </div>
+                          <div className="text-xs text-purple-300/50 text-center mt-2">
+                            Tap to view details
+                          </div>
+                        </button>
+                        
+                        {/* Save button */}
+                        {onSaveSentence && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSaveSentence(sentence);
+                            }}
+                            disabled={isSaved}
+                            className={`w-full mt-2 py-2 rounded-lg text-sm font-medium transition-all duration-100 ${
+                              isSaved
+                                ? 'bg-green-500/20 text-green-400 cursor-default'
+                                : 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 active:scale-95 active:bg-purple-500/40'
+                            }`}
+                          >
+                            {isSaved ? '✓ Saved' : '💾 Save Sentence'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
           
