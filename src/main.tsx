@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { LanguageBadge } from './components/LanguageBadge';
+import { RouteGuard } from './components/RouteGuard';
 import { MainMenu } from './features/home/MainMenu';
 import { LessonLibrary } from './features/lessons/LessonLibrary';
 import { ExerciseView } from './features/exercises/ExerciseView';
@@ -17,9 +18,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <LanguageProvider>
       <BrowserRouter>
-        <div className="min-h-screen bg-surface-300">
-          <LanguageBadge />
-          <Routes>
+        <RouteGuard>
+          <div className="min-h-screen bg-surface-300">
+            <LanguageBadge />
+            <Routes>
             <Route path="/" element={<MainMenu />} />
             <Route path="/lessons" element={<LessonLibrary />} />
             <Route path="/exercise/:lessonId" element={<ExerciseView />} />
@@ -33,8 +35,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/sentences" element={<MySentencesView />} /> {/* Legacy route */}
             <Route path="/passages" element={<MyPassagesView />} /> {/* Legacy route */}
             <Route path="/lookup" element={<LookupView />} />
-          </Routes>
-        </div>
+            </Routes>
+          </div>
+        </RouteGuard>
       </BrowserRouter>
     </LanguageProvider>
   </React.StrictMode>

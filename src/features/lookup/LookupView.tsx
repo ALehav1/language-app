@@ -8,6 +8,7 @@ import { WordDisplay } from '../../components/WordDisplay';
 import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecisionPanel';
 import { MemoryAidTile } from '../../components/MemoryAidTile';
 import { ContextTile } from '../../components/ContextTile';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { findHebrewCognate } from '../../utils/hebrewCognates';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -190,22 +191,24 @@ export function LookupView() {
     const isCurrentPassageSaved = passageResult?.original_text ? (passageSaved || isPassageSaved(passageResult.original_text)) : false;
 
     return (
-        <div className="min-h-screen bg-surface-300 p-4 pb-24">
-            {/* Header */}
-            <header className="flex items-center justify-between mb-6">
-                <button
-                    onClick={() => navigate('/')}
-                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-200"
-                    aria-label="Back to menu"
-                >
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-                <h1 className="text-xl font-bold text-white">Lookup</h1>
-                <div className="w-10" /> {/* Spacer for centering */}
+        <div className="min-h-screen bg-surface-300 pb-24">
+            {/* Header with back button and language switcher */}
+            <header className="sticky top-0 z-10 bg-surface-300/95 backdrop-blur-sm border-b border-white/10 px-4 py-3">
+                <div className="flex items-center justify-between">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span className="text-sm font-medium">Back</span>
+                    </button>
+                    <LanguageSwitcher />
+                </div>
             </header>
 
+            <div className="p-4">
             {/* Input area */}
             <div className="mb-6">
                 <textarea
@@ -541,6 +544,7 @@ export function LookupView() {
                     </p>
                 </div>
             )}
+            </div>
         </div>
     );
 }

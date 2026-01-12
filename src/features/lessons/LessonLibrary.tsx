@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLessons } from '../../hooks/useLessons';
 import { LessonGenerator } from './LessonGenerator';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { supabase } from '../../lib/supabase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { ContentType, Lesson } from '../../types';
@@ -140,25 +141,24 @@ export function LessonLibrary() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col">
-            {/* Header */}
-            <header className="px-4 pt-4 pb-2">
+        <div className="min-h-screen bg-surface-300 pb-24">
+            {/* Header with back button and language switcher */}
+            <header className="sticky top-0 z-10 bg-surface-300/95 backdrop-blur-sm border-b border-white/10 px-4 py-3">
                 <div className="flex items-center justify-between">
                     <button
-                        onClick={() => navigate('/')}
-                        className="touch-btn w-10 h-10 bg-white/10 text-white hover:bg-white/20 flex items-center justify-center rounded-xl"
-                        aria-label="Back to menu"
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
+                        <span className="text-sm font-medium">Back</span>
                     </button>
-                    <h1 className="text-lg font-bold text-white">Lessons</h1>
-                    <div className="w-10" />
+                    <LanguageSwitcher />
                 </div>
             </header>
 
-            <main className="flex-1 px-4 pb-8 space-y-4">
+            <div className="p-4 pb-8 space-y-4">
                 {/* View Saved Lessons - Category Filtered */}
                 {viewingSavedCategory && (
                     <div className="fixed inset-0 z-50 bg-surface-300 overflow-y-auto">
@@ -462,6 +462,7 @@ export function LessonLibrary() {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 }
