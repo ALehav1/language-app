@@ -1,329 +1,348 @@
+🌊 WINDSURF RULES — Language Learning App (AUTHORITATIVE)
 
-🌊 Windsurf Rules — Language Learning App
+This file defines how coding agents (Cascade, etc.) must operate on this project.
 
-This file defines how coding agents must operate on this project.
+This file is **binding**.
+If a rule is violated, the work is considered **NOT DONE**, regardless of intent.
 
-Rules are split into:
-	•	PART A — Universal Rules (apply to all projects)
-	•	PART B — Project-Specific Rules (apply ONLY to this app)
+---
 
-Conflict resolution order
-	1.	/docs/contract.md wins
-	2.	Universal rules override project-specific rules
-	3.	Project-specific rules override agent suggestions
+## Conflict Resolution Order (NON-NEGOTIABLE)
 
-Failure to follow these rules invalidates a claim of “done”.
+1. `/docs/contract.md` wins
+2. This file (`.windsurfrules.md`) wins
+3. Agent suggestions lose
 
-⸻
+Agents may not override, reinterpret, or weaken these rules.
 
-PART A — UNIVERSAL RULES
+---
 
-(Apply to ALL projects)
+# PART A — UNIVERSAL EXECUTION RULES
 
-⸻
+(Apply to ALL work on this repo)
 
-Read These First (Every Chat)
+---
 
-Agents must acknowledge they have read:
-	1.	/docs/contract.md
-	2.	.windsurfrules.md (this file)
+## 1. Required Acknowledgment (Every Session)
 
-Acknowledgment must happen before proposing changes.
+Before proposing **any change**, the agent must explicitly acknowledge it has read:
 
-⸻
+1. `/docs/contract.md`
+2. `.windsurfrules.md` (this file)
 
-Gated Execution Model (MANDATORY)
+No acknowledgment → no work.
 
-Work must follow explicit phases, in order.
+---
+
+## 2. Gated Execution Model (MANDATORY)
+
+All work proceeds in **explicit phases**, one at a time.
+
+### Allowed Phases
+- **Phase 0 — Diagnosis**
+- **Phase 1 — Design**
+- **Phase 2 — Implementation**
+- **Phase 3 — Verification**
+- **STOP**
+
+### Rules
+- One phase at a time
+- A phase must pass its gate before moving forward
+- If a gate fails, fix it before proceeding
+- The agent must stop after Phase 3 and wait
+
+### Forbidden
+- Skipping phases
+- Bundling unrelated fixes
+- “While I’m here” changes
+- Asking decision questions unless explicitly requested
+- Declaring progress beyond the active phase
+
+---
+
+## 3. Definition of DONE (STRICT)
+
+An agent may claim **DONE** only when **all** are true:
+
+### Code Quality
+- `npm run build` → PASS
+- `npm run lint` → PASS  
+  (Markdown warnings allowed; TS/JS errors are not)
+
+### Runtime Safety
+- Zero console errors introduced by agent changes
+- No runtime warnings caused by agent changes
+
+### Validation Reality
+- **Agents do NOT claim browser validation**
+- Manual validation is performed by the human
+- Agent must:
+  - describe what to validate
+  - explain expected vs actual outcomes
+  - stop and wait for screenshots or confirmation
+
+If screenshots are missing → **NOT DONE** (but not a violation).
+
+---
+
+## 4. Mobile-First Invariant (CRITICAL)
+
+All UI decisions are validated in this order:
+
+1. **375px** — phone baseline (must work FIRST)
+2. 768px — tablet
+3. 1024px — desktop
 
 Rules:
-	•	One phase at a time
-	•	Each phase has a gate
-	•	If a gate fails, fix it before proceeding
-	•	No “decision point” questions unless explicitly requested
-	•	No claiming progress beyond the current phase
+- Touch targets ≥ 48×48px
+- Primary actions ≥ 56×56px
+- No hover-only interactions
+- Content must remain readable at arm’s length
+
+---
+
+## 5. TypeScript Rules (NO EXCEPTIONS)
+
+- ❌ `any` is forbidden
+- `unknown` allowed only with explicit narrowing
+- All persisted data must have types
+- All cross-component props must have interfaces
+- Props interfaces defined **above** components
+- Domain types live **outside UI folders**
+
+Type safety regressions invalidate DONE.
+
+---
+
+## 6. React & App Patterns (MANDATORY)
+
+- Navigation: `useNavigate()` only  
+  ❌ Never `window.location`
+- Async logic must expose:
+  - loading state
+  - error state
+- Errors must have:
+  - user-safe UI message
+  - technical console detail
+
+---
+
+## 7. Refactor Safety (UNIVERSAL)
+
+- Never refactor behavior without locking it first
+  (tests, invariants, or explicit guarantees)
+- One refactor goal per branch
+- Preserve public APIs until consumers migrate
+- Prefer adapters over rewrites
 
 Forbidden:
-	•	Skipping phases
-	•	Bundling unrelated fixes
-	•	Declaring readiness without passing gates
+- Opportunistic cleanup
+- Multi-concern PRs
+- Silent behavior changes
 
-⸻
+---
 
-Definition of Done (NON-NEGOTIABLE)
-
-An agent may claim DONE only when all of the following are true:
-
-Code Quality
-	•	npm run test:run → PASS
-	•	npm run build → PASS
-	•	npm run lint → PASS (non-blocking markdown warnings allowed)
-
-Runtime Validation
-	•	Zero console errors during normal flows
-	•	No runtime warnings caused by agent changes
-
-Manual Browser Validation (REQUIRED)
-
-Agent must personally validate and provide screenshots for:
-	•	Home
-	•	Lessons
-	•	Lookup (Arabic)
-	•	Lookup (Spanish)
-	•	Vocabulary landing
-	•	Exercise detail
-
-Reporting
-
-Agent must provide:
-	•	List of files changed
-	•	Mapping of changes → phase(s)
-	•	Notes on any deferred work
-
-If any item above is missing → NOT DONE.
-
-⸻
-
-Mobile-First Development (CRITICAL)
-
-Test every change at these breakpoints in order:
-	1.	375px — phone baseline (must work FIRST)
-	2.	768px — tablet
-	3.	1024px — desktop
-
-Rules:
-	•	Touch targets ≥ 48×48px
-	•	Primary actions ≥ 56×56px
-	•	No hover-only interactions
-
-⸻
-
-TypeScript Rules (No Exceptions)
-	•	❌ No any
-	•	unknown only with explicit narrowing
-	•	Define interfaces/types for:
-	•	persisted data
-	•	cross-component props
-	•	Props interfaces go above components
-	•	Domain types live outside UI folders
-
-⸻
-
-React Patterns (Mandatory)
-	•	Navigation: useNavigate() only
-❌ Never window.location.href
-	•	Auth: onAuthStateChange listener
-❌ Not one-time getUser()
-	•	Async operations must expose:
-	•	loading state
-	•	error state
-	•	Errors:
-	•	user-friendly UI messages
-	•	technical detail in console
-
-⸻
-
-Refactor Safety (Universal)
-	•	Never refactor behavior without locking it first
-(tests, invariants, or explicit guarantees)
-	•	One refactor goal per branch
-	•	Preserve public APIs until all consumers migrate
-	•	Prefer adapters over rewrites
-
-Forbidden:
-	•	Opportunistic cleanup
-	•	Multi-concern PRs
-	•	Silent behavior changes
-
-⸻
-
-Before Saying “Done” (Universal Checklist)
-	•	Breakpoints tested (375 / 768 / 1024)
-	•	Zero console errors
-	•	Loading + error states present
-	•	No any
-	•	Touch targets compliant
-	•	Tests added or updated
-	•	No undocumented behavior change
-
-⸻
-
-PART B — PROJECT-SPECIFIC RULES
-
+# PART B — PROJECT-SPECIFIC RULES  
 (Language Learning App ONLY)
 
-⸻
+---
 
-Read These First (Every Chat)
-	1.	/agents.md — authoritative project instructions
-	2.	/docs/architecture/dependency-map.md
-	3.	/docs/architecture/data-models.md
+## 8. Canonical Content Model (LOCKED)
 
-If behavior contradicts documentation:
-	•	Update the docs
-	•	OR explicitly mark deprecated / planned
+The app supports **exactly four** content types, in this order:
 
-Silent drift is forbidden.
-
-⸻
-
-Canonical Content Model (LOCKED)
-
-The app supports exactly four content types, in this order:
-	1.	word
-	2.	sentence
-	3.	dialog
-	4.	passage
+1. `word`
+2. `sentence`
+3. `dialog`
+4. `passage`
 
 Rules:
-	•	❌ “Phrase(s)” is forbidden — use Sentence(s)
-	•	Order is fixed everywhere (UI, APIs, storage, practice)
-	•	Dialogs must be multi-turn (≥2 turns)
-A single sentence shown as a dialog is a bug.
+- ❌ “Phrase(s)” is forbidden — use **Sentence**
+- Order is fixed everywhere (UI, APIs, storage, practice)
+- Dialogs must be multi-turn (≥2 turns)
+- A single sentence rendered as a dialog is a bug
+- A single sentence rendered as a passage is a bug
 
-⸻
+---
 
-Vocabulary System (AUTHORITATIVE)
+## 9. Vocabulary System (AUTHORITATIVE)
 
-“My Vocabulary” is a review hub, not a flat list.
+“My Vocabulary” is a **review hub**, not a flat list.
 
-Required structure:
-	•	Landing page → choose:
-	•	Practice
-	•	Archive
-	•	Then choose content type:
-	•	Words
-	•	Sentences
-	•	Dialogs
-	•	Passages
-	•	Then list items
+Required flow:
+1. Choose **Practice** or **Archive**
+2. Choose content type (Word / Sentence / Dialog / Passage)
+3. View list
+4. Open item detail
 
 Rules:
-	•	Vocabulary counts must be language-scoped
-	•	Practice flow must allow continuing to next item
-	•	Saving an item must not dead-end the user
+- Items must always show **where they are saved**
+  (Practice or Archive)
+- Items must be movable:
+  - Practice ↔ Archive
+- Items must be deletable from detail view
+- Saving must never dead-end the user
 
-⸻
+---
 
-Language-Scoped Data (INVARIANT)
+## 10. Sentence-Specific Save Rules (CRITICAL)
+
+Sentences behave differently than words.
+
+Rules:
+- Example sentences must be **collapsed by default**
+- Each sentence has its **own save state**
+- If saved, UI must show:
+  - “Saved to Practice” or “Saved to Archive”
+- Users must be able to:
+  - move a sentence between Practice ↔ Archive
+  - delete a sentence from its saved location
+- There must be **no global “Save Passage” button** for sentences
+
+Violations here are **P0 bugs**.
+
+---
+
+## 11. Language-Scoped Data (INVARIANT)
 
 All of the following must be scoped by active language:
-	•	counts
-	•	feeds
-	•	lesson libraries
-	•	saved vocabulary
-	•	practice queues
-	•	archives
+
+- counts
+- feeds
+- lesson libraries
+- saved vocabulary
+- practice queues
+- archives
 
 Rules:
-	•	No cross-language leakage
-	•	Switching language must immediately update all derived state
-	•	Dependency arrays must include language
+- No cross-language leakage
+- Switching language must immediately update derived state
+- Dependency arrays must include language
 
-⸻
+---
 
-Language & Modality Awareness
-
-All shared logic must assume:
-	•	multiple languages
-	•	non-Latin scripts
-	•	LTR and RTL layouts
-	•	text + voice (future)
-
-Therefore:
-	•	Language must be explicit in data models
-	•	Validation must be semantic
-	•	UI must not assume keyboard, Latin script, or LTR
-
-⸻
-
-Added Context Tile (REQUIRED)
-
-An Added Context tile must exist in:
-	•	Lookup results
-	•	Lesson word detail
-	•	Exercise word detail
-
-Content rules:
-	•	Arabic
-	•	root / morphology
-	•	dialect vs MSA usage
-	•	Spanish
-	•	base form / conjugation (if verb)
-	•	LatAm vs Spain usage
+## 12. Language UI State (STRICT)
 
 Rules:
-	•	Must be language-aware
-	•	Must degrade gracefully
-	•	Must never crash on missing data
+- Active language must be visually unambiguous
+- Only one language pill may appear active
+- The active language must match:
+  - data
+  - layout
+  - typography
+  - feature gating
 
-⸻
+Mismatch = bug.
 
-Arabic-Only Features (STRICTLY GATED)
+---
 
-Only show when language === 'arabic':
-	•	Letter breakdown
-	•	Hebrew cognates
-	•	Egyptian/MSA toggles
+## 13. Arabic-Only Features (STRICTLY GATED)
+
+Only render when `language === 'arabic'`:
+
+- Letter breakdown
+- Hebrew cognates
+- Egyptian / MSA toggles
 
 Forbidden:
-	•	Rendering empty placeholders in Spanish
-	•	Executing Arabic logic in Spanish paths
+- Empty placeholders in Spanish
+- Executing Arabic logic in Spanish paths
 
-⸻
+---
 
-Theme Invariant (CRITICAL)
+## 14. Arabic Typography & Layout (NON-NEGOTIABLE)
+
+Arabic rendering rules:
+
+- Text direction: **RTL**
+- Justification: **right-aligned**
+- Word breakdown:
+  - one word per line
+  - rendered RTL
+  - logical order preserved
+- Font size must be:
+  - comfortably readable on 375px
+  - larger than Latin body text
+
+Breaking RTL or shrinking Arabic text is a **release-blocking bug**.
+
+---
+
+## 15. Added Context Tile (REQUIRED)
+
+An Added Context tile must exist in:
+
+- Lookup results
+- Lesson detail
+- Exercise detail
+- Vocabulary item detail
+
+Content rules:
+- Arabic:
+  - root / morphology
+  - Egyptian vs MSA usage
+- Spanish:
+  - base form / conjugation (if verb)
+  - LatAm vs Spain usage
+
+Rules:
+- Must be language-aware
+- Must degrade gracefully
+- Must never crash on missing data
+
+Missing tile = bug.
+
+---
+
+## 16. Theme Invariant (CRITICAL)
 
 Home defines the canonical visual language.
 
 Rules:
-	•	Card radius, borders, shadows, background, padding are canonical
-	•	Lessons, Lookup, Vocabulary, Exercises must reuse the same base tokens
-	•	❌ Black/white “utility” surfaces for primary content are forbidden
-	•	Accent colors may vary by language, not base surfaces
+- Card radius, shadows, padding are canonical
+- Lookup, Lessons, Vocabulary, Exercises must reuse them
+- ❌ Black/white utility surfaces for primary content are forbidden
+- Accent colors may vary by language, not base surfaces
 
-⸻
+---
 
-Persistence Rules
-	•	localStorage → session recovery only
-	•	Supabase → long-term memory only
+## 17. Persistence Rules
+
+- `localStorage` → session recovery only
+- Supabase → long-term memory only
 
 If a hook touches both:
-	•	Document why
-	•	Keep responsibilities separate
+- document why
+- keep responsibilities separate
 
-⸻
+---
 
-Documentation Discipline
+## 18. Documentation Discipline
 
 Any change affecting:
-	•	learning flow
-	•	saving behavior
-	•	vocabulary structure
-	•	language handling
-	•	practice logic
-	•	hooks
+- learning flow
+- saving behavior
+- vocabulary structure
+- language handling
+- practice logic
+- hooks
 
 must update:
-	•	README.md
-	•	agents.md
-	•	relevant /docs/architecture/*
+- `README.md`
+- `agents.md`
+- relevant `/docs/architecture/*`
 
-Docs are treated as versioned system components.
+Docs are versioned system components.
 
-⸻
+---
 
-Project “Done” Checklist (ADDITIVE)
-	•	Canonical content types respected everywhere
-	•	Vocabulary flow works end-to-end
-	•	No Arabic leakage into Spanish
-	•	No language count mismatches
-	•	Added Context tile present and correct
-	•	Visual theme unified across views
-	•	Browser-verified screenshots captured
-	•	Verification note written
+## 19. When Unsure
 
-⸻
+If the agent is unsure:
+- STOP
+- Ask
+- Do NOT guess
 
-This file is authoritative.
-If an agent is unsure, it must stop and ask — not guess.
+---
+
+### This file is authoritative.

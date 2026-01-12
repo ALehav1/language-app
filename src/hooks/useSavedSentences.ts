@@ -163,6 +163,11 @@ export function useSavedSentences(language?: 'arabic' | 'spanish') {
         return sentences.some(s => s.arabic_text === arabicText);
     }, [sentences]);
 
+    // Get saved sentence by Arabic text (returns full object with status)
+    const getSentenceByText = useCallback((arabicText: string): SavedSentence | null => {
+        return sentences.find(s => s.arabic_text === arabicText) || null;
+    }, [sentences]);
+
     // Update memory aids (note and/or image)
     const updateMemoryAids = useCallback(async (
         id: string,
@@ -203,6 +208,7 @@ export function useSavedSentences(language?: 'arabic' | 'spanish') {
         updateStatus,
         updateMemoryAids,
         isSentenceSaved,
+        getSentenceByText,
         refetch: fetchSentences,
     };
 }

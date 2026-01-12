@@ -29,7 +29,7 @@ export function LookupView() {
     const navigate = useNavigate();
     const { language } = useLanguage();
     const { saveWord, isWordSaved } = useSavedWords();
-    const { saveSentence, isSentenceSaved } = useSavedSentences();
+    const { saveSentence, getSentenceByText, updateStatus, deleteSentence } = useSavedSentences();
     const { savePassage, isPassageSaved } = useSavedPassages();
     
     const [input, setInput] = useState('');
@@ -38,11 +38,11 @@ export function LookupView() {
     const [result, setResult] = useState<LookupResult | null>(null);
     const [passageResult, setPassageResult] = useState<PassageResult | null>(null);
     const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
-    const [savedSentences, setSavedSentences] = useState<Set<string>>(new Set());
     const [passageSaved, setPassageSaved] = useState(false);
     const [mode, setMode] = useState<'word' | 'passage'>('word');
     const [memoryNote, setMemoryNote] = useState<string | null>(null);
     const [memoryImageUrl, setMemoryImageUrl] = useState<string | null>(null);
+    const [exampleSentencesExpanded, setExampleSentencesExpanded] = useState(false);
     
     // Dialect preference: 'egyptian' (default) or 'standard'
     const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
@@ -136,7 +136,6 @@ export function LookupView() {
                 explanation: sentence.explanation,
                 source: 'lookup',
             });
-            setSavedSentences(prev => new Set(prev).add(sentence.arabic_msa));
         } catch (err) {
             console.error('[LookupView] Failed to save sentence:', err);
         }
@@ -183,9 +182,6 @@ export function LookupView() {
     
     // Check if a word is saved (for passage words)
     const isWordAlreadySaved = (arabicWord: string) => savedWords.has(arabicWord) || isWordSaved(arabicWord);
-    
-    // Check if a sentence is saved
-    const isSentenceAlreadySaved = (arabicText: string) => savedSentences.has(arabicText) || isSentenceSaved(arabicText);
     
     // Check if current passage is saved
     const isCurrentPassageSaved = passageResult?.original_text ? (passageSaved || isPassageSaved(passageResult.original_text)) : false;
@@ -288,34 +284,73 @@ export function LookupView() {
                         onNoteChanged={setMemoryNote}
                     />
 
-                    {/* Save example sentences */}
+                    {/* Example sentences - Collapsed by default */}
                     {result.example_sentences && result.example_sentences.length > 0 && (
-                        <div className="space-y-3">
-                            <h3 className="text-sm font-semibold text-white/50">Save Example Sentences</h3>
-                            {result.example_sentences.map((sentence, idx) => {
-                                const isSaved = isSentenceAlreadySaved(sentence.arabic_msa);
-                                return (
-                                    <div key={idx} className="glass-card p-3">
-                                        <div className="text-white font-arabic text-lg mb-1" dir={language === 'arabic' ? 'rtl' : 'ltr'}>
-                                            {sentence.arabic_egyptian || sentence.arabic_msa}
-                                        </div>
-                                        <div className="text-white/60 text-sm mb-2">
-                                            {sentence.english}
-                                        </div>
-                                        <button
-                                            onClick={() => handleSaveSentence(sentence)}
-                                            disabled={isSaved}
-                                            className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
-                                                isSaved
-                                                    ? 'bg-green-500/20 text-green-400 cursor-default'
-                                                    : 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30'
-                                            }`}
-                                        >
-                                            {isSaved ? '✓ Saved' : '💬 Save Sentence'}
-                                        </button>
-                                    </div>
-                                );
-                            })}
+                        <div className="glass-card p-3">
+                            <button
+                                onClick={() => setExampleSentencesExpanded(!exampleSentencesExpanded)}
+                                className="w-full flex items-center justify-between text-left"
+                            >
+                                <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider">
+                                    Example Sentences ({result.example_sentences.length})
+                                </div>
+                                <svg
+                                    className={`w-4 h-4 text-teal-400/70 transition-transform ${exampleSentencesExpanded ? 'rotate-180' : ''}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            
+                            {exampleSentencesExpanded && (
+                                <div className="space-y-3 mt-3">
+                                    {result.example_sentences.map((sentence, idx) => {
+                                        const savedSentence = getSentenceByText?.(sentence.arabic_msa);
+                                        const isSaved = !!savedSentence;
+                                        return (
+                                            <div key={idx} className="glass-card p-3">
+                                                <div className="text-white font-arabic text-lg mb-1" dir={language === 'arabic' ? 'rtl' : 'ltr'}>
+                                                    {sentence.arabic_egyptian || sentence.arabic_msa}
+                                                </div>
+                                                <div className="text-white/60 text-sm mb-2">
+                                                    {sentence.english}
+                                                </div>
+                                                
+                                                {isSaved && savedSentence ? (
+                                                    <div className="space-y-2">
+                                                        <div className="text-xs text-green-400 font-medium">
+                                                            ✓ Saved to {savedSentence.status === 'active' ? 'Practice' : 'Archive'}
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => updateStatus?.(savedSentence.id, savedSentence.status === 'active' ? 'learned' : 'active')}
+                                                                className="flex-1 py-2 px-3 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs rounded-lg transition-colors"
+                                                            >
+                                                                Move to {savedSentence.status === 'active' ? 'Archive' : 'Practice'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => deleteSentence?.(savedSentence.id)}
+                                                                className="py-2 px-3 bg-red-500/20 text-red-300 hover:bg-red-500/30 text-xs rounded-lg transition-colors"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleSaveSentence(sentence)}
+                                                        className="w-full py-2 rounded-lg text-sm font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                                                    >
+                                                        💬 Save Sentence
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -394,27 +429,52 @@ export function LookupView() {
                     {/* Sentence by sentence breakdown */}
                     {passageResult.sentences?.map((sentence, sentenceIdx) => (
                         <div key={sentenceIdx} className="glass-card p-4 space-y-4">
-                            {/* Sentence header */}
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs text-white/40">Sentence {sentenceIdx + 1}</span>
-                                <button
-                                    onClick={() => handleSaveSentence({
-                                        arabic_msa: sentence.arabic_msa,
-                                        arabic_egyptian: sentence.arabic_egyptian,
-                                        transliteration_msa: sentence.transliteration_msa,
-                                        transliteration_egyptian: sentence.transliteration_egyptian,
-                                        english: sentence.translation,
-                                        explanation: sentence.explanation,
-                                    })}
-                                    disabled={isSentenceAlreadySaved(sentence.arabic_msa)}
-                                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                                        isSentenceAlreadySaved(sentence.arabic_msa)
-                                            ? 'bg-green-500/20 text-green-400'
-                                            : 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30'
-                                    }`}
-                                >
-                                    {isSentenceAlreadySaved(sentence.arabic_msa) ? '✓ Saved' : '💬 Save'}
-                                </button>
+                            {/* Sentence header with save state */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-white/40">Sentence {sentenceIdx + 1}</span>
+                                </div>
+                                
+                                {(() => {
+                                    const savedSentence = getSentenceByText?.(sentence.arabic_msa);
+                                    const isSaved = !!savedSentence;
+                                    
+                                    return isSaved && savedSentence ? (
+                                        <div className="space-y-2">
+                                            <div className="text-xs text-green-400 font-medium">
+                                                ✓ Saved to {savedSentence.status === 'active' ? 'Practice' : 'Archive'}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => updateStatus?.(savedSentence.id, savedSentence.status === 'active' ? 'learned' : 'active')}
+                                                    className="flex-1 py-1 px-2 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs rounded-lg transition-colors"
+                                                >
+                                                    Move to {savedSentence.status === 'active' ? 'Archive' : 'Practice'}
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteSentence?.(savedSentence.id)}
+                                                    className="py-1 px-2 bg-red-500/20 text-red-300 hover:bg-red-500/30 text-xs rounded-lg transition-colors"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleSaveSentence({
+                                                arabic_msa: sentence.arabic_msa,
+                                                arabic_egyptian: sentence.arabic_egyptian,
+                                                transliteration_msa: sentence.transliteration_msa,
+                                                transliteration_egyptian: sentence.transliteration_egyptian,
+                                                english: sentence.translation,
+                                                explanation: sentence.explanation,
+                                            })}
+                                            className="px-3 py-1 rounded-lg text-xs font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                                        >
+                                            💬 Save Sentence
+                                        </button>
+                                    );
+                                })()}
                             </div>
 
                             {/* Primary dialect (based on preference) */}
