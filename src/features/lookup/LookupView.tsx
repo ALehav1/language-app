@@ -369,7 +369,7 @@ export function LookupView() {
             {/* Passage Results */}
             {passageResult && mode === 'passage' && (
                 <div className="space-y-6">
-                    {/* Detected language badge + Save Passage button */}
+                    {/* Detected language badge + Save Passage button (only for multi-sentence) */}
                     <div className="flex items-center justify-between">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                             passageResult.detected_language === 'english'
@@ -378,17 +378,20 @@ export function LookupView() {
                         }`}>
                             {passageResult.detected_language === 'english' ? '🇺🇸 English → Arabic' : '🇪🇬 Arabic → English'}
                         </span>
-                        <button
-                            onClick={handleSavePassage}
-                            disabled={isCurrentPassageSaved}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                                isCurrentPassageSaved
-                                    ? 'bg-green-500/20 text-green-400 cursor-default'
-                                    : 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30'
-                            }`}
-                        >
-                            {isCurrentPassageSaved ? '✓ Passage Saved' : '📄 Save Passage'}
-                        </button>
+                        {/* Only show Save Passage for true multi-sentence content */}
+                        {passageResult.sentences && passageResult.sentences.length > 1 && (
+                            <button
+                                onClick={handleSavePassage}
+                                disabled={isCurrentPassageSaved}
+                                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                                    isCurrentPassageSaved
+                                        ? 'bg-green-500/20 text-green-400 cursor-default'
+                                        : 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30'
+                                }`}
+                            >
+                                {isCurrentPassageSaved ? '✓ Passage Saved' : '📄 Save Passage'}
+                            </button>
+                        )}
                     </div>
 
                     {/* Dialect toggle */}
