@@ -161,6 +161,11 @@ export function useSavedPassages(language?: 'arabic' | 'spanish') {
         return passages.some(p => p.original_text === originalText);
     }, [passages]);
 
+    // Get saved passage by original text (returns full object with status)
+    const getPassageByText = useCallback((originalText: string): SavedPassage | null => {
+        return passages.find(p => p.original_text === originalText) || null;
+    }, [passages]);
+
     // Update memory aids (note and/or image)
     const updateMemoryAids = useCallback(async (
         id: string,
@@ -201,6 +206,7 @@ export function useSavedPassages(language?: 'arabic' | 'spanish') {
         updateStatus,
         updateMemoryAids,
         isPassageSaved,
+        getPassageByText,
         refetch: fetchPassages,
     };
 }

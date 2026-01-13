@@ -34,7 +34,7 @@ export function LookupView() {
     const { language } = useLanguage();
     const { saveWord, isWordSaved } = useSavedWords();
     const { saveSentence, getSentenceByText, updateStatus, deleteSentence } = useSavedSentences();
-    const { savePassage, isPassageSaved } = useSavedPassages();
+    const { savePassage, isPassageSaved, getPassageByText, updateStatus: updatePassageStatus, deletePassage } = useSavedPassages();
     
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -504,20 +504,55 @@ export function LookupView() {
                         }`}>
                             {passageResult.detected_language === 'english' ? '🇺🇸 English → Arabic' : '🇪🇬 Arabic → English'}
                         </span>
-                        {/* Only show Save Passage for true multi-sentence content */}
-                        {passageResult.sentences && passageResult.sentences.length > 1 && (
-                            <button
-                                onClick={handleSavePassage}
-                                disabled={isCurrentPassageSaved}
-                                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                                    isCurrentPassageSaved
-                                        ? 'bg-green-500/20 text-green-400 cursor-default'
-                                        : 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30'
-                                }`}
-                            >
-                                {isCurrentPassageSaved ? '✓ Passage Saved' : '📄 Save Passage'}
-                            </button>
-                        )}
+                        {/* Save Passage controls (only for 2+ sentences) */}
+                        {passageResult.sentences && passageResult.sentences.length > 1 && (() => {
+                            const savedPassage = getPassageByText?.(passageResult.original_text);
+                            return savedPassage ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="text-xs text-green-400 font-medium">
+                                        ✓ Saved to {savedPassage.status === 'active' ? 'Practice' : 'Archive'}
+                                    </div>
+                                    <button
+                                        onClick={() => updatePassageStatus?.(savedPassage.id, savedPassage.status === 'active' ? 'learned' : 'active')}
+                                        className="px-3 py-1 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs rounded-lg transition-colors"
+                                    >
+                                        Move to {savedPassage.status === 'active' ? 'Archive' : 'Practice'}
+                                    </button>
+                                    <button
+                                        onClick={() => deletePassage?.(savedPassage.id)}
+                                        className="px-3 py-1 bg-red-500/20 text-red-300 hover:bg-red-500/30 text-xs rounded-lg transition-colors"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleSavePassage}
+                                        className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                                    >
+                                        📄 Save to Practice
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (!passageResult || !passageResult.original_text) return;
+                                            await savePassage({
+                                                original_text: passageResult.original_text,
+                                                source_language: passageResult.detected_language || 'arabic',
+                                                full_translation: passageResult.full_translation,
+                                                full_transliteration: passageResult.full_transliteration,
+                                                sentence_count: passageResult.sentences?.length || 1,
+                                                source: 'lookup',
+                                                status: 'learned',
+                                            });
+                                        }}
+                                        className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-blue-500/20 text-blue-300 hover:bg-blue-500/30"
+                                    >
+                                        📄 Save to Archive
+                                    </button>
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* Dialect toggle */}
