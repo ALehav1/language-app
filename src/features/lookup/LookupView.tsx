@@ -505,7 +505,7 @@ export function LookupView() {
                             {passageResult.detected_language === 'english' ? '🇺🇸 English → Arabic' : '🇪🇬 Arabic → English'}
                         </span>
                         {/* Save Passage controls (only for 2+ sentences) */}
-                        {passageResult.sentences && passageResult.sentences.length > 1 && (() => {
+                        {passageResult.sentences && passageResult.sentences.length > 1 && passageResult.original_text && (() => {
                             const savedPassage = getPassageByText?.(passageResult.original_text);
                             return savedPassage ? (
                                 <div className="flex items-center gap-2">
