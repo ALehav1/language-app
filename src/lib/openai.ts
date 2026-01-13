@@ -612,13 +612,115 @@ export async function analyzePassage(
 ): Promise<PassageResult> {
   const { language } = options;
   const isArabic = language === 'arabic';
-  // Detect if input is in target language or English
-  const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
+  const isSpanish = language === 'spanish';
+  
+  // Detect input language
+  const arabicChars = (text.match(/[؀-ۿ]/g) || []).length;
+  const spanishChars = (text.match(/[áéíóúüñ¿¡]/gi) || []).length;
   const latinChars = (text.match(/[a-zA-Z]/g) || []).length;
   
   const isArabicInput = isArabic && arabicChars > latinChars;
+  const isSpanishInput = isSpanish && (spanishChars > 0 || latinChars > arabicChars);
   
-  const prompt = isArabicInput ? `
+  let prompt = '';
+  
+  if (isSpanish && isSpanishInput) {
+    // Spanish input -> analyze and translate to English
+    prompt = `
+    Analyze this Spanish passage and break it down sentence by sentence, word by word.
+    
+    Text: "${text}"
+    
+    REQUIREMENTS:
+    1. Split into sentences
+    2. For EACH sentence provide:
+       - Original Spanish
+       - English translation
+       - Word-by-word breakdown
+    
+    3. For EACH word in the breakdown:
+       - Spanish word
+       - English translation
+       - Part of speech
+    
+    Return ONLY valid JSON:
+    {
+      "detected_language": "spanish",
+      "original_text": "${text}",
+      "full_translation": "Complete English translation",
+      "full_transliteration": "${text}",
+      "sentences": [
+        {
+          "arabic_msa": "${text}",
+          "arabic_egyptian": "${text}",
+          "transliteration_msa": "${text}",
+          "transliteration_egyptian": "${text}",
+          "translation": "English translation",
+          "explanation": "Grammar notes (optional)",
+          "words": [
+            {
+              "arabic": "palabra",
+              "arabic_egyptian": "palabra",
+              "transliteration": "palabra",
+              "transliteration_egyptian": "palabra",
+              "translation": "word",
+              "part_of_speech": "noun"
+            }
+          ]
+        }
+      ]
+    }
+    `;
+  } else if (isSpanish && !isSpanishInput) {
+    // English input -> translate to Spanish and analyze
+    prompt = `
+    Translate this English passage to Spanish and break it down sentence by sentence, word by word.
+    
+    English Text: "${text}"
+    
+    REQUIREMENTS:
+    1. Translate the entire passage to Spanish
+    2. Split into sentences
+    3. For EACH sentence provide:
+       - Spanish translation
+       - Original English
+       - Word-by-word breakdown of the Spanish
+    
+    4. For EACH word in the breakdown:
+       - Spanish word
+       - English translation
+       - Part of speech
+    
+    Return ONLY valid JSON:
+    {
+      "detected_language": "english",
+      "original_text": "${text}",
+      "full_translation": "Complete Spanish translation",
+      "full_transliteration": "Complete Spanish translation",
+      "sentences": [
+        {
+          "arabic_msa": "Spanish sentence",
+          "arabic_egyptian": "Spanish sentence",
+          "transliteration_msa": "Spanish sentence",
+          "transliteration_egyptian": "Spanish sentence",
+          "translation": "Original English sentence",
+          "explanation": "Grammar notes (optional)",
+          "words": [
+            {
+              "arabic": "palabra",
+              "arabic_egyptian": "palabra",
+              "transliteration": "palabra",
+              "transliteration_egyptian": "palabra",
+              "translation": "word",
+              "part_of_speech": "noun"
+            }
+          ]
+        }
+      ]
+    }
+    `;
+  } else if (isArabicInput) {
+    prompt = `
     Analyze this Arabic passage and break it down sentence by sentence, word by word.
     
     Text: "${text}"

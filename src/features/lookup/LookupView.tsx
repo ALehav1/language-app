@@ -9,6 +9,7 @@ import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecis
 import { MemoryAidTile } from '../../components/MemoryAidTile';
 import { ContextTile } from '../../components/ContextTile';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
+import { CollapsibleSection } from '../../components/CollapsibleSection';
 import { findHebrewCognate } from '../../utils/hebrewCognates';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -43,7 +44,6 @@ export function LookupView() {
     const [selectedSentence, setSelectedSentence] = useState<any | null>(null);
     const [memoryNote, setMemoryNote] = useState<string | null>(null);
     const [memoryImageUrl, setMemoryImageUrl] = useState<string | null>(null);
-    const [exampleSentencesExpanded, setExampleSentencesExpanded] = useState(false);
     
     // Dialect preference: 'egyptian' (default) or 'standard'
     const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
@@ -321,32 +321,18 @@ export function LookupView() {
 
                     {/* Example sentences - Collapsed by default */}
                     {result.example_sentences && result.example_sentences.length > 0 && (
-                        <div className="glass-card p-3">
-                            <button
-                                onClick={() => setExampleSentencesExpanded(!exampleSentencesExpanded)}
-                                className="w-full flex items-center justify-between text-left"
-                            >
-                                <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider">
-                                    Example Sentences ({result.example_sentences.length})
-                                </div>
-                                <svg
-                                    className={`w-4 h-4 text-teal-400/70 transition-transform ${exampleSentencesExpanded ? 'rotate-180' : ''}`}
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            
-                            {exampleSentencesExpanded && (
+                        <CollapsibleSection
+                            title="Example Sentences"
+                            count={result.example_sentences.length}
+                            defaultExpanded={false}
+                        >
                                 <div className="space-y-3 mt-3">
                                     {result.example_sentences.map((sentence, idx) => {
                                         const savedSentence = getSentenceByText?.(sentence.arabic_msa);
                                         const isSaved = !!savedSentence;
                                         return (
                                             <div key={idx} className="glass-card p-3">
-                                                <div className="text-white font-arabic text-lg mb-1" dir={language === 'arabic' ? 'rtl' : 'ltr'}>
+                                                <div className="text-white font-arabic text-2xl mb-1" dir={language === 'arabic' ? 'rtl' : 'ltr'}>
                                                     {sentence.arabic_egyptian || sentence.arabic_msa}
                                                 </div>
                                                 <div className="text-white/60 text-sm mb-2">
@@ -384,9 +370,7 @@ export function LookupView() {
                                             </div>
                                         );
                                     })}
-                                </div>
-                            )}
-                        </div>
+                        </CollapsibleSection>
                     )}
 
                     {/* Save decision panel - MOVED TO BOTTOM */}
@@ -420,7 +404,7 @@ export function LookupView() {
 
                     {/* Sentence detail - TODO: implement full sentence view with AddedContextTile and WordBreakdownList */}
                     <div className="glass-card p-4">
-                        <div className="text-2xl font-arabic text-white mb-2" dir="rtl">
+                        <div className="text-3xl font-arabic text-white mb-2" dir="rtl">
                             {selectedSentence.arabic_egyptian || selectedSentence.arabic_msa}
                         </div>
                         <div className="text-white/80">
