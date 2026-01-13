@@ -773,7 +773,10 @@ export async function analyzePassage(
         }
       ]
     }
-  ` : `
+  `;
+  } else {
+    // English input -> translate to Arabic
+    prompt = `
     Translate this English passage to Arabic and break it down sentence by sentence, word by word.
     
     English Text: "${text}"

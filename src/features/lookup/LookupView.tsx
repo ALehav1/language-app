@@ -326,8 +326,7 @@ export function LookupView() {
                             count={result.example_sentences.length}
                             defaultExpanded={false}
                         >
-                                <div className="space-y-3 mt-3">
-                                    {result.example_sentences.map((sentence, idx) => {
+                            {result.example_sentences.map((sentence, idx) => {
                                         const savedSentence = getSentenceByText?.(sentence.arabic_msa);
                                         const isSaved = !!savedSentence;
                                         return (
@@ -368,8 +367,8 @@ export function LookupView() {
                                                     </button>
                                                 )}
                                             </div>
-                                        );
-                                    })}
+                                    );
+                                })}
                         </CollapsibleSection>
                     )}
 
