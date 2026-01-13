@@ -626,36 +626,38 @@ export async function analyzePassage(
   
   if (isSpanish && isSpanishInput) {
     // Spanish input -> analyze and translate to English
+    // CRITICAL: Use Spanish-only schema (no Arabic fields)
     prompt = `
     Analyze this Spanish passage and break it down sentence by sentence, word by word.
     
     Text: "${text}"
     
-    REQUIREMENTS:
-    1. Split into sentences
-    2. For EACH sentence provide:
-       - Original Spanish
+    CRITICAL REQUIREMENTS:
+    1. This is SPANISH text - do NOT translate to or mention Arabic
+    2. Split into sentences
+    3. For EACH sentence provide:
+       - Original Spanish text
        - English translation
        - Word-by-word breakdown
     
-    3. For EACH word in the breakdown:
+    4. For EACH word in the breakdown:
        - Spanish word
        - English translation
        - Part of speech
     
-    Return ONLY valid JSON:
+    Return ONLY valid JSON (use Spanish text in all Spanish fields, NO Arabic):
     {
       "detected_language": "spanish",
       "original_text": "${text}",
-      "full_translation": "Complete English translation",
+      "full_translation": "Complete English translation of ENTIRE passage",
       "full_transliteration": "${text}",
       "sentences": [
         {
-          "arabic_msa": "${text}",
-          "arabic_egyptian": "${text}",
-          "transliteration_msa": "${text}",
-          "transliteration_egyptian": "${text}",
-          "translation": "English translation",
+          "arabic_msa": "Spanish sentence here",
+          "arabic_egyptian": "Spanish sentence here",
+          "transliteration_msa": "Spanish sentence here",
+          "transliteration_egyptian": "Spanish sentence here",
+          "translation": "English translation of this sentence",
           "explanation": "Grammar notes (optional)",
           "words": [
             {
@@ -673,29 +675,31 @@ export async function analyzePassage(
     `;
   } else if (isSpanish && !isSpanishInput) {
     // English input -> translate to Spanish and analyze
+    // CRITICAL: Use Spanish-only schema (no Arabic fields)
     prompt = `
     Translate this English passage to Spanish and break it down sentence by sentence, word by word.
     
     English Text: "${text}"
     
-    REQUIREMENTS:
-    1. Translate the entire passage to Spanish
-    2. Split into sentences
-    3. For EACH sentence provide:
+    CRITICAL REQUIREMENTS:
+    1. This is for SPANISH learning - do NOT translate to or mention Arabic
+    2. Translate the ENTIRE passage to Spanish (not just first sentence)
+    3. Split into sentences
+    4. For EACH sentence provide:
        - Spanish translation
        - Original English
        - Word-by-word breakdown of the Spanish
     
-    4. For EACH word in the breakdown:
+    5. For EACH word in the breakdown:
        - Spanish word
        - English translation
        - Part of speech
     
-    Return ONLY valid JSON:
+    Return ONLY valid JSON (use Spanish text in all Spanish fields, NO Arabic):
     {
       "detected_language": "english",
       "original_text": "${text}",
-      "full_translation": "Complete Spanish translation",
+      "full_translation": "Complete Spanish translation of ENTIRE passage",
       "full_transliteration": "Complete Spanish translation",
       "sentences": [
         {
@@ -835,11 +839,16 @@ export async function analyzePassage(
   `;
   }
 
+  // Add language-specific system instruction
+  const systemInstruction = isSpanish 
+    ? "Return valid JSON only. CRITICAL: This is for SPANISH learning. Do NOT include Arabic text, Arabic characters, or Arabic translations. Only Spanish and English."
+    : "Return valid json only.";
+
   const response = await withRetry(() =>
     openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: "Return valid json only." },
+        { role: "system", content: systemInstruction },
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" }
@@ -847,6 +856,25 @@ export async function analyzePassage(
   );
 
   const result = JSON.parse(response.choices[0].message.content || '{}') as PassageResult;
+  
+  // C3-1: Validate Spanish mode response - reject if contains Arabic characters
+  if (isSpanish && result.full_translation) {
+    const hasArabicChars = /[؀-ۿ]/.test(result.full_translation);
+    if (hasArabicChars) {
+      console.error('[analyzePassage] Spanish mode returned Arabic characters - rejecting and retrying');
+      // Retry once with stricter instruction
+      const retryResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "Return valid JSON only. CRITICAL: You are analyzing SPANISH text for Spanish learners. Do NOT produce Arabic characters or Arabic translations under any circumstances. Only Spanish and English." },
+          { role: "user", content: prompt + "\n\nIMPORTANT: Output SPANISH text only (and English translations). NO Arabic characters." }
+        ],
+        response_format: { type: "json_object" }
+      });
+      const retryResult = JSON.parse(retryResponse.choices[0].message.content || '{}') as PassageResult;
+      return retryResult;
+    }
+  }
   
   // Apply static Hebrew cognate lookup to each word
   if (result.sentences) {

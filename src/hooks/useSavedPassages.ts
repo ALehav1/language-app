@@ -28,6 +28,7 @@ export interface SavePassageInput {
     full_translation: string;
     full_transliteration?: string;
     sentence_count?: number;
+    enrichment_data?: any; // JSON: stores sentences[] with breakdowns, context, examples
     source?: string;
     status?: 'active' | 'learned';  // Default: 'active'
     memory_note?: string;

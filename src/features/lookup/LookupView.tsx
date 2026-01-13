@@ -198,6 +198,10 @@ export function LookupView() {
                 full_translation: passageResult.full_translation,
                 full_transliteration: passageResult.full_transliteration,
                 sentence_count: passageResult.sentences?.length || 1,
+                enrichment_data: {
+                    sentences: passageResult.sentences,
+                    detected_language: passageResult.detected_language,
+                },
                 source: 'lookup',
             });
         } catch (err) {
