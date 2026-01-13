@@ -39,7 +39,8 @@ export function LookupView() {
     const [passageResult, setPassageResult] = useState<PassageResult | null>(null);
     const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
     const [passageSaved, setPassageSaved] = useState(false);
-    const [mode, setMode] = useState<'word' | 'passage'>('word');
+    const [mode, setMode] = useState<'word' | 'sentence' | 'passage'>('word');
+    const [selectedSentence, setSelectedSentence] = useState<any | null>(null);
     const [memoryNote, setMemoryNote] = useState<string | null>(null);
     const [memoryImageUrl, setMemoryImageUrl] = useState<string | null>(null);
     const [exampleSentencesExpanded, setExampleSentencesExpanded] = useState(false);
@@ -55,13 +56,32 @@ export function LookupView() {
         localStorage.setItem(DIALECT_PREFERENCE_KEY, dialectPreference);
     }, [dialectPreference]);
 
-    // Detect if input looks like a passage (multiple words/sentences)
-    const isPassageInput = (text: string): boolean => {
+    // Detect content type from input
+    const detectContentType = (text: string): 'word' | 'sentence' | 'passage' => {
         const trimmed = text.trim();
-        // Check for multiple sentences (periods, question marks) or many words
-        const hasMultipleSentences = /[.؟!،]/.test(trimmed);
+        
+        // Count sentences by splitting on sentence-ending punctuation
+        const sentenceEnders = /[.؟!]\s+/g;
+        const sentences = trimmed.split(sentenceEnders).filter(s => s.trim().length > 0);
+        
+        // If 2+ sentences → passage
+        if (sentences.length >= 2) {
+            return 'passage';
+        }
+        
+        // If exactly 1 sentence (or has sentence punctuation) → sentence
+        if (sentences.length === 1 || /[.؟!،]/.test(trimmed)) {
+            return 'sentence';
+        }
+        
+        // If single token (no spaces or very few words) → word
         const wordCount = trimmed.split(/\s+/).length;
-        return hasMultipleSentences || wordCount > 4;
+        if (wordCount === 1) {
+            return 'word';
+        }
+        
+        // Default: if short phrase (2-4 words) without punctuation → treat as sentence
+        return wordCount <= 4 ? 'sentence' : 'passage';
     };
 
     // Handle lookup - auto-detect word vs passage
@@ -73,20 +93,22 @@ export function LookupView() {
         setResult(null);
         setPassageResult(null);
 
-        const isPassage = isPassageInput(input);
-        setMode(isPassage ? 'passage' : 'word');
+        const contentType = detectContentType(input);
+        setMode(contentType);
+        setSelectedSentence(null); // Reset sentence selection
 
         try {
-            if (isPassage) {
-                console.log('[LookupView] Analyzing passage:', input);
-                const data = await analyzePassage(input.trim(), { language });
-                console.log('[LookupView] Passage result:', data);
-                setPassageResult(data);
-            } else {
+            if (contentType === 'word') {
                 console.log('[LookupView] Looking up word:', input);
                 const data = await lookupWord(input.trim(), { language });
                 console.log('[LookupView] Word result:', data);
                 setResult(data);
+            } else {
+                // Both sentence and passage use analyzePassage
+                console.log(`[LookupView] Analyzing ${contentType}:`, input);
+                const data = await analyzePassage(input.trim(), { language });
+                console.log(`[LookupView] ${contentType} result:`, data);
+                setPassageResult(data);
             }
         } catch (err) {
             console.error('[LookupView] Error:', err);
@@ -122,6 +144,19 @@ export function LookupView() {
         } catch (err) {
             console.error('[LookupView] Failed to save word:', err);
         }
+    };
+
+    // Transition: Sentence click opens Sentence View
+    const handleSentenceClick = (sentence: any) => {
+        console.log('[LookupView] Sentence clicked, switching to sentence view');
+        setSelectedSentence(sentence);
+        setMode('sentence');
+    };
+
+    // Transition: Word click opens Word Detail (TODO: implement modal)
+    const handleWordClick = (word: any) => {
+        console.log('[LookupView] Word clicked, should open Word Detail modal:', word);
+        // TODO: Open word detail modal
     };
 
     // Handle save sentence (from example sentences or passage)
@@ -362,6 +397,35 @@ export function LookupView() {
                             onDecision={handleWordDecision}
                             alreadySaved={isCurrentWordSaved}
                         />
+                    </div>
+                </div>
+            )}
+
+            {/* Sentence View (when clicked from passage or directly looked up) */}
+            {selectedSentence && mode === 'sentence' && (
+                <div className="space-y-6">
+                    {/* Back button */}
+                    <button
+                        onClick={() => {
+                            setSelectedSentence(null);
+                            setMode('passage');
+                        }}
+                        className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span>Back to Passage</span>
+                    </button>
+
+                    {/* Sentence detail - TODO: implement full sentence view with AddedContextTile and WordBreakdownList */}
+                    <div className="glass-card p-4">
+                        <div className="text-2xl font-arabic text-white mb-2" dir="rtl">
+                            {selectedSentence.arabic_egyptian || selectedSentence.arabic_msa}
+                        </div>
+                        <div className="text-white/80">
+                            {selectedSentence.translation}
+                        </div>
                     </div>
                 </div>
             )}
