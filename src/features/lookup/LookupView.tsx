@@ -34,7 +34,7 @@ export function LookupView() {
     const { language } = useLanguage();
     const { saveWord, isWordSaved } = useSavedWords();
     const { saveSentence, getSentenceByText, updateStatus, deleteSentence } = useSavedSentences();
-    const { savePassage, isPassageSaved, getPassageByText, updateStatus: updatePassageStatus, deletePassage } = useSavedPassages();
+    const { savePassage, getPassageByText, updateStatus: updatePassageStatus, deletePassage } = useSavedPassages();
     
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +42,6 @@ export function LookupView() {
     const [result, setResult] = useState<LookupResult | null>(null);
     const [passageResult, setPassageResult] = useState<PassageResult | null>(null);
     const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
-    const [passageSaved, setPassageSaved] = useState(false);
     const [mode, setMode] = useState<'word' | 'sentence' | 'passage'>('word');
     const [selectedSentence, setSelectedSentence] = useState<any | null>(null);
     const [memoryNote, setMemoryNote] = useState<string | null>(null);
@@ -208,9 +207,6 @@ export function LookupView() {
 
     // Check if current word is saved
     const isCurrentWordSaved = result ? (savedWords.has(result.arabic_word) || isWordSaved(result.arabic_word)) : false;
-    
-    // Check if current passage is saved
-    const isCurrentPassageSaved = passageResult?.original_text ? (passageSaved || isPassageSaved(passageResult.original_text)) : false;
 
     return (
         <div className="min-h-screen bg-surface-300 pb-24">
