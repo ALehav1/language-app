@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { lookupWord, analyzePassage, type LookupResult, type PassageResult, type PassageWord } from '../../lib/openai';
+import { lookupWord, analyzePassage, type LookupResult, type PassageResult } from '../../lib/openai';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { useSavedSentences } from '../../hooks/useSavedSentences';
 import { useSavedPassages } from '../../hooks/useSavedPassages';
@@ -10,7 +10,10 @@ import { MemoryAidTile } from '../../components/MemoryAidTile';
 import { ContextTile } from '../../components/ContextTile';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { CollapsibleSection } from '../../components/CollapsibleSection';
-import { findHebrewCognate } from '../../utils/hebrewCognates';
+import { AddedContextTile } from '../../components/AddedContextTile';
+import { WordBreakdownList, type WordBreakdownWord } from '../../components/WordBreakdownList';
+import { WordDetailModal } from '../../components/modals/WordDetailModal';
+import type { WordSelectionContext } from '../../types/selection';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 // Dialect preference storage key
@@ -44,6 +47,10 @@ export function LookupView() {
     const [selectedSentence, setSelectedSentence] = useState<any | null>(null);
     const [memoryNote, setMemoryNote] = useState<string | null>(null);
     const [memoryImageUrl, setMemoryImageUrl] = useState<string | null>(null);
+    
+    // Word modal state
+    const [wordModalOpen, setWordModalOpen] = useState(false);
+    const [wordSelection, setWordSelection] = useState<WordSelectionContext | null>(null);
     
     // Dialect preference: 'egyptian' (default) or 'standard'
     const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
@@ -146,17 +153,22 @@ export function LookupView() {
         }
     };
 
-    // Transition: Sentence click opens Sentence View
+    // Handle sentence click - switches to Sentence view
     const handleSentenceClick = (sentence: any) => {
-        console.log('[LookupView] Sentence clicked, switching to sentence view');
         setSelectedSentence(sentence);
         setMode('sentence');
     };
 
-    // Transition: Word click opens Word Detail (TODO: implement modal)
-    const handleWordClick = (word: any) => {
-        console.log('[LookupView] Word clicked, should open Word Detail modal:', word);
-        // TODO: Open word detail modal
+    // Handle word click - opens Word Detail modal
+    const handleWordClick = (word: WordBreakdownWord) => {
+        setWordSelection({
+            selectedText: word.arabic || word.translation,
+            parentSentence: selectedSentence?.arabic_msa || passageResult?.original_text || '',
+            sourceView: 'lookup',
+            language: language,
+            contentType: 'word',
+        } as WordSelectionContext);
+        setWordModalOpen(true);
     };
 
     // Handle save sentence (from example sentences or passage)
@@ -173,23 +185,6 @@ export function LookupView() {
             });
         } catch (err) {
             console.error('[LookupView] Failed to save sentence:', err);
-        }
-    };
-
-    // Handle save word from passage breakdown
-    const handleSavePassageWord = async (word: PassageWord) => {
-        try {
-            const cognate = findHebrewCognate(word.arabic);
-            await saveWord({
-                word: word.arabic,
-                translation: word.translation,
-                pronunciation_standard: word.transliteration,
-                pronunciation_egyptian: word.transliteration_egyptian,
-                hebrew_cognate: cognate || undefined,
-            });
-            setSavedWords(prev => new Set(prev).add(word.arabic));
-        } catch (err) {
-            console.error('[LookupView] Failed to save word from passage:', err);
         }
     };
 
@@ -214,9 +209,6 @@ export function LookupView() {
 
     // Check if current word is saved
     const isCurrentWordSaved = result ? (savedWords.has(result.arabic_word) || isWordSaved(result.arabic_word)) : false;
-    
-    // Check if a word is saved (for passage words)
-    const isWordAlreadySaved = (arabicWord: string) => savedWords.has(arabicWord) || isWordSaved(arabicWord);
     
     // Check if current passage is saved
     const isCurrentPassageSaved = passageResult?.original_text ? (passageSaved || isPassageSaved(passageResult.original_text)) : false;
@@ -401,15 +393,102 @@ export function LookupView() {
                         <span>Back to Passage</span>
                     </button>
 
-                    {/* Sentence detail - TODO: implement full sentence view with AddedContextTile and WordBreakdownList */}
+                    {/* Sentence Header */}
                     <div className="glass-card p-4">
-                        <div className="text-3xl font-arabic text-white mb-2" dir="rtl">
-                            {selectedSentence.arabic_egyptian || selectedSentence.arabic_msa}
+                        <div className="text-3xl font-arabic text-white mb-3" dir="rtl">
+                            {dialectPreference === 'egyptian' 
+                                ? (selectedSentence.arabic_egyptian || selectedSentence.arabic_msa)
+                                : (selectedSentence.arabic_msa || selectedSentence.arabic_egyptian)
+                            }
                         </div>
-                        <div className="text-white/80">
+                        <div className="text-white/80 text-lg mb-2">
                             {selectedSentence.translation}
                         </div>
+                        {selectedSentence.explanation && (
+                            <div className="text-white/60 text-sm italic mt-2">
+                                {selectedSentence.explanation}
+                            </div>
+                        )}
                     </div>
+
+                    {/* Added Context for Sentence */}
+                    {selectedSentence.context && (
+                        <AddedContextTile
+                            language={language}
+                            context={selectedSentence.context}
+                        />
+                    )}
+
+                    {/* Word Breakdown (collapsed by default) */}
+                    {selectedSentence.words && selectedSentence.words.length > 0 && (
+                        <CollapsibleSection
+                            title="Word Breakdown"
+                            count={selectedSentence.words.length}
+                            defaultExpanded={false}
+                        >
+                            <WordBreakdownList
+                                words={selectedSentence.words}
+                                language={language}
+                                dialectPreference={dialectPreference}
+                                onWordClick={handleWordClick}
+                            />
+                        </CollapsibleSection>
+                    )}
+
+                    {/* Save Sentence Controls */}
+                    {(() => {
+                        const savedSentence = getSentenceByText?.(selectedSentence.arabic_msa);
+                        return savedSentence ? (
+                            <div className="glass-card p-4 space-y-2">
+                                <div className="text-xs text-green-400 font-medium">
+                                    ✓ Saved to {savedSentence.status === 'active' ? 'Practice' : 'Archive'}
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => updateStatus?.(savedSentence.id, savedSentence.status === 'active' ? 'learned' : 'active')}
+                                        className="flex-1 py-2 px-3 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-sm rounded-lg transition-colors"
+                                    >
+                                        Move to {savedSentence.status === 'active' ? 'Archive' : 'Practice'}
+                                    </button>
+                                    <button
+                                        onClick={() => deleteSentence?.(savedSentence.id)}
+                                        className="py-2 px-3 bg-red-500/20 text-red-300 hover:bg-red-500/30 text-sm rounded-lg transition-colors"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="glass-card p-4">
+                                <div className="text-sm text-white/60 mb-3">Save this sentence to:</div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleSaveSentence(selectedSentence)}
+                                        className="flex-1 py-3 rounded-lg text-sm font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                                    >
+                                        💬 Save to Practice
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            await saveSentence({
+                                                arabic_text: selectedSentence.arabic_msa,
+                                                arabic_egyptian: selectedSentence.arabic_egyptian,
+                                                transliteration: selectedSentence.transliteration_msa,
+                                                transliteration_egyptian: selectedSentence.transliteration_egyptian,
+                                                translation: selectedSentence.translation,
+                                                explanation: selectedSentence.explanation,
+                                                source: 'lookup',
+                                                status: 'learned',
+                                            });
+                                        }}
+                                        className="flex-1 py-3 rounded-lg text-sm font-medium transition-colors bg-blue-500/20 text-blue-300 hover:bg-blue-500/30"
+                                    >
+                                        📚 Save to Archive
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </div>
             )}
 
@@ -589,54 +668,28 @@ export function LookupView() {
                             )}
 
                             {/* Word-by-word breakdown - Vertical RTL */}
-                            <div>
-                                <div className="text-xs text-white/40 mb-2">Word Breakdown</div>
-                                <div className="space-y-2" dir="rtl">
-                                    {sentence.words?.map((word, wordIdx) => {
-                                        const wordSaved = isWordAlreadySaved(word.arabic);
-                                        // Show preferred dialect first
-                                        const primaryArabic = dialectPreference === 'egyptian' 
-                                            ? (word.arabic_egyptian || word.arabic)
-                                            : (word.arabic || word.arabic_egyptian);
-                                        const primaryTranslit = dialectPreference === 'egyptian'
-                                            ? (word.transliteration_egyptian || word.transliteration)
-                                            : (word.transliteration || word.transliteration_egyptian);
-                                        return (
-                                            <button
-                                                key={wordIdx}
-                                                onClick={() => !wordSaved && handleSavePassageWord(word)}
-                                                disabled={wordSaved}
-                                                className={`group relative w-full px-4 py-3 rounded-lg text-right transition-colors ${
-                                                    wordSaved
-                                                        ? 'bg-green-500/10 border border-green-500/30'
-                                                        : 'bg-white/10 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/30'
-                                                }`}
-                                            >
-                                                <div className="text-2xl font-arabic text-white mb-1">
-                                                    {primaryArabic}
-                                                </div>
-                                                <div className="text-white/60 text-sm mb-1">
-                                                    {primaryTranslit}
-                                                </div>
-                                                <div className="text-white/80 text-base">
-                                                    {word.translation}
-                                                </div>
-                                                {word.part_of_speech && (
-                                                    <div className="text-white/30 text-xs mt-1">
-                                                        {word.part_of_speech}
-                                                    </div>
-                                                )}
-                                                {/* Save indicator */}
-                                                {wordSaved ? (
-                                                    <div className="absolute top-2 left-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-xs">✓</div>
-                                                ) : (
-                                                    <div className="absolute top-2 left-2 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">+</div>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
+                            {sentence.words && sentence.words.length > 0 && (
+                                <div>
+                                    <div className="text-xs text-white/40 mb-2 flex items-center justify-between">
+                                        <span>Word Breakdown ({sentence.words.length} words)</span>
+                                        <button
+                                            onClick={() => handleSentenceClick(sentence)}
+                                            className="text-teal-400 hover:text-teal-300 text-xs flex items-center gap-1"
+                                        >
+                                            <span>View Detail</span>
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <WordBreakdownList
+                                        words={sentence.words}
+                                        language={language}
+                                        dialectPreference={dialectPreference}
+                                        onWordClick={handleWordClick}
+                                    />
                                 </div>
-                            </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -655,6 +708,15 @@ export function LookupView() {
                 </div>
             )}
             </div>
+
+            {/* Word Detail Modal */}
+            {wordSelection && (
+                <WordDetailModal
+                    isOpen={wordModalOpen}
+                    onClose={() => setWordModalOpen(false)}
+                    selection={wordSelection}
+                />
+            )}
         </div>
     );
 }
