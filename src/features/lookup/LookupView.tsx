@@ -201,7 +201,6 @@ export function LookupView() {
                 sentence_count: passageResult.sentences?.length || 1,
                 source: 'lookup',
             });
-            setPassageSaved(true);
         } catch (err) {
             console.error('[LookupView] Failed to save passage:', err);
         }
