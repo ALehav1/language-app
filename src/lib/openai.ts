@@ -833,6 +833,7 @@ export async function analyzePassage(
       ]
     }
   `;
+  }
 
   const response = await withRetry(() =>
     openai.chat.completions.create({
