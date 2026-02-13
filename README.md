@@ -409,3 +409,4 @@ MIT
 ---
 
 **For detailed technical documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md)**
+
