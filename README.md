@@ -2,234 +2,133 @@
 
 **AI-powered Arabic learning focused on Egyptian dialect**
 
-Last Updated: January 10, 2026 (Evening) - UI Polish & Dialogs Support
+Last Updated: January 13, 2026 (Night) - Spanish UX Contract v1 Implementation
 
 **🚀 Current Production:** https://language-m6q3yz1z4-alehav1s-projects.vercel.app
 
 ---
 
-## Quick Start
+## 🔒 Architectural Invariants (Do Not Violate)
 
-```bash
-npm install
-npm run dev
-```
+**These rules prevent regressions. Follow them strictly:**
 
-**Environment Setup:** Copy `.env.example` to `.env` and add your Supabase + OpenAI keys.
+1. **WordSurface is the ONLY word renderer** - Never create parallel word display components
+2. **SentenceSurface is the ONLY sentence renderer** - Sentences are tiles, words are chips inside them
+3. **Sentence = one tile, words = chips** - Single words are compact, never full-width
+4. **LanguageSwitcher controls language** - LanguageBadge is display-only, not interactive
+5. **Spanish and Arabic NEVER share field names** - No `arabic_word` for Spanish data
+6. **Canonical routes:**
+   - Word detail: `/vocabulary/word`
+   - Vocabulary list: `/words`
+   - Lookup: `/lookup`
+7. **Any new feature must plug into existing surfaces** - Do not create new renderers
 
-**Documentation:**
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete technical reference
-- **[CLEANUP_ANALYSIS.md](./CLEANUP_ANALYSIS.md)** - File audit and deprecation log
-
----
-
-## What Is This?
-
-A language learning app that teaches **Egyptian Arabic** (how people actually speak) alongside Modern Standard Arabic (formal/written). Designed for 5-10 minute practice sessions.
-
-**Core Philosophy:**
-- No gamification (no streaks, points, badges)
-- Explicit save control (you decide what to practice)
-- Semantic validation (accepts synonyms and typos)
-- Dialect-first (Egyptian primary, MSA reference)
-- Interactive text selection (click words/sentences to explore and save)
+⚠️ **Changes to these invariants require explicit intent and justification.**
 
 ---
 
-## Current Features (v1.0)
+## 📊 **NEW: Comprehensive Codebase Analysis (Jan 13, 2026)**
 
-### Navigation
-**Main Menu** → 3 tiles:
-- **Lessons** - AI-generated lessons
-- **Lookup** - Translate any text
-- **My Saved Vocabulary** - Words/Sentences/Passages/Dialogs with filtering
+**[👉 View Complete Analysis](./docs/comprehensive-analysis-2026-01-13/)** - 271 KB of detailed documentation including:
+- **[Executive Summary](./docs/comprehensive-analysis-2026-01-13/EXECUTIVE_SUMMARY.md)** - Critical issues, ROI analysis, roadmap
+- **[48+ Issues Identified](./docs/comprehensive-analysis-2026-01-13/ISSUES_ANALYSIS.md)** - With fixes and priorities
+- **[52 Recommendations](./docs/comprehensive-analysis-2026-01-13/RECOMMENDATIONS.md)** - Implementation guides with code examples
+- **[Complete Architecture](./docs/comprehensive-analysis-2026-01-13/COMPREHENSIVE_ARCHITECTURE.md)** - System design and patterns
+- **[All User Flows](./docs/comprehensive-analysis-2026-01-13/USER_FLOWS.md)** - Step-by-step journey maps
+- **[Data Architecture](./docs/comprehensive-analysis-2026-01-13/DATA_ARCHITECTURE.md)** - Database and state management
 
-### User Flows
-
-**1. Learn from AI Lesson:**
-```
-Main Menu → Lessons
-    ↓
-Browse category (Words/Phrases/Passages/Dialogs) OR Create New
-    ↓
-[If Create] Select topic, difficulty, dialect → AI generates lesson
-    ↓
-Start Exercise → Practice with dual input (transliteration + translation)
-    ↓
-Submit → Get semantic validation + detailed feedback
-    ↓
-ExerciseFeedback shows:
-    - Word breakdown (Egyptian + MSA pronunciations)
-    - Letter breakdown (right-to-left with vowels)
-    - Hebrew cognates (if applicable)
-    - Context tile (root, Egyptian usage, MSA comparison)
-    - Example sentences (collapsible)
-    - Memory Aid tile (create DALL-E image + notes)
-    - Chat tile (ask AI tutor questions)
-    ↓
-Save Decision: Practice / Archive / Skip
-    ↓
-Next word in lesson → Repeat until complete
-```
-
-**2. Review Saved Vocabulary:**
-```
-Main Menu → My Saved Vocabulary
-    ↓
-Filter by status: Practice (active) or Archive (learned)
-    ↓
-Filter by type: Words / Sentences / Passages / Dialogs
-    ↓
-Sort: Recent / A-Z Arabic / A-Z English
-    ↓
-Click item → WordDisplay modal with full details
-    ↓
-View/edit memory aids, change status, or delete
-```
-
-**3. Look Up & Save New Content:**
-```
-Main Menu → Lookup
-    ↓
-Paste Arabic OR English text
-    ↓
-Get instant translation + word-by-word breakdown
-    ↓
-View same rich feedback as lessons:
-    - Full translation with both dialects
-    - Word breakdown for each word
-    - Context, Memory Aid, Chat tiles
-    - Example sentences
-    ↓
-Save individual words/phrases to Practice or Archive
-```
-
-**4. Create Custom Lesson:**
-```
-Main Menu → Lessons → Select category → Create New
-    ↓
-Choose topic (or use Quick Topic: Restaurant/Travel/Work/Family/Shopping)
-    ↓
-Select difficulty: Beginner / Intermediate / Advanced
-    ↓
-Select dialect: Egyptian (default) / MSA
-    ↓
-[System checks for similar lessons]
-    ↓
-AI generates vocabulary (excludes already-saved words)
-    ↓
-Start practicing immediately
-```
-
-### My Saved Vocabulary
-- **Unified view** with content type filters (Words/Sentences/Passages/Dialogs)
-- **Status filters** (Practice/Archive)
-- **Search & Sort** (recent, A-Z Arabic, A-Z English)
-- **Loading/Success feedback** on all save actions
-
-### Arabic Features
-- **Egyptian dictionary** - 150+ MSA→Egyptian mappings
-- **Letter breakdown** - Shows vowel combinations, organized by word
-- **Hebrew cognates** - 150+ Semitic root connections (single words only)
-- **Transliteration validation** - Chat number support (7=h, 3=', etc.)
-- **Context tiles** - Root analysis, Egyptian usage, MSA comparison, cultural notes
-- **Memory aid tiles** - DALL-E visuals + personal notes (collapsible)
-- **Chat tiles** - Interactive Q&A about any word/phrase with AI tutor
-
-**Hebrew Cognate Rules:**
-- Only displayed for Arabic single words (never sentences/passages/dialogs)
-- Never displayed for Spanish content
-- Shows when true Semitic root connection exists between Arabic and Hebrew
-- Match can be with Egyptian OR MSA form
-
-### Spanish Features
-- **Default difficulty: INTERMEDIATE** - Spanish lessons start at intermediate level
-- **Dual dialect support** - LatAm (primary) + Spain (reference)
-- **No letter breakdown** - Latin script doesn't require phonetic decomposition
-- **No transliteration** - Not needed for Latin-based languages
-- **No Hebrew cognates** - Spanish is Romance, not Semitic
-- **Context tiles** - Usage notes and cultural context (when applicable)
-- **Memory aid tiles** - DALL-E visuals + personal notes (collapsible)
-- **Chat tiles** - Interactive Q&A about any word/phrase with AI tutor
+**Quick Start:** Read [START_HERE.md](./docs/comprehensive-analysis-2026-01-13/START_HERE.md) for navigation guide.
 
 ---
 
-## Tech Stack
+## 🇲🇽 Spanish UX Contract v1 (Jan 13, 2026)
 
-- React 19 + TypeScript + Vite
-- TailwindCSS (glassmorphism dark theme)
-- Supabase (database + storage)
-- OpenAI API (GPT-4 + DALL-E 3)
+**Architecture Changes - Composition Pattern:**
 
----
+| Component | Purpose |
+|-----------|---------||
+| `WordSurface.tsx` | **Canonical word renderer** - Composition shell for Arabic + Spanish |
+| `WordDisplay.tsx` | Arabic-specific rendering (internal to WordSurface) |
+| `SpanishWordBody.tsx` | Spanish-specific rendering (internal to WordSurface) |
+| `uiTokens.ts` | Shared Tailwind class tokens for consistent styling |
 
-## Project Structure
+**Data Types:**
 
+| File | Types |
+|------|-------|
+| `src/types/word.ts` | `SpanishWordData`, `ArabicWordData`, `WordData` union, type guards |
+| `src/contexts/LanguageContext.tsx` | `ArabicDialect`, `SpanishDialect`, `DialectPreferences` |
+
+**UX Contract Implementation:**
+
+1. **P2-A: Spanish inline chips** ✅ - `WordBreakdownList` renders Spanish as compact chips (not full-width rows)
+2. **P2-B: Word click → canonical Word Surface** ✅ - Clicks navigate to `/vocabulary/word` with `location.state`
+3. **P2-C: Spanish data parity** ✅ - `SpanishLookupResult` with proper Spanish fields (NO Arabic overloading)
+4. **P2-D: Spanish dialect toggle** ✅ - `LanguageContext` has `setSpanishDialect('latam' | 'spain')`
+5. **P2-E: Global language switcher** ✅ - `LanguageSwitcher` controls language; `LanguageBadge` is display-only
+6. **P2-F: Theme tokens** ✅ - `src/styles/uiTokens.ts` for consistent styling
+7. **P2-G: Double-click fix** ✅ - Translate button has `type="button"`, `touchAction: manipulation`
+8. **P2-H: Supabase 400s** ✅ - Fixed in P1.4 (queries use `in('status', ['active', 'learned'])`)
+
+**Spanish Data Contract (NO Arabic Field Overloading):**
+
+| API Response Field | Type | Purpose |
+|-------------------|------|---------||
+| `spanish_latam` | string | Primary Spanish form (LatAm neutral) |
+| `spanish_spain` | string | Spain variant (if different) |
+| `translation_en` | string | English translation |
+| `word_context.usage_notes` | string | Common usage contexts |
+| `word_context.latam_notes` | string | LatAm-specific notes |
+| `word_context.spain_notes` | string | Spain-specific notes |
+| `example_sentences[].spanish_latam` | string | LatAm example sentence |
+| `example_sentences[].spanish_spain` | string | Spain variant (if different) |
+| `memory_aid.mnemonic` | string | Memory trick |
+| `memory_aid.visual_cue` | string | Visual concept |
+
+**Storage Keys:**
+
+| Key | Value |
+|-----|-------|
+| `language-app-selected-language` | `'arabic'` \| `'spanish'` |
+| `language-app-dialect-preferences` | `{ arabic: 'egyptian' \| 'standard', spanish: 'latam' \| 'spain' }` |
+
+**User Flow - Spanish Word Drilldown:**
 ```
-src/
-├── domain/              # Domain layer (PR-2)
-│   └── practice/        # Practice abstractions
-│       ├── PracticeItem.ts           # Canonical practice type
-│       ├── adapters/                 # DB → Domain transformations
-│       │   ├── fromVocabularyItems.ts
-│       │   └── fromSavedWords.ts
-│       └── __tests__/                # Adapter tests (11 passing)
-├── features/            # Feature modules
-│   ├── home/           # Main menu
-│   ├── lessons/        # Lesson browser & generator
-│   ├── exercises/      # Practice flow
-│   ├── vocabulary/     # Saved words (unified view)
-│   ├── sentences/      # Legacy view
-│   ├── passages/       # Legacy view
-│   └── lookup/         # Translation lookup
-├── components/         # Shared UI
-├── hooks/             # Data & logic hooks
-├── lib/               # External services
-├── utils/             # Utilities (dialect, cognates, etc.)
-└── types/             # TypeScript definitions
+Lookup → Enter Spanish text → Translate
+    ↓
+Sentence tile with inline word chips (Spanish + English gloss)
+    ↓
+Click chip → navigate to /vocabulary/word?from=lookup
+    ↓
+Word Surface with: translation, usage notes, memory aid, examples, save controls
+    ↓
+Save → returns to Lookup
 ```
-
-**Domain Layer (PR-2):**
-- Language-agnostic practice abstraction
-- Adapters decouple domain from database schemas
-- Voice-ready (promptType/answerType fields)
-- See [ADR-001](./docs/architecture/adr/ADR-001-practice-item.md) for design rationale
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed documentation.
-
----
-
-## Key Components
-
-**Display:**
-- `WordDisplay` - Unified word display (everywhere)
-- `SaveDecisionPanel` - Save controls with feedback
-- `MemoryAidEditor` - Visual + note creation
-
-**Data:**
-- `useSavedWords` - Primary vocabulary hook
-- `useLessons` - Lesson data
-- `useExercise` - Exercise logic
 
 ---
 
 ## Routes
 
+**Canonical routes:**
+
 | Path | Purpose |
-|------|---------|
+|------|---------||
 | `/` | Main menu |
 | `/lessons` | Browse/create lessons |
 | `/exercise/:id` | Practice flow |
-| `/words` | Unified vocabulary (Words/Sentences/Passages) |
+| `/vocabulary/word` | Word detail page (from lookup/chips) |
+| `/words` | Vocabulary list view |
 | `/lookup` | Translation lookup |
 
-**Legacy routes** (`/sentences`, `/passages`) still exist for backward compatibility but primary UX consolidates to `/words` with filtering.
+**Legacy routes** (backward compatibility only):
+- `/sentences` - Use `/words?type=sentences` instead
+- `/passages` - Use `/words?type=passages` instead
 
 ---
 
 ## Testing
 
-The project uses Vitest + React Testing Library for unit and integration testing.
+The project uses Vitest + React Testing Library for automated testing.
 
 **Run tests:**
 ```bash
@@ -240,15 +139,17 @@ npm run test:coverage # Coverage report
 npm run lint          # TypeScript type checking
 ```
 
-**Current Coverage:** 46/46 tests passing (100%)
-- `useExercise` - 19/19 tests (exercise logic, persistence, baseline behaviors)
-- `useCardStack` - 16/16 tests (undo window, card actions, localStorage)
-- **Domain Adapters** - 11/11 tests (PR-2)
-  - Transformation tests (7 tests)
-  - Golden equivalence tests (4 tests)
+**Current Coverage:** 177/177 tests passing
+- Domain + hooks + critical UX flows: **automated** (Vitest + RTL)
+- Full UX regression: **manual** at 375px viewport
+- `useExercise` - 19 tests (exercise logic, persistence)
+- `useCardStack` - 16 tests (undo window, card actions)
+- **Domain Adapters** - 11 tests (transformations, golden equivalence)
+- **LookupView** - 11 tests (content classification, language switching, translate reliability)
+- Additional component + integration tests
 
 **Test Philosophy:**
-- Baseline tests document current behavior (including known bugs)
+- Baseline tests document current behavior
 - Tests lock in behavior before refactoring
 - No test changes without intentional behavior changes
 
@@ -258,11 +159,11 @@ See `docs/verification/` for PR notes and verification details.
 
 ## Development
 
+**Local dev server:** http://localhost:5173
+
 **Mobile-First:** Test at 375px → 768px → 1024px
 
 **TypeScript:** Strict mode, no `any` types
-
-**Testing:** Manual testing only (automated tests planned)
 
 ---
 

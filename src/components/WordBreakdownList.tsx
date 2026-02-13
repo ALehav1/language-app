@@ -1,18 +1,21 @@
 /**
  * WordBreakdownList - Canonical component for displaying word-by-word breakdown
  * 
+ * UX CONTRACT:
+ * 
  * Arabic:
  * - dir="rtl"
- * - One word per row
+ * - One word per row (full-width tiles)
  * - Right-aligned
- * - Vertical stack
+ * - Vertical stack (space-y-2)
  * 
  * Spanish:
  * - LTR
- * - One word per row
- * - Left-aligned
+ * - Compact inline chips (inline-flex, wrap)
+ * - Content-sized (not full-width)
+ * - Shows: Spanish word (top) + English gloss (bottom, smaller)
  * 
- * Clicking a word triggers onWordClick(word) - NEVER saves directly
+ * Clicking a word triggers onWordClick(word) for page navigation - NEVER saves directly
  */
 
 export interface WordBreakdownWord {
@@ -38,11 +41,51 @@ export function WordBreakdownList({
   onWordClick,
 }: WordBreakdownListProps) {
   const isRTL = language === 'arabic';
+  const isSpanish = language === 'spanish';
 
+  // P2-A: Spanish uses inline chips, Arabic uses vertical stack
+  if (isSpanish) {
+    return (
+      <div className="flex flex-wrap gap-2" dir="ltr">
+        {words.map((word, idx) => {
+          // Spanish: word.arabic contains Spanish text, word.translation contains English
+          const spanishWord = word.arabic || word.arabic_egyptian || '';
+          const englishGloss = word.translation || '';
+
+          return (
+            <button
+              key={idx}
+              onClick={() => onWordClick(word)}
+              className="group relative inline-flex flex-col items-center px-3 py-2 rounded-lg transition-colors bg-white/10 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/30"
+            >
+              {/* Spanish word (primary, top) */}
+              <div className="text-white font-semibold text-base">
+                {spanishWord}
+              </div>
+              
+              {/* English gloss (secondary, bottom, smaller) */}
+              <div className="text-white/60 text-xs mt-0.5">
+                {englishGloss}
+              </div>
+
+              {/* Part of speech (optional, subtle) */}
+              {word.part_of_speech && (
+                <div className="text-white/30 text-[10px] mt-0.5">
+                  {word.part_of_speech}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Arabic: vertical stack with full-width rows (original behavior)
   return (
     <div
       className="space-y-2"
-      dir={isRTL ? 'rtl' : 'ltr'}
+      dir="rtl"
     >
       {words.map((word, idx) => {
         // For Arabic, show preferred dialect first
@@ -115,3 +158,4 @@ export function WordBreakdownList({
     </div>
   );
 }
+

@@ -3,6 +3,8 @@
 **Last Updated:** January 10, 2026 (Evening)  
 **Version:** 1.2 UI Polish & Dialogs Support
 
+> **📌 See [README → Architectural Invariants](./README.md#-architectural-invariants-do-not-violate) for non-negotiable design constraints.**
+
 ---
 
 ## Table of Contents

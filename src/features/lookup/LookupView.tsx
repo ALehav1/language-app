@@ -4,7 +4,7 @@ import { lookupWord, analyzePassage, type LookupResult, type PassageResult } fro
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { useSavedSentences } from '../../hooks/useSavedSentences';
 import { useSavedPassages } from '../../hooks/useSavedPassages';
-import { WordDisplay } from '../../components/WordDisplay';
+import { WordSurface } from '../../components/surfaces/WordSurface';
 import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecisionPanel';
 import { MemoryAidTile } from '../../components/MemoryAidTile';
 import { ContextTile } from '../../components/ContextTile';
@@ -12,8 +12,6 @@ import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { CollapsibleSection } from '../../components/CollapsibleSection';
 import { AddedContextTile } from '../../components/AddedContextTile';
 import { WordBreakdownList, type WordBreakdownWord } from '../../components/WordBreakdownList';
-import { WordDetailModal } from '../../components/modals/WordDetailModal';
-import type { WordSelectionContext } from '../../types/selection';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 // Dialect preference storage key
@@ -37,19 +35,15 @@ export function LookupView() {
     const { savePassage, getPassageByText, updateStatus: updatePassageStatus, deletePassage } = useSavedPassages();
     
     const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<LookupResult | null>(null);
     const [passageResult, setPassageResult] = useState<PassageResult | null>(null);
+    const [selectedSentence, setSelectedSentence] = useState<any | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
     const [mode, setMode] = useState<'word' | 'sentence' | 'passage'>('word');
-    const [selectedSentence, setSelectedSentence] = useState<any | null>(null);
     const [memoryNote, setMemoryNote] = useState<string | null>(null);
     const [memoryImageUrl, setMemoryImageUrl] = useState<string | null>(null);
-    
-    // Word modal state
-    const [wordModalOpen, setWordModalOpen] = useState(false);
-    const [wordSelection, setWordSelection] = useState<WordSelectionContext | null>(null);
     
     // Dialect preference: 'egyptian' (default) or 'standard'
     const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
@@ -66,6 +60,14 @@ export function LookupView() {
     const detectContentType = (text: string): 'word' | 'sentence' | 'passage' => {
         const trimmed = text.trim();
         
+        // CRITICAL: Check word count FIRST to catch single tokens
+        const wordCount = trimmed.split(/\s+/).length;
+        
+        // Single token with no spaces → always word
+        if (wordCount === 1) {
+            return 'word';
+        }
+        
         // Count sentences by splitting on sentence-ending punctuation
         const sentenceEnders = /[.؟!]\s+/g;
         const sentences = trimmed.split(sentenceEnders).filter(s => s.trim().length > 0);
@@ -80,48 +82,63 @@ export function LookupView() {
             return 'sentence';
         }
         
-        // If single token (no spaces or very few words) → word
-        const wordCount = trimmed.split(/\s+/).length;
-        if (wordCount === 1) {
-            return 'word';
-        }
-        
         // Default: if short phrase (2-4 words) without punctuation → treat as sentence
         return wordCount <= 4 ? 'sentence' : 'passage';
     };
 
     // Handle lookup - auto-detect word vs passage
     const handleLookup = async () => {
-        if (!input.trim()) return;
+        // STEP 0: Hard proof signal
+        console.log('[LOOKUP] Translate clicked', { language, textLength: input.length });
+        console.log('[LOOKUP] Translate begin');
         
-        setIsLoading(true);
-        setError(null);
-        setResult(null);
-        setPassageResult(null);
-
-        const contentType = detectContentType(input);
-        setMode(contentType);
-        setSelectedSentence(null); // Reset sentence selection
-
+        if (!input.trim()) {
+            console.warn('[LOOKUP] Empty input, aborting');
+            setError('Please enter text to translate');
+            return;
+        }
+        
         try {
+            // STEP 2: Set loading state and clear previous results
+            setIsLoading(true);
+            setError(null);
+            setResult(null);
+            setPassageResult(null);
+
+            const contentType = detectContentType(input);
+            console.log('[LOOKUP] Detected content type:', contentType);
+            setMode(contentType);
+            setSelectedSentence(null);
+
             if (contentType === 'word') {
-                console.log('[LookupView] Looking up word:', input);
+                console.log('[LOOKUP] Looking up word:', input.slice(0, 40));
+                // STEP 3: Log before API call
+                console.log('[LOOKUP] calling lookupWord', { language, textPreview: input.slice(0, 40) });
                 const data = await lookupWord(input.trim(), { language });
-                console.log('[LookupView] Word result:', data);
+                // STEP 3: Log after API call
+                console.log('[LOOKUP] lookupWord returned', data);
                 setResult(data);
             } else {
                 // Both sentence and passage use analyzePassage
-                console.log(`[LookupView] Analyzing ${contentType}:`, input);
+                console.log('[LOOKUP] Analyzing ${contentType}:', input.slice(0, 40));
+                // STEP 3: Log before API call
+                console.log('[LOOKUP] calling analyzePassage', { language, contentType, textPreview: input.slice(0, 40) });
                 const data = await analyzePassage(input.trim(), { language });
-                console.log(`[LookupView] ${contentType} result:`, data);
+                // STEP 3: Log after API call
+                console.log('[LOOKUP] analyzePassage returned', data);
                 setPassageResult(data);
             }
+            
+            console.log('[LOOKUP] Translate complete successfully');
         } catch (err) {
-            console.error('[LookupView] Error:', err);
-            const errorMessage = err instanceof Error ? err.message : 'Failed to analyze. Please try again.';
-            console.error('[LookupView] Error details:', errorMessage);
-            setError(errorMessage);
+            // STEP 4: Catch and surface all errors
+            console.error('[LOOKUP] Translate failed', err);
+            const errorMessage = err instanceof Error ? err.message : 'Translation failed. Please try again.';
+            console.error('[LOOKUP] Error details:', errorMessage);
+            setError(`Translate failed: ${errorMessage}. See console for details.`);
         } finally {
+            // STEP 2: Always reset loading state
+            console.log('[LOOKUP] Resetting loading state');
             setIsLoading(false);
         }
     };
@@ -158,16 +175,23 @@ export function LookupView() {
         setMode('sentence');
     };
 
-    // Handle word click - opens Word Detail modal
+    // P2-B: Handle word click - navigates to unified word detail page
     const handleWordClick = (word: WordBreakdownWord) => {
-        setWordSelection({
-            selectedText: word.arabic || word.translation,
-            parentSentence: selectedSentence?.arabic_msa || passageResult?.original_text || '',
-            sourceView: 'lookup',
-            language: language,
-            contentType: 'word',
-        } as WordSelectionContext);
-        setWordModalOpen(true);
+        console.log('[LOOKUP] Word chip clicked, navigating to word detail', { word, language });
+        
+        // Navigate to canonical /vocabulary/word route with lookup context
+        // Pass word text as query param + full word data in state
+        const wordText = language === 'arabic' 
+            ? (word.arabic || word.arabic_egyptian || '')
+            : (word.arabic || ''); // Spanish stored in .arabic field temporarily
+            
+        navigate(`/vocabulary/word?text=${encodeURIComponent(wordText)}&from=lookup`, {
+            state: {
+                wordData: word,
+                language: language,
+                parentSentence: selectedSentence?.arabic_msa || selectedSentence?.arabic_egyptian || passageResult?.original_text || '',
+            }
+        });
     };
 
     // Handle save sentence (from example sentences or passage)
@@ -241,9 +265,14 @@ export function LookupView() {
                     dir="auto"
                 />
                 <button
-                    onClick={handleLookup}
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleLookup();
+                    }}
                     disabled={!input.trim() || isLoading}
-                    className="w-full mt-3 py-4 btn-primary font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full mt-3 py-4 btn-primary font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation"
                 >
                     {isLoading ? (
                         <span className="flex items-center justify-center gap-2">
@@ -279,9 +308,22 @@ export function LookupView() {
                         </div>
                     </div>
 
-                    {/* Full word details using shared component */}
-                    <WordDisplay
-                        word={{
+                    {/* Full word details using WordSurface (canonical renderer) */}
+                    {/* Spanish: Use SpanishLookupResult fields directly (NO Arabic overloading) */}
+                    <WordSurface
+                        word={language === 'spanish' ? {
+                            // SpanishLookupResult fields
+                            language: 'spanish' as const,
+                            spanish_latam: (result as any).spanish_latam || result.arabic_word || '',
+                            spanish_spain: (result as any).spanish_spain || result.arabic_word_egyptian,
+                            translation: (result as any).translation_en || result.translation || '',
+                            pronunciation: (result as any).pronunciation,
+                            partOfSpeech: (result as any).part_of_speech,
+                            wordContext: (result as any).word_context,
+                            memoryAid: (result as any).memory_aid,
+                            exampleSentences: (result as any).example_sentences,
+                        } : {
+                            // Arabic: existing fields
                             arabic: result.arabic_word,
                             arabicEgyptian: result.arabic_word_egyptian,
                             translation: result.translation,
@@ -289,21 +331,26 @@ export function LookupView() {
                             transliterationEgyptian: result.pronunciation_egyptian,
                             hebrewCognate: result.hebrew_cognate,
                         }}
-                        size="large"
+                        language={language}
+                        size={language === 'spanish' ? 'normal' : 'large'}
                         showHebrewCognate={language === 'arabic'}
                         showLetterBreakdown={language === 'arabic'}
-                        showExampleSentences={false}
-                        showPronunciations={true}
-                        dialectPreference="egyptian"
+                        showExampleSentences={true}
+                        showPronunciations={language === 'arabic'}
+                        showSaveOption={false}
+                        dialectPreference={language === 'spanish' ? 'latam' : 'egyptian'}
                     />
 
-                    {/* Added Context */}
-                    <ContextTile context={result.word_context} language={language} />
+                    {/* Added Context - Spanish uses SpanishWordContext */}
+                    <ContextTile 
+                        context={language === 'spanish' ? (result as any).word_context : result.word_context} 
+                        language={language} 
+                    />
 
                     {/* Memory Aid */}
                     <MemoryAidTile
-                        primaryText={result.arabic_word}
-                        translation={result.translation}
+                        primaryText={language === 'spanish' ? ((result as any).spanish_latam || result.arabic_word) : result.arabic_word}
+                        translation={(result as any).translation_en || result.translation}
                         currentNote={memoryNote}
                         currentImageUrl={memoryImageUrl}
                         onImageGenerated={setMemoryImageUrl}
@@ -366,8 +413,8 @@ export function LookupView() {
                     {/* Save decision panel - MOVED TO BOTTOM */}
                     <div className="glass-card p-4">
                         <SaveDecisionPanel
-                            primaryText={result.arabic_word}
-                            translation={result.translation}
+                            primaryText={language === 'spanish' ? ((result as any).spanish_latam || result.arabic_word) : result.arabic_word}
+                            translation={(result as any).translation_en || result.translation}
                             onDecision={handleWordDecision}
                             alreadySaved={isCurrentWordSaved}
                         />
@@ -491,17 +538,22 @@ export function LookupView() {
                 </div>
             )}
 
-            {/* Passage Results */}
-            {passageResult && mode === 'passage' && (
+            {/* Passage Results (includes single-sentence results) */}
+            {passageResult && !selectedSentence && (
                 <div className="space-y-6">
-                    {/* Detected language badge + Save Passage button (only for multi-sentence) */}
+                    {/* Detected language badge + Save Passage button */}
                     <div className="flex items-center justify-between">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                             passageResult.detected_language === 'english'
                                 ? 'bg-blue-500/20 text-blue-300'
+                                : language === 'spanish'
+                                ? 'bg-amber-500/20 text-amber-300'
                                 : 'bg-teal-500/20 text-teal-300'
                         }`}>
-                            {passageResult.detected_language === 'english' ? '🇺🇸 English → Arabic' : '🇪🇬 Arabic → English'}
+                            {passageResult.detected_language === 'english'
+                                ? (language === 'spanish' ? '🇺🇸 English → Spanish' : '🇺🇸 English → Arabic')
+                                : (language === 'spanish' ? '🇲🇽 Spanish → English' : '🇪🇬 Arabic → English')
+                            }
                         </span>
                         {/* Save Passage controls (only for 2+ sentences) */}
                         {passageResult.sentences && passageResult.sentences.length > 1 && passageResult.original_text && (() => {
@@ -554,33 +606,35 @@ export function LookupView() {
                         })()}
                     </div>
 
-                    {/* Dialect toggle */}
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs text-white/40">Show first:</span>
-                        <button
-                            onClick={() => setDialectPreference('egyptian')}
-                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                                dialectPreference === 'egyptian'
-                                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
-                                    : 'bg-white/5 text-white/50 hover:bg-white/10'
-                            }`}
-                        >
-                            🇪🇬 Egyptian
-                        </button>
-                        <button
-                            onClick={() => setDialectPreference('standard')}
-                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                                dialectPreference === 'standard'
-                                    ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
-                                    : 'bg-white/5 text-white/50 hover:bg-white/10'
-                            }`}
-                        >
-                            📖 MSA
-                        </button>
-                    </div>
+                    {/* Dialect toggle (Arabic only) */}
+                    {language === 'arabic' && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-white/40">Show first:</span>
+                            <button
+                                onClick={() => setDialectPreference('egyptian')}
+                                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                    dialectPreference === 'egyptian'
+                                        ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
+                                        : 'bg-white/5 text-white/50 hover:bg-white/10'
+                                }`}
+                            >
+                                🇪🇬 Egyptian
+                            </button>
+                            <button
+                                onClick={() => setDialectPreference('standard')}
+                                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                    dialectPreference === 'standard'
+                                        ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
+                                        : 'bg-white/5 text-white/50 hover:bg-white/10'
+                                }`}
+                            >
+                                📖 MSA
+                            </button>
+                        </div>
+                    )}
 
-                    {/* English translation (only for Arabic input) */}
-                    {passageResult.detected_language === 'arabic' && (
+                    {/* English translation (only for non-English input) */}
+                    {passageResult.detected_language !== 'english' && (
                         <div className="glass-card p-4">
                             <div className="text-xs text-white/40 mb-2">📝 English Translation</div>
                             <div className="text-white text-lg">
@@ -640,7 +694,17 @@ export function LookupView() {
                                 })()}
                             </div>
 
-                            {/* Primary dialect (based on preference) */}
+                            {/* Language-aware sentence rendering */}
+                            {language === 'spanish' ? (
+                                // Spanish mode: show Spanish text + English translation
+                                <>
+                                    <div className="text-2xl text-white mb-3" dir="ltr">
+                                        {sentence.arabic_msa}
+                                    </div>
+                                </>
+                            ) : (
+                                // Arabic mode: show dialect variants
+                                <>
                             {dialectPreference === 'egyptian' ? (
                                 <>
                                     {/* Egyptian first */}
@@ -688,6 +752,8 @@ export function LookupView() {
                                     </div>
                                 </>
                             )}
+                                </>
+                            )}
 
                             {/* Translation */}
                             <div className="text-white">
@@ -729,6 +795,41 @@ export function LookupView() {
                 </div>
             )}
 
+            {/* Dev-only Debug Panel */}
+            {import.meta.env.DEV && (
+                <div className="fixed bottom-4 right-4 bg-black/90 text-white p-4 rounded-lg text-xs font-mono max-w-md overflow-auto max-h-96 border border-white/20">
+                    <div className="font-bold mb-2 text-teal-300">🔍 Debug Panel</div>
+                    <div className="space-y-1">
+                        <div><span className="text-white/50">language:</span> <span className="text-amber-300">{language}</span></div>
+                        <div><span className="text-white/50">mode:</span> <span className="text-purple-300">{mode}</span></div>
+                        <div><span className="text-white/50">isLoading:</span> <span className="text-blue-300">{String(isLoading)}</span></div>
+                        <div><span className="text-white/50">error:</span> <span className="text-red-300">{error || 'null'}</span></div>
+                        <div><span className="text-white/50">hasResult:</span> <span className="text-green-300">{String(!!result)}</span></div>
+                        <div><span className="text-white/50">hasPassageResult:</span> <span className="text-green-300">{String(!!passageResult)}</span></div>
+                        {passageResult && (
+                            <>
+                                <div><span className="text-white/50">detected_language:</span> <span className="text-yellow-300">{passageResult.detected_language}</span></div>
+                                <div><span className="text-white/50">sentences.length:</span> <span className="text-cyan-300">{passageResult.sentences?.length || 0}</span></div>
+                                {passageResult.sentences?.[0] && (
+                                    <div className="text-white/40 text-[10px] mt-1">
+                                        First sentence keys: {Object.keys(passageResult.sentences[0]).join(', ')}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        {result && (
+                            <div className="text-white/40 text-[10px] mt-1">
+                                Result keys: {Object.keys(result).slice(0, 5).join(', ')}...
+                            </div>
+                        )}
+                        <div><span className="text-white/50">selectedSentence:</span> <span className="text-pink-300">{String(!!selectedSentence)}</span></div>
+                        <div className="text-white/40 text-[10px] mt-2">
+                            localStorage: {localStorage.getItem('language-app-selected-language') || 'null'}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Empty state */}
             {!result && !passageResult && !isLoading && !error && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -742,15 +843,6 @@ export function LookupView() {
                 </div>
             )}
             </div>
-
-            {/* Word Detail Modal */}
-            {wordSelection && (
-                <WordDetailModal
-                    isOpen={wordModalOpen}
-                    onClose={() => setWordModalOpen(false)}
-                    selection={wordSelection}
-                />
-            )}
         </div>
     );
 }

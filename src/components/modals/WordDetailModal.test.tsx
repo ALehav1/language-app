@@ -147,9 +147,11 @@ describe('WordDetailModal', () => {
         />
       );
 
-      await waitFor(() => {
-        expect(openai.lookupWord).toHaveBeenCalledWith('مرحبا', { language: 'arabic' });
-      });
+      // Wait for word to appear in DOM (proves lookup completed)
+      const wordElement = await screen.findByText('مرحبا', {}, { timeout: 3000 });
+      expect(wordElement).toBeInTheDocument();
+      
+      expect(openai.lookupWord).toHaveBeenCalledWith('مرحبا', { language: 'arabic', dialect: 'egyptian' });
     });
 
     it('shows loading state while fetching', () => {

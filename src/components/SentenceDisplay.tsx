@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { WordDisplay, type ArabicWordData } from './WordDisplay';
+import { useNavigate } from 'react-router-dom';
+import { type ArabicWordData } from './WordDisplay';
 import { findHebrewCognate } from '../utils/hebrewCognates';
 import type { SaveDecision } from './SaveDecisionPanel';
 
@@ -97,13 +97,11 @@ export function SentenceDisplay({
   isSaved = false,
   onSave,
   onWordTap,
-  onWordSave,
+  onWordSave: _onWordSave, // Unused - word clicks navigate instead of modal
   onTap,
 }: SentenceDisplayProps) {
   const fonts = FONT_SIZES[size];
-  
-  // State for expanded word modal
-  const [expandedWord, setExpandedWord] = useState<ArabicWordData | null>(null);
+  const navigate = useNavigate();
   
   // Determine which dialect to show first based on preference
   const primaryArabic = dialectPreference === 'egyptian' 
@@ -121,12 +119,19 @@ export function SentenceDisplay({
   const primaryLabel = dialectPreference === 'egyptian' ? '🇪🇬 Egyptian (Spoken)' : '📖 MSA (Formal)';
   const secondaryLabel = dialectPreference === 'egyptian' ? '📖 MSA (Formal)' : '🇪🇬 Egyptian (Spoken)';
 
-  // Handle word tap - either use callback or show modal
+  // Handle word tap - navigate to word detail page (NOT a modal)
   const handleWordTap = (word: ArabicWordData) => {
     if (onWordTap) {
       onWordTap(word);
     } else {
-      setExpandedWord(word);
+      // Navigate to word detail page with word data
+      navigate(`/vocabulary/word?from=sentence`, {
+        state: {
+          wordData: word,
+          language: 'arabic',
+          parentSentence: sentence.arabicEgyptian || sentence.arabicMsa,
+        }
+      });
     }
   };
 
@@ -263,52 +268,6 @@ export function SentenceDisplay({
           )}
         </div>
       </Wrapper>
-      
-      {/* Expanded word modal */}
-      {expandedWord && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-          onClick={() => setExpandedWord(null)}
-        >
-          <div 
-            className="glass-card p-5 max-w-md w-full max-h-[85vh] overflow-y-auto space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">Word Details</h3>
-              <button 
-                onClick={() => setExpandedWord(null)}
-                className="text-white/50 hover:text-white text-xl"
-              >
-                ✕
-              </button>
-            </div>
-            
-            {/* Word display */}
-            <WordDisplay
-              word={expandedWord}
-              size="large"
-              showHebrewCognate={true}
-              showLetterBreakdown={true}
-              showSaveOption={!!onWordSave}
-              dialectPreference={dialectPreference}
-              onSave={onWordSave ? (decision) => {
-                onWordSave(expandedWord, decision);
-                setExpandedWord(null);
-              } : undefined}
-            />
-            
-            {/* Close button */}
-            <button
-              onClick={() => setExpandedWord(null)}
-              className="w-full py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }

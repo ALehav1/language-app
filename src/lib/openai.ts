@@ -334,15 +334,54 @@ export interface WordContext {
 export type DetectedLanguage = 'english' | 'arabic' | 'spanish';
 
 /**
- * Lookup result for a word or phrase.
+ * Spanish-specific context (NO Arabic field overloading)
+ */
+export interface SpanishWordContext {
+  usage_notes?: string;      // Common usage contexts
+  register?: 'formal' | 'informal' | 'slang' | 'neutral';
+  latam_notes?: string;      // LatAm-specific notes
+  spain_notes?: string;      // Spain-specific notes
+  etymology?: string;        // Brief word origin
+}
+
+/**
+ * Spanish example sentence (NO Arabic field overloading)
+ */
+export interface SpanishExampleSentence {
+  spanish_latam: string;     // LatAm Spanish sentence
+  spanish_spain?: string;    // Spain variant (if different)
+  english: string;           // English translation
+  explanation?: string;      // Usage context or dialect note
+}
+
+/**
+ * Spanish lookup result - EXPLICIT Spanish fields, NO Arabic overloading
+ */
+export interface SpanishLookupResult {
+  detected_language: 'spanish' | 'english';
+  spanish_latam: string;           // Primary Spanish form (LatAm neutral)
+  spanish_spain?: string;          // Spain variant (if different)
+  translation_en: string;          // English translation
+  pronunciation?: string;          // IPA or phonetic guide (optional)
+  part_of_speech?: string;         // noun, verb, adjective, etc.
+  word_context?: SpanishWordContext;
+  example_sentences?: SpanishExampleSentence[];
+  memory_aid?: {
+    mnemonic?: string;             // Memory trick or association
+    visual_cue?: string;           // Memorable image concept
+  };
+}
+
+/**
+ * Arabic lookup result for a word or phrase.
  */
 export interface LookupResult {
   detected_language: DetectedLanguage;
-  arabic_word: string;  // MSA word WITH harakat (vowel diacritics)
-  arabic_word_egyptian?: string;  // Egyptian word if different from MSA
+  arabic_word: string;  // MSA word WITH harakat (Arabic) OR primary Spanish form (LatAm)
+  arabic_word_egyptian?: string;  // Egyptian word (Arabic) OR Spain Spanish variant
   translation: string;
-  pronunciation_standard: string;  // MSA transliteration
-  pronunciation_egyptian: string;  // Egyptian transliteration
+  pronunciation_standard: string;  // MSA transliteration (Arabic) OR IPA/phonetic (Spanish)
+  pronunciation_egyptian: string;  // Egyptian transliteration (Arabic) OR empty (Spanish)
   word_context?: WordContext;
   letter_breakdown: Array<{
     letter: string;  // Letter WITH diacritics
@@ -359,7 +398,11 @@ export interface LookupResult {
     meaning: string;
     notes?: string;
   };
-  example_sentences: ExampleSentence[];  // 2-3 example sentences with MSA + Egyptian versions
+  example_sentences: ExampleSentence[];  // 2-3 example sentences with MSA + Egyptian (Arabic) OR LatAm + Spain (Spanish)
+  memory_aid?: {  // P2-C: Spanish parity
+    mnemonic?: string;
+    visual_cue?: string;
+  };
 }
 
 /**
@@ -438,46 +481,63 @@ export async function lookupWord(
     }` : `
     Analyze this Spanish/English word or sentence: "${input}"
     
-    CRITICAL REQUIREMENTS:
+    SPANISH DATA CONTRACT - NO ARABIC FIELDS:
     
     1. Detect the language (Spanish or English)
-    2. If English: translate to Spanish (LatAm neutral - Mexican/Colombian/Argentine common usage)
+    2. If English: translate to Spanish (LatAm neutral)
     3. If Spanish: provide English translation
     
-    4. Context and usage notes (in English):
-       - Common usage contexts
-       - Register (formal/informal/slang)
-       - Regional variations if significant (LatAm vs Spain)
+    4. Return BOTH dialect variants with SPANISH field names:
+       - spanish_latam: Primary form (Mexican/Colombian neutral)
+       - spanish_spain: Castilian variant (if different)
     
-    5. Provide 2-3 example sentences in EVERYDAY SPOKEN Spanish:
-       - Natural, conversational examples
-       - Include English translations
+    5. Context and usage (word_context):
+       - usage_notes: Common contexts
+       - register: formal | informal | slang | neutral
+       - latam_notes: LatAm-specific notes
+       - spain_notes: Spain-specific notes
+       - etymology: Brief word origin
     
-    Return ONLY valid JSON:
+    6. Example sentences (2-3) with SPANISH field names:
+       - spanish_latam: LatAm Spanish sentence
+       - spanish_spain: Spain variant (if different)
+       - english: English translation
+       - explanation: Usage context
+    
+    7. Memory aid:
+       - mnemonic: Memory trick (in English)
+       - visual_cue: Memorable image description
+    
+    Return ONLY valid JSON with SPANISH field names (NOT arabic_*):
     {
       "detected_language": "spanish" | "english",
-      "arabic_word": "",  // Leave empty for Spanish
-      "translation": "English translation",
+      "spanish_latam": "PRIMARY SPANISH FORM (LatAm neutral)",
+      "spanish_spain": "SPAIN VARIANT (if different, else omit)",
+      "translation_en": "English translation",
+      "pronunciation": "IPA or phonetic guide (optional)",
+      "part_of_speech": "noun | verb | adjective | etc.",
       "word_context": {
-        "root": "",
-        "root_meaning": "",
-        "egyptian_usage": "Common usage context and notes",
-        "msa_comparison": "",
-        "cultural_notes": "Regional/register notes"
+        "usage_notes": "Common usage contexts",
+        "register": "formal | informal | slang | neutral",
+        "latam_notes": "LatAm-specific notes",
+        "spain_notes": "Spain-specific notes",
+        "etymology": "Brief origin if relevant"
       },
       "example_sentences": [
         {
-          "arabic_msa": "",
-          "transliteration_msa": "",
-          "arabic_egyptian": "Spanish sentence here",
-          "transliteration_egyptian": "",
+          "spanish_latam": "LatAm Spanish sentence",
+          "spanish_spain": "Spain variant (if different)",
           "english": "English translation",
-          "explanation": "Usage notes"
+          "explanation": "Context or dialect note"
         }
-      ]
+      ],
+      "memory_aid": {
+        "mnemonic": "Memory trick or word association",
+        "visual_cue": "Memorable image concept description"
+      }
     }
     
-    DO NOT include: pronunciation_standard, pronunciation_egyptian, letter_breakdown, letter_breakdown_egyptian, hebrew_cognate
+    CRITICAL: Use spanish_latam/spanish_spain fields, NOT arabic_*/arabic_msa/arabic_egyptian
   `;
 
   const response = await withRetry(() =>
@@ -491,7 +551,38 @@ export async function lookupWord(
     })
   );
 
-  const result = JSON.parse(response.choices[0].message.content || '{}') as LookupResult;
+  const rawResult = JSON.parse(response.choices[0].message.content || '{}');
+  
+  // A3: Spanish returns SpanishLookupResult, Arabic returns LookupResult
+  if (!isArabic) {
+    // Parse as SpanishLookupResult - NO Arabic field overloading
+    const spanishResult: SpanishLookupResult = {
+      detected_language: rawResult.detected_language || 'spanish',
+      spanish_latam: rawResult.spanish_latam || rawResult.arabic_word || '',
+      spanish_spain: rawResult.spanish_spain || rawResult.arabic_word_egyptian,
+      translation_en: rawResult.translation_en || rawResult.translation || '',
+      pronunciation: rawResult.pronunciation || rawResult.pronunciation_standard,
+      part_of_speech: rawResult.part_of_speech,
+      word_context: rawResult.word_context ? {
+        usage_notes: rawResult.word_context.usage_notes,
+        register: rawResult.word_context.register,
+        latam_notes: rawResult.word_context.latam_notes,
+        spain_notes: rawResult.word_context.spain_notes,
+        etymology: rawResult.word_context.etymology,
+      } : undefined,
+      example_sentences: rawResult.example_sentences?.map((s: any) => ({
+        spanish_latam: s.spanish_latam || s.arabic_msa || '',
+        spanish_spain: s.spanish_spain || s.arabic_egyptian,
+        english: s.english || '',
+        explanation: s.explanation,
+      })),
+      memory_aid: rawResult.memory_aid,
+    };
+    console.log('[lookupWord] Spanish result (proper fields):', spanishResult);
+    return spanishResult as any; // Cast to satisfy return type, caller should use SpanishLookupResult
+  }
+
+  const result = rawResult as LookupResult;
   
   // Check Egyptian dictionary for reliable Egyptian equivalents
   if (result.arabic_word) {
@@ -856,6 +947,21 @@ export async function analyzePassage(
   );
 
   const result = JSON.parse(response.choices[0].message.content || '{}') as PassageResult;
+  
+  // P1.2: Validate that sentence/passage analysis produced at least one sentence
+  if (!result.sentences || result.sentences.length === 0) {
+    console.error('[analyzePassage] Invalid result: empty sentences array', { text, language, result });
+    throw new Error('Translation failed: API returned empty sentence list. Please try again.');
+  }
+  
+  // Validate each sentence has required fields
+  for (const sentence of result.sentences) {
+    const primaryText = sentence.arabic_msa || sentence.arabic_egyptian;
+    if (!primaryText || !sentence.translation) {
+      console.error('[analyzePassage] Invalid sentence: missing primary_text or translation', sentence);
+      throw new Error('Translation failed: incomplete sentence data. Please try again.');
+    }
+  }
   
   // C3-1: Validate Spanish mode response - reject if contains Arabic characters
   if (isSpanish && result.full_translation) {

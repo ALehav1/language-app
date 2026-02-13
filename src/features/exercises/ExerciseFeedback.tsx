@@ -3,7 +3,7 @@ import type { AnswerResult, VocabularyItem } from '../../types';
 import { lookupWord, type LookupResult } from '../../lib/openai';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecisionPanel';
-import { WordDisplay } from '../../components/WordDisplay';
+import { WordSurface } from '../../components/surfaces/WordSurface';
 import { ContextTile } from '../../components/ContextTile';
 import { MemoryAidTile } from '../../components/MemoryAidTile';
 import { ChatTile, type ChatMessage } from '../../components/ChatTile';
@@ -92,8 +92,8 @@ export function ExerciseFeedback({
 
     // Use enhanced data if available, otherwise fall back to item data
 
-    // Generate letter breakdown - WordDisplay will handle this internally
-    // We don't need to pass it explicitly since WordDisplay generates it when showLetterBreakdown=true
+    // Generate letter breakdown - WordSurface will handle this internally
+    // We don't need to pass it explicitly since WordSurface generates it when showLetterBreakdown=true
 
     return (
         <div className="space-y-6 pb-20">
@@ -181,7 +181,7 @@ export function ExerciseFeedback({
             <div className="space-y-4">
                 <h4 className="text-white/70 font-semibold px-1">Word Details</h4>
 
-                {/* Use WordDisplay for the word details */}
+                {/* Use WordSurface for the word details (canonical renderer) */}
                 {isArabic && isLoadingEnhanced ? (
                     /* Loading skeleton for Arabic words */
                     <div className="glass-card p-4 animate-pulse">
@@ -190,7 +190,7 @@ export function ExerciseFeedback({
                         <div className="h-6 bg-white/10 rounded w-1/2"></div>
                     </div>
                 ) : isArabic && enhancedData ? (
-                    <WordDisplay
+                    <WordSurface
                         word={{
                             arabic: item.word,
                             arabicEgyptian: enhancedData.arabic_word_egyptian || item.word,
@@ -200,29 +200,28 @@ export function ExerciseFeedback({
                             hebrewCognate: enhancedData.hebrew_cognate,
                             exampleSentences: enhancedData.example_sentences,
                         }}
+                        language="arabic"
                         size="large"
-                        showHebrewCognate={language === 'arabic'}
-                        showLetterBreakdown={language === 'arabic'}
+                        showHebrewCognate={true}
+                        showLetterBreakdown={true}
                         showExampleSentences={false}
                         showSaveOption={false}
                         dialectPreference="egyptian"
                     />
                 ) : (
-                    /* Non-Arabic word display */
-                    <div className="glass-card p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-3xl font-bold text-white">
-                                {item.word}
-                            </span>
-                            <span className="text-white/60 text-lg">{item.translation}</span>
-                        </div>
-                        {item.transliteration && (
-                            <div className="flex items-center gap-2 text-white/50 text-sm">
-                                <span className="text-white/30">Pronunciation:</span>
-                                <span className="font-medium text-white/70">{item.transliteration}</span>
-                            </div>
-                        )}
-                    </div>
+                    /* Non-Arabic word display - use WordSurface for Spanish too */
+                    <WordSurface
+                        word={{
+                            language: 'spanish' as const,
+                            spanish_latam: item.word,
+                            translation: item.translation,
+                        }}
+                        language="spanish"
+                        size="large"
+                        showExampleSentences={false}
+                        showSaveOption={false}
+                        dialectPreference="latam"
+                    />
                 )}
                 
                 {/* Context and tiles for Arabic words */}

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import type { WordContext } from '../lib/openai';
+import type { WordContext, SpanishWordContext } from '../lib/openai';
 import type { Language } from '../types';
 
 interface ContextTileProps {
-    context?: WordContext;
+    context?: WordContext | SpanishWordContext;
     language: Language;
 }
 
@@ -12,7 +12,15 @@ export function ContextTile({ context, language }: ContextTileProps) {
 
     if (!context) return null;
 
-    const hasContent = context.root || context.egyptian_usage || context.msa_comparison || context.cultural_notes;
+    // Check for content based on language
+    const isSpanish = language === 'spanish';
+    const spanishContext = context as SpanishWordContext;
+    const arabicContext = context as WordContext;
+    
+    const hasContent = isSpanish
+        ? (spanishContext.usage_notes || spanishContext.latam_notes || spanishContext.spain_notes || spanishContext.etymology)
+        : (arabicContext.root || arabicContext.egyptian_usage || arabicContext.msa_comparison || arabicContext.cultural_notes);
+    
     if (!hasContent) return null;
 
     return (
@@ -37,30 +45,55 @@ export function ContextTile({ context, language }: ContextTileProps) {
 
             {isExpanded && (
                 <div className="px-4 pb-4 space-y-3 text-sm">
-                    {context.root && (
+                    {/* Spanish context fields */}
+                    {isSpanish && spanishContext.usage_notes && (
+                        <div>
+                            <div className="text-amber-400 font-medium mb-1">Usage Notes</div>
+                            <div className="text-white/80">{spanishContext.usage_notes}</div>
+                        </div>
+                    )}
+                    {isSpanish && spanishContext.latam_notes && (
+                        <div>
+                            <div className="text-teal-400 font-medium mb-1">🌎 Latin America</div>
+                            <div className="text-white/80">{spanishContext.latam_notes}</div>
+                        </div>
+                    )}
+                    {isSpanish && spanishContext.spain_notes && (
+                        <div>
+                            <div className="text-red-400 font-medium mb-1">🇪🇸 Spain</div>
+                            <div className="text-white/80">{spanishContext.spain_notes}</div>
+                        </div>
+                    )}
+                    {isSpanish && spanishContext.etymology && (
+                        <div>
+                            <div className="text-purple-400 font-medium mb-1">Etymology</div>
+                            <div className="text-white/80 italic">{spanishContext.etymology}</div>
+                        </div>
+                    )}
+                    
+                    {/* Arabic context fields */}
+                    {!isSpanish && arabicContext.root && (
                         <div>
                             <div className="text-teal-400 font-medium mb-1">Root</div>
-                            <div className="text-white/80">{context.root}</div>
+                            <div className="text-white/80">{arabicContext.root}</div>
                         </div>
                     )}
-                    {context.egyptian_usage && (
+                    {!isSpanish && arabicContext.egyptian_usage && (
                         <div>
-                            <div className="text-amber-400 font-medium mb-1">
-                                {language === 'arabic' ? 'Egyptian Usage' : 'Usage Notes'}
-                            </div>
-                            <div className="text-white/80">{context.egyptian_usage}</div>
+                            <div className="text-amber-400 font-medium mb-1">Egyptian Usage</div>
+                            <div className="text-white/80">{arabicContext.egyptian_usage}</div>
                         </div>
                     )}
-                    {context.msa_comparison && language === 'arabic' && (
+                    {!isSpanish && arabicContext.msa_comparison && (
                         <div>
                             <div className="text-blue-400 font-medium mb-1">MSA Comparison</div>
-                            <div className="text-white/80">{context.msa_comparison}</div>
+                            <div className="text-white/80">{arabicContext.msa_comparison}</div>
                         </div>
                     )}
-                    {context.cultural_notes && (
+                    {!isSpanish && arabicContext.cultural_notes && (
                         <div>
                             <div className="text-purple-400 font-medium mb-1">Cultural Notes</div>
-                            <div className="text-white/80">{context.cultural_notes}</div>
+                            <div className="text-white/80">{arabicContext.cultural_notes}</div>
                         </div>
                     )}
                 </div>

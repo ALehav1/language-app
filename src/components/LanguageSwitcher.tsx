@@ -9,10 +9,17 @@ import { useLanguage } from '../contexts/LanguageContext';
 export function LanguageSwitcher() {
   const { language, setLanguage } = useLanguage();
 
+  const handleLanguageChange = (lang: 'arabic' | 'spanish') => {
+    console.log('[LanguageSwitcher] setLanguage', lang);
+    console.log('[LanguageSwitcher] current language before:', language);
+    setLanguage(lang);
+    console.log('[LanguageSwitcher] localStorage after:', localStorage.getItem('language-app-selected-language'));
+  };
+
   return (
     <div className="flex items-center gap-2">
       <button
-        onClick={() => setLanguage('arabic')}
+        onClick={() => handleLanguageChange('arabic')}
         className={`
           px-3 py-1.5 rounded-lg text-sm font-medium transition-all
           ${
@@ -25,7 +32,7 @@ export function LanguageSwitcher() {
         🇪🇬 Arabic
       </button>
       <button
-        onClick={() => setLanguage('spanish')}
+        onClick={() => handleLanguageChange('spanish')}
         className={`
           px-3 py-1.5 rounded-lg text-sm font-medium transition-all
           ${

@@ -46,11 +46,20 @@ export function WordDetailModal({ isOpen, onClose, selection }: WordDetailModalP
       setSaved(false);
 
       try {
-        const lookupResult = await lookupWord(selection.selectedText, { language });
-        setResult(lookupResult);
+        const wordData = await lookupWord(selection.selectedText, { language, dialect: 'egyptian' });
         
-        if (isWordSaved(lookupResult.arabic_word)) {
-          setSaved(true);
+        if ('arabic_word' in wordData) {
+          setResult(wordData);
+          if (isWordSaved(wordData.arabic_word)) {
+            setSaved(true);
+          }
+        } else if ('spanish_word' in wordData) {
+          setResult(wordData as any);
+          if (isWordSaved((wordData as any).spanish_word)) {
+            setSaved(true);
+          }
+        } else {
+          setError('Unexpected result format');
         }
       } catch (err) {
         console.error('[WordDetailModal] Lookup error:', err);

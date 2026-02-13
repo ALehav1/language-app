@@ -37,7 +37,7 @@ export function MainMenu() {
                 .from('saved_words')
                 .select('*', { count: 'exact', head: true })
                 .eq('language', language)
-                .neq('status', 'retired');
+                .in('status', ['active', 'learned']);
             setWordCount(words || 0);
 
             // Get sentence count (language-scoped)
@@ -46,9 +46,10 @@ export function MainMenu() {
                     .from('saved_sentences')
                     .select('*', { count: 'exact', head: true })
                     .eq('language', language)
-                    .neq('status', 'retired');
+                    .in('status', ['active', 'learned']);
                 setSentenceCount(sentences || 0);
-            } catch {
+            } catch (err) {
+                console.error('[MainMenu] Failed to fetch sentence count:', err);
                 setSentenceCount(0);
             }
 
@@ -58,9 +59,10 @@ export function MainMenu() {
                     .from('saved_passages')
                     .select('*', { count: 'exact', head: true })
                     .eq('source_language', language)
-                    .neq('status', 'retired');
+                    .in('status', ['active', 'learned']);
                 setPassageCount(passages || 0);
-            } catch {
+            } catch (err) {
+                console.error('[MainMenu] Failed to fetch passage count:', err);
                 setPassageCount(0);
             }
 

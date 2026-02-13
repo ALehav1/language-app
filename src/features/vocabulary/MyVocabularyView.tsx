@@ -1,12 +1,15 @@
-import { useState, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { LookupModal } from './LookupModal';
-import { WordDisplay, type ArabicWordData } from '../../components/WordDisplay';
+import { WordSurface } from '../../components/surfaces/WordSurface';
+import { type ArabicWordData } from '../../components/WordDisplay';
 import { MemoryAidEditor } from '../../components/MemoryAidEditor';
 import { findHebrewCognate } from '../../utils/hebrewCognates';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { lookupWord, type LookupResult } from '../../lib/openai';
 import type { SavedWordWithContexts, WordStatus } from '../../types';
+import type { SpanishWordData } from '../../types/word';
 
 type SortOption = 'recent' | 'alphabetical' | 'alphabetical-en';
 
@@ -14,11 +17,26 @@ type SortOption = 'recent' | 'alphabetical' | 'alphabetical-en';
  * My Saved Words - Single-word vocabulary only (not sentences/passages).
  * Filtered by selected language from global context.
  */
+/**
+ * Location state for transient word data from lookup flow
+ */
+interface TransientWordState {
+    wordData?: any;  // Word data from lookup chip click
+    language?: 'arabic' | 'spanish';
+    parentSentence?: string;
+    source?: 'lookup';
+}
+
 export function MyVocabularyView() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { language } = useLanguage();
     const [searchParams] = useSearchParams();
     const mode = searchParams.get('mode') || 'practice';
+    const fromLookup = searchParams.get('from') === 'lookup';
+    
+    // Check for transient word data from lookup flow
+    const transientState = location.state as TransientWordState | null;
     
     // State for filters and search - default based on mode
     const defaultStatus: WordStatus = mode === 'archive' ? 'learned' : 'active';
@@ -39,7 +57,8 @@ export function MyVocabularyView() {
         deleteWord,
         updateMemoryAids,
         counts,
-        refetch 
+        refetch,
+        saveWord,
     } = useSavedWords({
         status: statusFilter,
         searchQuery: searchQuery.trim() || undefined,
@@ -116,6 +135,149 @@ export function MyVocabularyView() {
             </span>
         );
     };
+
+    // State for enhanced Spanish word data (fetched on demand)
+    const [enhancedSpanishData, setEnhancedSpanishData] = useState<LookupResult | null>(null);
+    const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(false);
+
+    // TRANSIENT WORD VIEW: When navigating from lookup chip click
+    // Show word detail page instead of vocabulary list
+    const wordData = fromLookup && transientState?.wordData ? transientState.wordData : null;
+    const wordLanguage = transientState?.language || language;
+    const isSpanish = wordLanguage === 'spanish';
+    
+    // P3-B: Fetch enhanced Spanish data for context/memory/examples
+    useEffect(() => {
+        if (!wordData || !isSpanish) return;
+        const spanishWord = wordData.arabic || wordData.spanish_latam || '';
+        if (!spanishWord) return;
+        
+        setIsLoadingEnhanced(true);
+        lookupWord(spanishWord, { language: 'spanish' })
+            .then(data => {
+                console.log('[MyVocabularyView] Enhanced Spanish data:', data);
+                setEnhancedSpanishData(data);
+            })
+            .catch(err => {
+                console.error('[MyVocabularyView] Failed to fetch enhanced Spanish data:', err);
+            })
+            .finally(() => setIsLoadingEnhanced(false));
+    }, [wordData, isSpanish]);
+    
+    if (fromLookup && wordData) {
+        // Convert breakdown word data to display format
+        // A4: Use SpanishLookupResult fields directly (NO Arabic field overloading)
+        const spanishData = enhancedSpanishData as any; // SpanishLookupResult
+        const displayWord: SpanishWordData | ArabicWordData = isSpanish ? {
+            language: 'spanish' as const,
+            spanish_latam: spanishData?.spanish_latam || wordData.arabic || wordData.spanish_latam || '',
+            spanish_spain: spanishData?.spanish_spain || wordData.spanish_spain,
+            translation: spanishData?.translation_en || wordData.translation || '',
+            partOfSpeech: spanishData?.part_of_speech || wordData.part_of_speech,
+            pronunciation: spanishData?.pronunciation,
+            // A4: Spanish parity fields from SpanishLookupResult (proper Spanish fields)
+            wordContext: spanishData?.word_context ? {
+                usage_notes: spanishData.word_context.usage_notes,
+                register: spanishData.word_context.register,
+                latam_notes: spanishData.word_context.latam_notes,
+                spain_notes: spanishData.word_context.spain_notes,
+                etymology: spanishData.word_context.etymology,
+            } : undefined,
+            memoryAid: spanishData?.memory_aid ? {
+                mnemonic: spanishData.memory_aid.mnemonic,
+                visual_cue: spanishData.memory_aid.visual_cue,
+            } : undefined,
+            exampleSentences: spanishData?.example_sentences?.map((s: any) => ({
+                spanish_latam: s.spanish_latam,
+                spanish_spain: s.spanish_spain,
+                english: s.english,
+                explanation: s.explanation,
+            })),
+        } satisfies SpanishWordData : {
+            arabic: wordData.arabic || '',
+            translation: wordData.translation || '',
+            arabicEgyptian: wordData.arabic_egyptian,
+            transliteration: wordData.transliteration,
+            transliterationEgyptian: wordData.transliteration_egyptian,
+            partOfSpeech: wordData.part_of_speech,
+        } as ArabicWordData;
+        
+        return (
+            <div className="min-h-screen flex flex-col">
+                {/* Header with back button */}
+                <header className="sticky top-0 z-40 bg-surface-300/95 backdrop-blur-sm border-b border-white/10">
+                    <div className="flex items-center gap-4 p-4">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="touch-btn w-10 h-10 bg-white/10 text-white/70 flex items-center justify-center rounded-xl"
+                            aria-label="Back to lookup"
+                            type="button"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <div className="flex-1">
+                            <h1 className="text-xl font-bold text-white">Word Details</h1>
+                            <p className="text-white/50 text-sm">
+                                From lookup • {isSpanish ? 'Spanish' : 'Arabic'}
+                            </p>
+                        </div>
+                    </div>
+                </header>
+                
+                {/* Word display using WordSurface (canonical renderer) */}
+                <main className="flex-1 p-4">
+                    {/* Loading indicator for enhanced Spanish data */}
+                    {isSpanish && isLoadingEnhanced && (
+                        <div className="text-center text-white/50 text-sm mb-4">
+                            Loading word details...
+                        </div>
+                    )}
+                    <div className="glass-card p-6">
+                        <WordSurface
+                            word={displayWord}
+                            language={wordLanguage}
+                            size="large"
+                            showHebrewCognate={!isSpanish}
+                            showLetterBreakdown={!isSpanish}
+                            showExampleSentences={true}
+                            showSaveOption={true}
+                            dialectPreference={isSpanish ? 'latam' : 'egyptian'}
+                            onSave={async (decision: any, memoryAid: any) => {
+                                if (decision === 'discard') return;
+                                try {
+                                    await saveWord({
+                                        word: isSpanish ? (displayWord as SpanishWordData).spanish_latam : (displayWord as ArabicWordData).arabic,
+                                        translation: displayWord.translation,
+                                        status: decision === 'practice' ? 'active' : 'learned',
+                                        memory_note: memoryAid?.note,
+                                        memory_image_url: memoryAid?.imageUrl,
+                                    });
+                                    // Navigate back after save
+                                    navigate(-1);
+                                } catch (err) {
+                                    console.error('[MyVocabularyView] Failed to save word:', err);
+                                }
+                            }}
+                        />
+                    </div>
+                    
+                    {/* Parent sentence context */}
+                    {transientState?.parentSentence && (
+                        <div className="glass-card p-4 mt-4">
+                            <div className="text-purple-400/70 text-xs font-bold uppercase tracking-wider mb-2">
+                                Found In
+                            </div>
+                            <div className={`text-white ${isSpanish ? '' : 'font-arabic text-right'}`} dir={isSpanish ? 'ltr' : 'rtl'}>
+                                {transientState?.parentSentence}
+                            </div>
+                        </div>
+                    )}
+                </main>
+            </div>
+        );
+    }
 
     if (loading && words.length === 0) {
         return (
@@ -464,8 +626,8 @@ export function MyVocabularyView() {
                             </button>
                         </div>
 
-                        {/* Use WordDisplay for consistent word rendering */}
-                        <WordDisplay
+                        {/* Use WordSurface for consistent word rendering */}
+                        <WordSurface
                             word={{
                                 arabic: selectedWord.word,
                                 translation: selectedWord.translation,
@@ -474,6 +636,7 @@ export function MyVocabularyView() {
                                 hebrewCognate: selectedWord.hebrew_cognate || findHebrewCognate(selectedWord.word) || undefined,
                                 exampleSentences: selectedWord.example_sentences || undefined,
                             } as ArabicWordData}
+                            language={language}
                             size="large"
                             showHebrewCognate={language === 'arabic'}
                             showLetterBreakdown={language === 'arabic'}

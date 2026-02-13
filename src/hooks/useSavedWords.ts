@@ -33,8 +33,8 @@ export function useSavedWords(options?: {
             if (options?.status && options.status !== 'all') {
                 query = query.eq('status', options.status);
             } else {
-                // By default, exclude retired words
-                query = query.neq('status', 'retired');
+                // By default, only show active and learned words
+                query = query.in('status', ['active', 'learned']);
             }
 
             // Apply language filter (PHASE 1.3: critical for language mode)
