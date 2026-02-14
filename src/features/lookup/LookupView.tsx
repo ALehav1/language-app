@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { lookupWord, analyzePassage, type LookupResult, type PassageResult } from '../../lib/openai';
 import { useSavedWords } from '../../hooks/useSavedWords';
@@ -14,9 +14,6 @@ import { AddedContextTile } from '../../components/AddedContextTile';
 import { WordBreakdownList, type WordBreakdownWord } from '../../components/WordBreakdownList';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-// Dialect preference storage key
-const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
-
 /**
  * LookupView - Full-page lookup for translating Arabic/English text.
  * 
@@ -29,7 +26,7 @@ const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
  */
 export function LookupView() {
     const navigate = useNavigate();
-    const { language } = useLanguage();
+    const { language, dialectPreferences, setArabicDialect } = useLanguage();
     const { saveWord, isWordSaved } = useSavedWords();
     const { saveSentence, getSentenceByText, updateStatus, deleteSentence } = useSavedSentences();
     const { savePassage, getPassageByText, updateStatus: updatePassageStatus, deletePassage } = useSavedPassages();
@@ -49,16 +46,8 @@ export function LookupView() {
     const getWordFromResult = (r: LookupResult) =>
         language === 'spanish' ? (r as any).spanish_latam : r.arabic_word;
 
-    // Dialect preference: 'egyptian' (default) or 'standard'
-    const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
-        const saved = localStorage.getItem(DIALECT_PREFERENCE_KEY);
-        return (saved === 'standard') ? 'standard' : 'egyptian';
-    });
-    
-    // Persist dialect preference
-    useEffect(() => {
-        localStorage.setItem(DIALECT_PREFERENCE_KEY, dialectPreference);
-    }, [dialectPreference]);
+    // Dialect preference from global context
+    const dialectPreference = dialectPreferences.arabic;
 
     // Detect content type from input
     const detectContentType = (text: string): 'word' | 'sentence' | 'passage' => {
@@ -618,7 +607,7 @@ export function LookupView() {
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-white/40">Show first:</span>
                             <button
-                                onClick={() => setDialectPreference('egyptian')}
+                                onClick={() => setArabicDialect('egyptian')}
                                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                                     dialectPreference === 'egyptian'
                                         ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
@@ -628,7 +617,7 @@ export function LookupView() {
                                 🇪🇬 Egyptian
                             </button>
                             <button
-                                onClick={() => setDialectPreference('standard')}
+                                onClick={() => setArabicDialect('standard')}
                                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                                     dialectPreference === 'standard'
                                         ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'

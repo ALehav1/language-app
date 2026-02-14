@@ -1,12 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSavedSentences, type SavedSentence } from '../../hooks/useSavedSentences';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { MemoryAidEditor } from '../../components/MemoryAidEditor';
 import { SentenceDisplay, type ArabicSentenceData } from '../../components/SentenceDisplay';
-
-// Shared dialect preference key (same as LookupView)
-const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
 
 /**
  * MySentencesView - Browse and practice saved spoken Arabic sentences.
@@ -14,7 +11,7 @@ const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
  */
 export function MySentencesView() {
     const navigate = useNavigate();
-    const { language } = useLanguage();
+    const { language, dialectPreferences, setArabicDialect } = useLanguage();
     const [searchParams] = useSearchParams();
     const mode = searchParams.get('mode') || 'practice';
     const { sentences, loading, counts, deleteSentence, updateStatus, updateMemoryAids } = useSavedSentences(language);
@@ -22,15 +19,8 @@ export function MySentencesView() {
     const defaultFilter: 'all' | 'active' | 'learned' = mode === 'archive' ? 'learned' : 'active';
     const [filter, setFilter] = useState<'all' | 'active' | 'learned'>(defaultFilter);
     
-    // Dialect preference (shared with Lookup)
-    const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
-        const saved = localStorage.getItem(DIALECT_PREFERENCE_KEY);
-        return (saved === 'standard') ? 'standard' : 'egyptian';
-    });
-    
-    useEffect(() => {
-        localStorage.setItem(DIALECT_PREFERENCE_KEY, dialectPreference);
-    }, [dialectPreference]);
+    // Dialect preference from global context
+    const dialectPreference = dialectPreferences.arabic;
 
     // Filter sentences
     const filteredSentences = sentences.filter(s => {
@@ -140,7 +130,7 @@ export function MySentencesView() {
             <div className="flex items-center gap-2 mb-4">
                 <span className="text-xs text-white/40">Show:</span>
                 <button
-                    onClick={() => setDialectPreference('egyptian')}
+                    onClick={() => setArabicDialect('egyptian')}
                     className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                         dialectPreference === 'egyptian'
                             ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
@@ -150,7 +140,7 @@ export function MySentencesView() {
                     🇪🇬 Egyptian
                 </button>
                 <button
-                    onClick={() => setDialectPreference('standard')}
+                    onClick={() => setArabicDialect('standard')}
                     className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                         dialectPreference === 'standard'
                             ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
