@@ -74,7 +74,7 @@ export function VocabularyLanding() {
                     .from('saved_passages')
                     .select('*', { count: 'exact', head: true })
                     .eq('status', status)
-                    .eq('language', language);
+                    .eq('source_language', language);
                 counts.passage = passageCount || 0;
             } catch {
                 counts.passage = 0;

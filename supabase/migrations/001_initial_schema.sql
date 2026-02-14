@@ -1,95 +1,150 @@
--- Language Learning App Schema
--- Run this in your Supabase SQL Editor
+-- Migration: 001_initial_schema.sql
+-- Created: 2026-02-13
+-- Purpose: Clean schema definition for all application tables
+-- Note: Replaces all previous migrations (archived in _archive/)
+-- Tables: lessons, vocabulary_items, lesson_progress, saved_words,
+--         word_contexts, saved_sentences, saved_passages, saved_dialogs
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- Lessons table
-CREATE TABLE IF NOT EXISTS lessons (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    language TEXT NOT NULL CHECK (language IN ('arabic', 'spanish')),
-    difficulty TEXT NOT NULL CHECK (difficulty IN ('new', 'learning', 'practiced', 'mastered')),
-    estimated_minutes INTEGER NOT NULL DEFAULT 5,
-    vocab_count INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+-- ============================================================
+-- TABLE: lessons
+-- ============================================================
+CREATE TABLE lessons (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    title text NOT NULL,
+    description text NOT NULL,
+    language text NOT NULL CHECK (language IN ('arabic', 'spanish')),
+    difficulty text NOT NULL CHECK (difficulty IN ('new', 'learning', 'practiced', 'mastered')),
+    content_type text NOT NULL DEFAULT 'word' CHECK (content_type IN ('word', 'sentence', 'dialog', 'passage')),
+    estimated_minutes integer NOT NULL DEFAULT 5,
+    vocab_count integer NOT NULL DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Vocabulary items table
-CREATE TABLE IF NOT EXISTS vocabulary_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    lesson_id UUID REFERENCES lessons(id) ON DELETE CASCADE,
-    word TEXT NOT NULL,
-    translation TEXT NOT NULL,
-    language TEXT NOT NULL CHECK (language IN ('arabic', 'spanish')),
-    transliteration TEXT,
-    hebrew_cognate JSONB,  -- { root?: string, meaning?: string, notes?: string }
-    mastery_level TEXT NOT NULL DEFAULT 'new' CHECK (mastery_level IN ('new', 'learning', 'practiced', 'mastered')),
-    last_reviewed TIMESTAMPTZ,
-    next_review TIMESTAMPTZ,
-    times_practiced INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+-- ============================================================
+-- TABLE: vocabulary_items
+-- ============================================================
+CREATE TABLE vocabulary_items (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    lesson_id uuid NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    word text NOT NULL,
+    translation text NOT NULL,
+    language text NOT NULL CHECK (language IN ('arabic', 'spanish')),
+    content_type text NOT NULL DEFAULT 'word' CHECK (content_type IN ('word', 'sentence', 'dialog', 'passage')),
+    transliteration text,
+    hebrew_cognate jsonb,
+    letter_breakdown jsonb,
+    speaker text,
+    context text,
+    mastery_level text NOT NULL DEFAULT 'new' CHECK (mastery_level IN ('new', 'learning', 'practiced', 'mastered')),
+    times_practiced integer NOT NULL DEFAULT 0,
+    last_reviewed timestamptz,
+    next_review timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Lesson progress tracking
-CREATE TABLE IF NOT EXISTS lesson_progress (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    lesson_id UUID REFERENCES lessons(id) ON DELETE CASCADE,
-    language TEXT NOT NULL CHECK (language IN ('arabic', 'spanish')),
-    completed_date TIMESTAMPTZ DEFAULT NOW(),
-    score INTEGER,
-    items_practiced INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+-- ============================================================
+-- TABLE: lesson_progress
+-- ============================================================
+CREATE TABLE lesson_progress (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    lesson_id uuid NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    language text NOT NULL CHECK (language IN ('arabic', 'spanish')),
+    completed_date timestamptz NOT NULL DEFAULT now(),
+    score integer,
+    items_practiced integer NOT NULL DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Indexes for common queries
-CREATE INDEX IF NOT EXISTS idx_vocab_lesson ON vocabulary_items(lesson_id);
-CREATE INDEX IF NOT EXISTS idx_vocab_language ON vocabulary_items(language);
-CREATE INDEX IF NOT EXISTS idx_vocab_next_review ON vocabulary_items(next_review);
-CREATE INDEX IF NOT EXISTS idx_progress_lesson ON lesson_progress(lesson_id);
-
--- Insert sample lessons
-INSERT INTO lessons (id, title, description, language, difficulty, estimated_minutes, vocab_count) VALUES
-    ('00000000-0000-0000-0000-000000000001', 'Greetings & Introductions', 'Learn essential Arabic greetings and how to introduce yourself in everyday conversations.', 'arabic', 'new', 5, 5),
-    ('00000000-0000-0000-0000-000000000002', 'At the Restaurant', 'Order food, ask for the menu, and handle common restaurant situations in Spanish.', 'spanish', 'learning', 7, 5),
-    ('00000000-0000-0000-0000-000000000003', 'Numbers & Counting', 'Master Arabic numerals 1-20 with pronunciation tips and Hebrew cognate connections.', 'arabic', 'new', 6, 3),
-    ('00000000-0000-0000-0000-000000000004', 'Travel Essentials', 'Navigate airports, hotels, and transportation with confidence.', 'spanish', 'practiced', 8, 3);
-
--- Insert Arabic Greetings vocabulary
-INSERT INTO vocabulary_items (lesson_id, word, translation, language, transliteration, hebrew_cognate) VALUES
-    ('00000000-0000-0000-0000-000000000001', 'مرحبا', 'hello', 'arabic', 'marhaba', '{"root": "ברוך", "meaning": "blessing/welcome", "notes": "Similar greeting pattern in Hebrew"}'),
-    ('00000000-0000-0000-0000-000000000001', 'شكرا', 'thank you', 'arabic', 'shukran', '{"root": "שכר", "meaning": "reward/payment", "notes": "Shares same Semitic root"}'),
-    ('00000000-0000-0000-0000-000000000001', 'نعم', 'yes', 'arabic', 'na''am', '{"root": "נעם", "meaning": "pleasant/agreeable", "notes": "Identical root, used for affirmation"}'),
-    ('00000000-0000-0000-0000-000000000001', 'لا', 'no', 'arabic', 'la', '{"root": "לא", "meaning": "no/not", "notes": "Identical in both languages"}'),
-    ('00000000-0000-0000-0000-000000000001', 'من فضلك', 'please', 'arabic', 'min fadlik', NULL);
-
--- Insert Spanish Restaurant vocabulary
-INSERT INTO vocabulary_items (lesson_id, word, translation, language) VALUES
-    ('00000000-0000-0000-0000-000000000002', 'la cuenta', 'the bill', 'spanish'),
-    ('00000000-0000-0000-0000-000000000002', 'el menú', 'the menu', 'spanish'),
-    ('00000000-0000-0000-0000-000000000002', 'la mesa', 'the table', 'spanish'),
-    ('00000000-0000-0000-0000-000000000002', 'el agua', 'the water', 'spanish'),
-    ('00000000-0000-0000-0000-000000000002', 'delicioso', 'delicious', 'spanish');
-
--- Insert Arabic Numbers vocabulary
-INSERT INTO vocabulary_items (lesson_id, word, translation, language, transliteration, hebrew_cognate) VALUES
-    ('00000000-0000-0000-0000-000000000003', 'واحد', 'one', 'arabic', 'wahid', '{"root": "אחד", "meaning": "one/single", "notes": "Same Semitic root for one"}'),
-    ('00000000-0000-0000-0000-000000000003', 'اثنان', 'two', 'arabic', 'ithnan', '{"root": "שניים", "meaning": "two", "notes": "Related number from Semitic root"}'),
-    ('00000000-0000-0000-0000-000000000003', 'ثلاثة', 'three', 'arabic', 'thalatha', '{"root": "שלוש", "meaning": "three", "notes": "Similar Semitic root for three"}');
-
--- Insert Spanish Travel vocabulary
-INSERT INTO vocabulary_items (lesson_id, word, translation, language) VALUES
-    ('00000000-0000-0000-0000-000000000004', 'el aeropuerto', 'the airport', 'spanish'),
-    ('00000000-0000-0000-0000-000000000004', 'el hotel', 'the hotel', 'spanish'),
-    ('00000000-0000-0000-0000-000000000004', 'el taxi', 'the taxi', 'spanish');
-
--- Update vocab counts
-UPDATE lessons SET vocab_count = (
-    SELECT COUNT(*) FROM vocabulary_items WHERE vocabulary_items.lesson_id = lessons.id
+-- ============================================================
+-- TABLE: saved_words
+-- ============================================================
+CREATE TABLE saved_words (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    word text NOT NULL UNIQUE,
+    translation text NOT NULL,
+    language text NOT NULL DEFAULT 'arabic' CHECK (language IN ('arabic', 'spanish')),
+    pronunciation_standard text,
+    pronunciation_egyptian text,
+    letter_breakdown jsonb,
+    hebrew_cognate jsonb,
+    example_sentences jsonb,
+    topic text,
+    tags text[],
+    status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'learned', 'retired')),
+    times_practiced integer NOT NULL DEFAULT 0,
+    times_correct integer NOT NULL DEFAULT 0,
+    last_practiced timestamptz,
+    next_review timestamptz,
+    memory_note text,
+    memory_image_url text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Row Level Security (optional, for future auth)
--- ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE vocabulary_items ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE lesson_progress ENABLE ROW LEVEL SECURITY;
+-- ============================================================
+-- TABLE: word_contexts
+-- ============================================================
+CREATE TABLE word_contexts (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    saved_word_id uuid NOT NULL REFERENCES saved_words(id) ON DELETE CASCADE,
+    content_type text NOT NULL CHECK (content_type IN ('word', 'sentence', 'dialog', 'passage', 'lookup')),
+    full_text text NOT NULL,
+    full_transliteration text,
+    full_translation text NOT NULL,
+    speaker text,
+    dialog_context text,
+    lesson_id uuid REFERENCES lessons(id) ON DELETE SET NULL,
+    vocabulary_item_id uuid REFERENCES vocabulary_items(id) ON DELETE SET NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- TABLE: saved_sentences
+-- ============================================================
+CREATE TABLE saved_sentences (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    arabic_text text NOT NULL,
+    arabic_egyptian text,
+    transliteration text NOT NULL,
+    transliteration_egyptian text,
+    translation text NOT NULL,
+    explanation text,
+    topic text,
+    source text,
+    language text NOT NULL CHECK (language IN ('arabic', 'spanish')),
+    status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'learned')),
+    memory_note text,
+    memory_image_url text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- TABLE: saved_passages
+-- ============================================================
+CREATE TABLE saved_passages (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    original_text text NOT NULL,
+    source_language text NOT NULL CHECK (source_language IN ('arabic', 'english', 'spanish')),
+    full_translation text NOT NULL,
+    full_transliteration text,
+    sentence_count integer NOT NULL DEFAULT 1,
+    enrichment_data jsonb,
+    source text,
+    status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'learned')),
+    memory_note text,
+    memory_image_url text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- TABLE: saved_dialogs (minimal, future-ready)
+-- ============================================================
+CREATE TABLE saved_dialogs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    language text NOT NULL CHECK (language IN ('arabic', 'spanish')),
+    status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'learned')),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
