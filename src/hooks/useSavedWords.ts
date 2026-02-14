@@ -162,7 +162,7 @@ export function useSavedWords(options?: {
                     .insert({
                         word: wordData.word,
                         translation: wordData.translation,
-                        language: 'arabic',
+                        language: options?.language || 'arabic',
                         pronunciation_standard: wordData.pronunciation_standard || null,
                         pronunciation_egyptian: wordData.pronunciation_egyptian || null,
                         letter_breakdown: wordData.letter_breakdown || null,

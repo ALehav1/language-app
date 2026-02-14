@@ -133,7 +133,7 @@ export function useSavedVocabulary(): UseSavedVocabularyReturn {
                             hebrew_cognate: vocabItem.hebrew_cognate || null,
                             topic: null,
                             tags: null,
-                            status: 'needs_review',
+                            status: 'active',
                             times_practiced: 0,
                             times_correct: 0,
                             last_practiced: null,

@@ -29,7 +29,7 @@ The Language Learning App is an AI-powered Arabic and Spanish learning platform 
 
 ### Key Metrics
 - **Total Lines of Code:** ~17,518 (82 active TypeScript/TSX files)
-- **Test Coverage:** 46/46 tests passing
+- **Test Coverage:** 177/177 tests passing
 - **Supported Languages:** Arabic (Egyptian + MSA), Spanish (LatAm + Spain)
 - **Content Types:** Words, Sentences, Dialogs, Passages
 - **Deployment:** Vercel (https://language-m6q3yz1z4-alehav1s-projects.vercel.app)
@@ -1146,7 +1146,7 @@ The Language Learning App is a well-architected, production-ready application wi
 ✅ **Strengths:**
 - Type-safe with strict TypeScript
 - Well-documented (ARCHITECTURE.md, README.md, ADRs)
-- Comprehensive testing (46/46 tests passing)
+- Comprehensive testing (177/177 tests passing)
 - Clean separation of concerns
 - Domain abstraction layer for future extensibility
 

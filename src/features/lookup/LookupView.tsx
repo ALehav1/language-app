@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { lookupWord, analyzePassage, type LookupResult, type PassageResult } from '../../lib/openai';
 import { useSavedWords } from '../../hooks/useSavedWords';
@@ -14,9 +14,6 @@ import { AddedContextTile } from '../../components/AddedContextTile';
 import { WordBreakdownList, type WordBreakdownWord } from '../../components/WordBreakdownList';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-// Dialect preference storage key
-const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
-
 /**
  * LookupView - Full-page lookup for translating Arabic/English text.
  * 
@@ -29,7 +26,7 @@ const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
  */
 export function LookupView() {
     const navigate = useNavigate();
-    const { language } = useLanguage();
+    const { language, dialectPreferences, setArabicDialect } = useLanguage();
     const { saveWord, isWordSaved } = useSavedWords();
     const { saveSentence, getSentenceByText, updateStatus, deleteSentence } = useSavedSentences();
     const { savePassage, getPassageByText, updateStatus: updatePassageStatus, deletePassage } = useSavedPassages();
@@ -45,16 +42,12 @@ export function LookupView() {
     const [memoryNote, setMemoryNote] = useState<string | null>(null);
     const [memoryImageUrl, setMemoryImageUrl] = useState<string | null>(null);
     
-    // Dialect preference: 'egyptian' (default) or 'standard'
-    const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
-        const saved = localStorage.getItem(DIALECT_PREFERENCE_KEY);
-        return (saved === 'standard') ? 'standard' : 'egyptian';
-    });
-    
-    // Persist dialect preference
-    useEffect(() => {
-        localStorage.setItem(DIALECT_PREFERENCE_KEY, dialectPreference);
-    }, [dialectPreference]);
+    // Helper: extract the primary word from a lookup result based on language
+    const getWordFromResult = (r: LookupResult) =>
+        language === 'spanish' ? (r as any).spanish_latam : r.arabic_word;
+
+    // Dialect preference from global context
+    const dialectPreference = dialectPreferences.arabic;
 
     // Detect content type from input
     const detectContentType = (text: string): 'word' | 'sentence' | 'passage' => {
@@ -151,19 +144,21 @@ export function LookupView() {
         if (!result || decision === 'discard') return;
         
         try {
+            const isSpanish = language === 'spanish';
             await saveWord({
-                word: result.arabic_word,
-                translation: result.translation,
-                pronunciation_standard: result.pronunciation_standard,
-                pronunciation_egyptian: result.pronunciation_egyptian,
-                letter_breakdown: result.letter_breakdown,
-                hebrew_cognate: result.hebrew_cognate,
-                example_sentences: result.example_sentences,
+                word: isSpanish ? (result as any).spanish_latam : result.arabic_word,
+                translation: isSpanish ? (result as any).translation_en : result.translation,
+                pronunciation_standard: isSpanish ? ((result as any).pronunciation || null) : result.pronunciation_standard,
+                pronunciation_egyptian: isSpanish ? undefined : result.pronunciation_egyptian,
+                letter_breakdown: isSpanish ? undefined : result.letter_breakdown,
+                hebrew_cognate: isSpanish ? undefined : result.hebrew_cognate,
+                example_sentences: result.example_sentences || null,
                 status: decision === 'practice' ? 'active' : 'learned', // archive = learned
                 memory_note: memoryAid?.note,
                 memory_image_url: memoryAid?.imageUrl,
             });
-            setSavedWords(prev => new Set(prev).add(result.arabic_word));
+            const word = getWordFromResult(result);
+            setSavedWords(prev => new Set(prev).add(word));
         } catch (err) {
             console.error('[LookupView] Failed to save word:', err);
         }
@@ -234,7 +229,8 @@ export function LookupView() {
     };
 
     // Check if current word is saved
-    const isCurrentWordSaved = result ? (savedWords.has(result.arabic_word) || isWordSaved(result.arabic_word)) : false;
+    const currentWord = result ? getWordFromResult(result) : '';
+    const isCurrentWordSaved = result ? (savedWords.has(currentWord) || isWordSaved(currentWord)) : false;
 
     return (
         <div className="min-h-screen bg-surface-300 pb-24">
@@ -611,7 +607,7 @@ export function LookupView() {
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-white/40">Show first:</span>
                             <button
-                                onClick={() => setDialectPreference('egyptian')}
+                                onClick={() => setArabicDialect('egyptian')}
                                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                                     dialectPreference === 'egyptian'
                                         ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
@@ -621,7 +617,7 @@ export function LookupView() {
                                 🇪🇬 Egyptian
                             </button>
                             <button
-                                onClick={() => setDialectPreference('standard')}
+                                onClick={() => setArabicDialect('standard')}
                                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                                     dialectPreference === 'standard'
                                         ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'

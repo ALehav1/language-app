@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSavedPassages, type SavedPassage } from '../../hooks/useSavedPassages';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -8,16 +8,13 @@ import type { SentenceSelectionContext } from '../../types/selection';
 import { makeSentenceSelection } from '../../types/selection-helpers';
 import { splitSentences } from '../../utils/text/splitSentences';
 
-// Shared dialect preference key
-const DIALECT_PREFERENCE_KEY = 'language-app-dialect-preference';
-
 /**
  * MyPassagesView - Browse and review saved full passages.
  * Shows both Arabic and English passages with full breakdowns.
  */
 export function MyPassagesView() {
     const navigate = useNavigate();
-    const { language } = useLanguage();
+    const { language, dialectPreferences, setArabicDialect } = useLanguage();
     const [searchParams] = useSearchParams();
     const mode = searchParams.get('mode') || 'practice';
     const { passages, loading, counts, deletePassage, updateStatus, updateMemoryAids } = useSavedPassages(language);
@@ -25,19 +22,12 @@ export function MyPassagesView() {
     const defaultFilter: 'all' | 'active' | 'learned' = mode === 'archive' ? 'learned' : 'active';
     const [filter, setFilter] = useState<'all' | 'active' | 'learned'>(defaultFilter);
     
-    // Dialect preference (shared with Lookup and Sentences)
-    const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
-        const saved = localStorage.getItem(DIALECT_PREFERENCE_KEY);
-        return (saved === 'standard') ? 'standard' : 'egyptian';
-    });
-    
+    // Dialect preference from global context
+    const dialectPreference = dialectPreferences.arabic;
+
     // Sentence modal state
     const [sentenceModalOpen, setSentenceModalOpen] = useState(false);
     const [sentenceSelection, setSentenceSelection] = useState<SentenceSelectionContext | null>(null);
-    
-    useEffect(() => {
-        localStorage.setItem(DIALECT_PREFERENCE_KEY, dialectPreference);
-    }, [dialectPreference]);
 
     // Filter passages
     const filteredPassages = passages.filter(p => {
@@ -131,7 +121,7 @@ export function MyPassagesView() {
                 <div className="flex items-center gap-2 mb-4">
                     <span className="text-xs text-white/40">Show:</span>
                     <button
-                        onClick={() => setDialectPreference('egyptian')}
+                        onClick={() => setArabicDialect('egyptian')}
                         className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                             dialectPreference === 'egyptian'
                                 ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
@@ -141,7 +131,7 @@ export function MyPassagesView() {
                         🇪🇬 Egyptian
                     </button>
                     <button
-                        onClick={() => setDialectPreference('standard')}
+                        onClick={() => setArabicDialect('standard')}
                         className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                             dialectPreference === 'standard'
                                 ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'

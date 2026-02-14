@@ -13,31 +13,65 @@ Last Updated: January 13, 2026 (Night) - Spanish UX Contract v1 Implementation
 **These rules prevent regressions. Follow them strictly:**
 
 1. **WordSurface is the ONLY word renderer** - Never create parallel word display components
-2. **SentenceSurface is the ONLY sentence renderer** - Sentences are tiles, words are chips inside them
+2. **SentenceDisplay is the sentence renderer** - SentenceSurface was archived (zero imports)
 3. **Sentence = one tile, words = chips** - Single words are compact, never full-width
 4. **LanguageSwitcher controls language** - LanguageBadge is display-only, not interactive
 5. **Spanish and Arabic NEVER share field names** - No `arabic_word` for Spanish data
 6. **Canonical routes:**
-   - Word detail: `/vocabulary/word`
-   - Vocabulary list: `/words`
+   - Vocabulary landing: `/vocabulary`
+   - Word list: `/vocabulary/word`
+   - Sentence list: `/vocabulary/sentence`
+   - Passage list: `/vocabulary/passage`
    - Lookup: `/lookup`
-7. **Any new feature must plug into existing surfaces** - Do not create new renderers
+7. **LanguageContext is the single source of truth** for language and dialect preferences
 
 ⚠️ **Changes to these invariants require explicit intent and justification.**
 
 ---
 
-## 📊 **NEW: Comprehensive Codebase Analysis (Jan 13, 2026)**
+## Setup
 
-**[👉 View Complete Analysis](./docs/comprehensive-analysis-2026-01-13/)** - 271 KB of detailed documentation including:
-- **[Executive Summary](./docs/comprehensive-analysis-2026-01-13/EXECUTIVE_SUMMARY.md)** - Critical issues, ROI analysis, roadmap
-- **[48+ Issues Identified](./docs/comprehensive-analysis-2026-01-13/ISSUES_ANALYSIS.md)** - With fixes and priorities
-- **[52 Recommendations](./docs/comprehensive-analysis-2026-01-13/RECOMMENDATIONS.md)** - Implementation guides with code examples
-- **[Complete Architecture](./docs/comprehensive-analysis-2026-01-13/COMPREHENSIVE_ARCHITECTURE.md)** - System design and patterns
-- **[All User Flows](./docs/comprehensive-analysis-2026-01-13/USER_FLOWS.md)** - Step-by-step journey maps
-- **[Data Architecture](./docs/comprehensive-analysis-2026-01-13/DATA_ARCHITECTURE.md)** - Database and state management
+**Prerequisites:** Node.js 18+, npm
 
-**Quick Start:** Read [START_HERE.md](./docs/comprehensive-analysis-2026-01-13/START_HERE.md) for navigation guide.
+```bash
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Fill in VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_OPENAI_API_KEY
+
+# Run database migrations against your Supabase project
+# See supabase/migrations/001_initial_schema.sql
+
+# Start dev server
+npm run dev
+
+# Run tests
+npm run test:run
+```
+
+---
+
+## 📊 **Comprehensive Codebase Analysis (Jan 13, 2026)**
+
+271 KB of detailed documentation in `docs/`:
+- **[Executive Summary](./docs/EXECUTIVE_SUMMARY.md)** - Critical issues, ROI analysis, roadmap
+- **[48+ Issues Identified](./docs/ISSUES_ANALYSIS.md)** - With fixes and priorities
+- **[52 Recommendations](./docs/RECOMMENDATIONS.md)** - Implementation guides with code examples
+- **[Complete Architecture](./docs/COMPREHENSIVE_ARCHITECTURE.md)** - System design and patterns
+- **[All User Flows](./docs/USER_FLOWS.md)** - Step-by-step journey maps
+- **[Data Architecture](./docs/DATA_ARCHITECTURE.md)** - Database and state management
+
+**Quick Start:** Read [START_HERE.md](./docs/START_HERE.md) for navigation guide.
+
+---
+
+## 🔎 Latest Audit (Feb 13, 2026)
+
+For the current implementation-vs-documentation review and prioritized fix list, see:
+
+**[Codebase Audit - 2026-02-13](./docs/CODEBASE_AUDIT_2026-02-13.md)**
 
 ---
 
@@ -112,17 +146,22 @@ Save → returns to Lookup
 **Canonical routes:**
 
 | Path | Purpose |
-|------|---------||
+|------|---------|
 | `/` | Main menu |
 | `/lessons` | Browse/create lessons |
 | `/exercise/:id` | Practice flow |
-| `/vocabulary/word` | Word detail page (from lookup/chips) |
-| `/words` | Vocabulary list view |
+| `/vocabulary` | Vocabulary landing (words/sentences/passages) |
+| `/vocabulary/word` | Saved words list |
+| `/vocabulary/sentence` | Saved sentences list |
+| `/vocabulary/dialog` | Saved dialogs (uses sentences view) |
+| `/vocabulary/passage` | Saved passages list |
 | `/lookup` | Translation lookup |
 
-**Legacy routes** (backward compatibility only):
-- `/sentences` - Use `/words?type=sentences` instead
-- `/passages` - Use `/words?type=passages` instead
+**Legacy routes** (redirect to canonical equivalents):
+- `/words` → `/vocabulary/word`
+- `/saved` → `/vocabulary/word`
+- `/sentences` → `/vocabulary/sentence`
+- `/passages` → `/vocabulary/passage`
 
 ---
 
@@ -163,7 +202,7 @@ See `docs/verification/` for PR notes and verification details.
 
 **Mobile-First:** Test at 375px → 768px → 1024px
 
-**TypeScript:** Strict mode, no `any` types
+**TypeScript:** Strict mode. Some `any` casts remain in the Spanish lookup flow (tech debt).
 
 ---
 
@@ -388,16 +427,13 @@ See `docs/verification/` for PR notes and verification details.
 - **No user auth** - Single-user app
 - **No cross-device sync** - localStorage for preferences
 - **Resume expires** - 24-hour limit on saved progress
-- **Manual testing only** - No automated test suite yet
 
 ---
 
 ## Future Enhancements
 
-- Spanish language expansion
 - Audio pronunciation
 - Offline mode with sync
-- Automated testing
 - Community features
 
 ---
@@ -409,4 +445,3 @@ MIT
 ---
 
 **For detailed technical documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md)**
-
