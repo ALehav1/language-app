@@ -45,6 +45,10 @@ export function LookupView() {
     const [memoryNote, setMemoryNote] = useState<string | null>(null);
     const [memoryImageUrl, setMemoryImageUrl] = useState<string | null>(null);
     
+    // Helper: extract the primary word from a lookup result based on language
+    const getWordFromResult = (r: LookupResult) =>
+        language === 'spanish' ? (r as any).spanish_latam : r.arabic_word;
+
     // Dialect preference: 'egyptian' (default) or 'standard'
     const [dialectPreference, setDialectPreference] = useState<'egyptian' | 'standard'>(() => {
         const saved = localStorage.getItem(DIALECT_PREFERENCE_KEY);
@@ -151,19 +155,21 @@ export function LookupView() {
         if (!result || decision === 'discard') return;
         
         try {
+            const isSpanish = language === 'spanish';
             await saveWord({
-                word: result.arabic_word,
-                translation: result.translation,
-                pronunciation_standard: result.pronunciation_standard,
-                pronunciation_egyptian: result.pronunciation_egyptian,
-                letter_breakdown: result.letter_breakdown,
-                hebrew_cognate: result.hebrew_cognate,
-                example_sentences: result.example_sentences,
+                word: isSpanish ? (result as any).spanish_latam : result.arabic_word,
+                translation: isSpanish ? (result as any).translation_en : result.translation,
+                pronunciation_standard: isSpanish ? ((result as any).pronunciation || null) : result.pronunciation_standard,
+                pronunciation_egyptian: isSpanish ? undefined : result.pronunciation_egyptian,
+                letter_breakdown: isSpanish ? undefined : result.letter_breakdown,
+                hebrew_cognate: isSpanish ? undefined : result.hebrew_cognate,
+                example_sentences: result.example_sentences || null,
                 status: decision === 'practice' ? 'active' : 'learned', // archive = learned
                 memory_note: memoryAid?.note,
                 memory_image_url: memoryAid?.imageUrl,
             });
-            setSavedWords(prev => new Set(prev).add(result.arabic_word));
+            const word = getWordFromResult(result);
+            setSavedWords(prev => new Set(prev).add(word));
         } catch (err) {
             console.error('[LookupView] Failed to save word:', err);
         }
@@ -234,7 +240,8 @@ export function LookupView() {
     };
 
     // Check if current word is saved
-    const isCurrentWordSaved = result ? (savedWords.has(result.arabic_word) || isWordSaved(result.arabic_word)) : false;
+    const currentWord = result ? getWordFromResult(result) : '';
+    const isCurrentWordSaved = result ? (savedWords.has(currentWord) || isWordSaved(currentWord)) : false;
 
     return (
         <div className="min-h-screen bg-surface-300 pb-24">
