@@ -3,7 +3,6 @@
  * Automatically infers Egyptian Arabic when not provided by API
  */
 
-import { openai } from '../lib/openai';
 import { getEgyptianEquivalent } from './egyptianDictionary';
 
 // In-memory cache for inferred Egyptian Arabic
@@ -65,54 +64,9 @@ export async function inferEgyptianArabic(
     return result;
   }
   
-  try {
-    console.log('[inferEgyptianArabic] Inferring Egyptian for:', msaText);
-    
-    const prompt = `Convert this Modern Standard Arabic (MSA) text to Egyptian Arabic:
-
-MSA: ${msaText}
-
-Provide the Egyptian Arabic version with proper vowel marks and its transliteration.
-Egyptian Arabic often uses completely different words than MSA.
-
-Common Egyptian replacements:
-- كيف → إزاي (ezzay)
-- ماذا → إيه (eih)
-- الآن → دلوقتي (dilwa'ti)
-- ذاهب → رايح (raayeh)
-- أريد → عايز (aayez)
-- جيد → كويس (kwayyis)
-- العمل → الشغل (el-shoghl)
-
-Return ONLY a JSON object:
-{
-  "egyptian": "Egyptian Arabic with vowels",
-  "transliteration": "pronunciation"
-}`;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "Return valid json only." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.3
-    });
-    
-    const result = JSON.parse(response.choices[0].message.content || '{}');
-    
-    if (result.egyptian && result.transliteration) {
-      // Cache the result
-      inferenceCache.set(cacheKey, result);
-      saveCache();
-      console.log('[inferEgyptianArabic] Inferred:', result);
-      return result;
-    }
-  } catch (error) {
-    console.error('[inferEgyptianArabic] Failed to infer:', error);
-  }
-  
+  // TODO: Route through /api/ endpoint if this function is ever used.
+  // The raw openai client was removed from the browser bundle (Packet B).
+  console.warn('[inferEgyptianArabic] AI inference unavailable — needs a serverless endpoint');
   return null;
 }
 
