@@ -24,9 +24,9 @@ This comprehensive analysis of the Language Learning App codebase provides a com
 
 **Architecture & Design**
 - Well-organized feature-based structure
-- Strict TypeScript with no `any` types in core logic
+- Strict TypeScript (some `any` casts remain in Spanish lookup flow)
 - Domain abstraction layer for future extensibility (PracticeItem)
-- Comprehensive testing (46/46 tests passing)
+- Comprehensive testing (177/177 tests passing)
 - Excellent documentation (README, ARCHITECTURE, ADRs)
 
 **User Experience**
@@ -73,7 +73,7 @@ This comprehensive analysis of the Language Learning App codebase provides a com
 
 ### Codebase
 - **Lines of Code:** ~17,518 (82 active TypeScript/TSX files)
-- **Test Coverage:** 46/46 tests passing (100%)
+- **Test Coverage:** 177/177 tests passing (100%)
 - **Documentation:** 246 KB across 6 comprehensive docs
 - **Dependencies:** 37 npm packages (React 19, TypeScript 5.9, Vite 7.3)
 
@@ -342,7 +342,7 @@ This comprehensive analysis of the Language Learning App codebase provides a com
    - API calls
 
 3. **DATA_ARCHITECTURE.md** (47 KB)
-   - Database schema (5 tables)
+   - Database schema (8 tables)
    - Query patterns
    - State management
    - Data transformations

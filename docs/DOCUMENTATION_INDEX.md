@@ -22,7 +22,7 @@ This index provides quick access to all comprehensive documentation created for 
 ### For Architects
 1. [COMPREHENSIVE_ARCHITECTURE.md](./COMPREHENSIVE_ARCHITECTURE.md) - Complete architecture
 2. [DATA_ARCHITECTURE.md](./DATA_ARCHITECTURE.md) - Database and state management
-3. [architecture/ADR-001-domain-layer.md](./architecture/ADR-001-domain-layer.md) - Domain abstraction decisions
+3. [ADR-001-practice-item.md](./architecture/adr/ADR-001-practice-item.md) - Domain abstraction decisions
 
 ### For Product Managers
 1. [USER_FLOWS.md](./USER_FLOWS.md) - Complete user journey maps
@@ -99,12 +99,15 @@ This index provides quick access to all comprehensive documentation created for 
 **Purpose:** Complete data layer reference
 
 **Contents:**
-- Database Schema (5 active tables)
+- Database Schema (8 active tables)
   - lessons
   - vocabulary_items
+  - lesson_progress
   - saved_words
   - word_contexts
-  - lesson_progress
+  - saved_sentences
+  - saved_passages
+  - saved_dialogs
 - Table Relationships & ERD
 - Query Patterns (8 common patterns)
 - Data Access Layer (custom hooks)
@@ -330,7 +333,7 @@ This index provides quick access to all comprehensive documentation created for 
 ### Coverage
 - **Architecture:** ✅ Complete
 - **User Flows:** ✅ Complete (5 primary flows)
-- **Data Layer:** ✅ Complete (5 tables + patterns)
+- **Data Layer:** ✅ Complete (8 tables + patterns)
 - **Issues:** ✅ Complete (48+ issues documented)
 - **Recommendations:** ✅ Complete (52 actionable items)
 

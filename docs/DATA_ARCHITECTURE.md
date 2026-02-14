@@ -68,14 +68,15 @@ The Language Learning App uses **Supabase PostgreSQL** as its primary database, 
     │    PostgreSQL Database         │
     │    (Supabase-hosted)           │
     │                                │
-    │  Tables:                       │
+    │  Tables (8):                    │
     │  - lessons                     │
     │  - vocabulary_items            │
+    │  - lesson_progress             │
     │  - saved_words                 │
     │  - word_contexts               │
-    │  - lesson_progress             │
-    │  - saved_sentences (planned)   │
-    │  - saved_passages (planned)    │
+    │  - saved_sentences             │
+    │  - saved_passages              │
+    │  - saved_dialogs               │
     └────────────────────────────────┘
 ```
 
