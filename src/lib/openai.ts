@@ -1,4 +1,3 @@
-import OpenAI from 'openai';
 import type { Language, MasteryLevel, ArabicDialect, SpanishDialect, ContentType } from '../types/database';
 import {
   apiLookupWord,
@@ -7,13 +6,6 @@ import {
   apiEvaluateAnswer,
   apiGenerateMemoryImage,
 } from './api';
-
-// Initialize client (dangerouslyAllowBrowser for P1 demo, backend proxy recommended for prod)
-// Kept temporarily for Packet A — Packet B removes this entirely.
-export const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
-});
 
 export interface AIContent {
   title: string;
