@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { openai } from '../lib/openai';
+import { apiChat } from '../lib/api';
 
 export interface ChatMessage {
     role: 'user' | 'assistant';
@@ -29,20 +29,11 @@ export function ChatTile({ word, translation, context, savedMessages, onMessages
         setIsLoading(true);
 
         try {
-            const systemPrompt = `You are a helpful Arabic language tutor. The student is learning about the word/phrase "${word}" which means "${translation}".${context ? ` Context: ${context}` : ''} Answer their questions briefly (2-3 sentences max), focusing on practical usage and cultural insights.`;
-
-            const response = await openai.chat.completions.create({
-                model: 'gpt-4o-mini',
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    ...updatedMessages.map(m => ({ role: m.role, content: m.content })),
-                ],
-                max_tokens: 150,
-            });
+            const responseContent = await apiChat(updatedMessages, word, translation, context);
 
             const assistantMessage: ChatMessage = {
                 role: 'assistant',
-                content: response.choices[0].message.content || 'Sorry, I could not generate a response.',
+                content: responseContent,
             };
 
             onMessagesChange([...updatedMessages, assistantMessage]);
