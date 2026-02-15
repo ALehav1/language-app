@@ -35,7 +35,7 @@ Higher-priority documents override lower ones. If you encounter a conflict, foll
 
 5. **LanguageContext is the single source of truth** (`src/contexts/LanguageContext.tsx`) for language and dialect preferences.
 
-6. **Spanish and Arabic NEVER share field names** — No `arabic_word` for Spanish data.
+6. **Spanish and Arabic SHOULD NOT share field names** — this is the target architecture. Currently violated: Spanish lookup results are stored in Arabic-typed fields in several paths (LookupView.tsx, openai.ts, analyze-passage.ts). Fixing this is tracked as a P1 issue. Do not add NEW shared field usage.
 
 7. **All API calls go through serverless functions in `api/`** — Never expose API keys client-side.
 
@@ -70,7 +70,7 @@ IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning.
 
 ## Constraints
 - Mobile-first (test 375px first, then 768px, then 1024px)
-- TypeScript strict mode — no `any` types
+- TypeScript strict mode enabled. Goal: no `any` types. Current reality: 30+ `as any` casts remain, mostly in the Spanish lookup flow (LookupView.tsx, openai.ts). Do not add new `any` casts. When touching files with existing casts, prefer fixing them if scope allows.
 - 48px minimum touch targets
 - Loading states required for all async operations
 - All API calls go through serverless functions in api/ — never expose API keys client-side
@@ -144,7 +144,7 @@ MyVocabularyView deletes words immediately on click with no ConfirmDialog. Sente
 
 
 ## Running State
-After each significant step, update docs/WORKING.md with:
+`docs/WORKING.md` does not exist by default. Create it when starting multi-session work, and clean it up when done. When active, it should contain:
 - Current task and status
 - What was just completed
 - Next steps remaining
@@ -152,7 +152,7 @@ After each significant step, update docs/WORKING.md with:
 This file is the first thing to read when resuming after a session break.
 
 ## After Feature Completion
-- Clear or archive docs/WORKING.md
+- Clear or archive docs/WORKING.md (if it was created)
 - Write learnings to docs/[feature].md
 - If pattern is reusable across projects, note it at the top with: "CROSS-PROJECT: [what pattern, why it's reusable]"
 - Run verification checklist
