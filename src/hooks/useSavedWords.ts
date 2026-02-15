@@ -99,6 +99,7 @@ export function useSavedWords(options?: {
         wordData: {
             word: string;
             translation: string;
+            language?: Language;       // Prefer passing explicitly; falls back to hook option
             pronunciation_standard?: string;
             pronunciation_egyptian?: string;
             letter_breakdown?: LetterBreakdown[];
@@ -156,13 +157,19 @@ export function useSavedWords(options?: {
                 if (error) throw error;
                 savedWord = data;
             } else {
+                // Resolve language: prefer explicit wordData.language, then hook option
+                const resolvedLanguage = wordData.language || options?.language;
+                if (!resolvedLanguage) {
+                    console.warn('[useSavedWords] saveWord called without language — defaulting to "arabic". Pass language explicitly.');
+                }
+
                 // Insert new word - default to 'active' (still practicing)
                 const { data, error } = await supabase
                     .from('saved_words')
                     .insert({
                         word: wordData.word,
                         translation: wordData.translation,
-                        language: options?.language || 'arabic',
+                        language: resolvedLanguage || 'arabic',
                         pronunciation_standard: wordData.pronunciation_standard || null,
                         pronunciation_egyptian: wordData.pronunciation_egyptian || null,
                         letter_breakdown: wordData.letter_breakdown || null,
