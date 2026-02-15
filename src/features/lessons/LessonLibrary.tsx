@@ -27,10 +27,8 @@ export function LessonLibrary() {
     const [lessonToEdit, setLessonToEdit] = useState<Lesson | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [editDescription, setEditDescription] = useState('');
-    const [lessonToRegenerate, setLessonToRegenerate] = useState<Lesson | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
-    const [isRegenerating, setIsRegenerating] = useState(false);
 
     const { showToast } = useToast();
 
@@ -106,33 +104,6 @@ export function LessonLibrary() {
             showToast({ type: 'error', message: 'Failed to update lesson. Please try again.' });
         } finally {
             setIsUpdating(false);
-        }
-    };
-
-    // Regenerate lesson handler
-    const handleRegenerateLesson = async () => {
-        if (!lessonToRegenerate) return;
-
-        setIsRegenerating(true);
-        try {
-            // Delete existing vocabulary items
-            const { error: deleteError } = await supabase
-                .from('vocabulary_items')
-                .delete()
-                .eq('lesson_id', lessonToRegenerate.id);
-
-            if (deleteError) throw deleteError;
-
-            // Close dialog and trigger lesson generator with existing lesson data
-            setLessonToRegenerate(null);
-            // TODO: Implement regeneration by passing lesson ID to LessonGenerator
-            // For now, just navigate to the lesson (which will be empty)
-            navigate(`/exercise/${lessonToRegenerate.id}`);
-        } catch (err) {
-            console.error('Failed to regenerate lesson:', err);
-            showToast({ type: 'error', message: 'Failed to regenerate lesson. Please try again.' });
-        } finally {
-            setIsRegenerating(false);
         }
     };
 
@@ -251,17 +222,16 @@ export function LessonLibrary() {
                                                             </svg>
                                                             Edit
                                                         </button>
+                                                        {/* TODO: Implement regeneration by passing lesson ID to LessonGenerator */}
                                                         <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setLessonToRegenerate(lesson);
-                                                            }}
-                                                            className="flex-1 py-2 px-3 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                                                            disabled
+                                                            className="flex-1 py-2 px-3 bg-white/5 text-white/30 text-xs rounded-lg flex items-center justify-center gap-1.5 cursor-not-allowed"
+                                                            title="Regeneration coming soon"
                                                         >
                                                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                                             </svg>
-                                                            Regenerate
+                                                            Regenerate (soon)
                                                         </button>
                                                         <button
                                                             onClick={(e) => {
@@ -430,40 +400,6 @@ export function LessonLibrary() {
                 </div>
             )}
 
-            {/* Regenerate Lesson Confirmation Dialog */}
-            {lessonToRegenerate && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                    <div className="glass-card w-full max-w-md p-6 space-y-4">
-                        <h3 className="text-xl font-bold text-white">Regenerate Lesson?</h3>
-                        <p className="text-white/70 text-sm">
-                            Generate new words for <span className="font-semibold text-white">"{lessonToRegenerate.title}"</span>?
-                        </p>
-                        <p className="text-white/50 text-xs">
-                            This will replace the current vocabulary items with new ones. Your practice progress will be saved, but the lesson content will be different.
-                        </p>
-                        <p className="text-amber-400/80 text-xs bg-amber-500/10 p-3 rounded-lg">
-                            ⚠️ Note: Full regeneration with AI is not yet implemented. For now, this will clear the lesson content.
-                        </p>
-                        
-                        <div className="pt-2 space-y-2">
-                            <button
-                                onClick={handleRegenerateLesson}
-                                disabled={isRegenerating}
-                                className="w-full py-3 bg-white text-surface-300 font-bold rounded-xl hover:bg-white/90 transition-colors disabled:opacity-50"
-                            >
-                                {isRegenerating ? 'Regenerating...' : 'Regenerate Lesson'}
-                            </button>
-                            <button
-                                onClick={() => setLessonToRegenerate(null)}
-                                disabled={isRegenerating}
-                                className="w-full py-3 text-white/70 font-medium hover:text-white transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
             </div>
         </div>
     );

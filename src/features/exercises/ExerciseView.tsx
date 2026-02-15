@@ -106,12 +106,12 @@ export function ExerciseView() {
         if (hasProgress) {
             setShowExitConfirm(true);
         } else {
-            navigate(isSavedPractice ? '/saved' : '/');
+            navigate(isSavedPractice ? '/vocabulary/word' : '/');
         }
     }, [hasProgress, navigate, isSavedPractice]);
 
     const confirmExit = useCallback(() => {
-        navigate(isSavedPractice ? '/saved' : '/');
+        navigate(isSavedPractice ? '/vocabulary/word' : '/');
     }, [navigate, isSavedPractice]);
 
     // Handle save decision from ExerciseFeedback and continue to next
@@ -297,7 +297,7 @@ export function ExerciseView() {
 
                         {/* Done button */}
                         <button
-                            onClick={() => navigate(isSavedPractice ? '/saved' : '/')}
+                            onClick={() => navigate(isSavedPractice ? '/vocabulary/word' : '/')}
                             className="w-full touch-btn py-4 btn-primary rounded-xl font-semibold text-lg"
                         >
                             Done
@@ -565,7 +565,7 @@ export function ExerciseView() {
 
                                 <div className="pt-2 border-t border-white/10">
                                     <button
-                                        onClick={() => navigate('/saved')}
+                                        onClick={() => navigate('/vocabulary/word')}
                                         className="w-full py-2 text-white/50 hover:text-white/70 text-sm flex items-center justify-center gap-2"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
