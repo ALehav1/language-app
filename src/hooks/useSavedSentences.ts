@@ -33,6 +33,7 @@ export interface SaveSentenceInput {
     explanation?: string;
     topic?: string;
     source?: string;
+    language?: 'arabic' | 'spanish';  // Prefer passing explicitly; falls back to hook param
     status?: 'active' | 'learned';  // Default: 'active'
     memory_note?: string;
     memory_image_url?: string;
@@ -97,10 +98,17 @@ export function useSavedSentences(language?: 'arabic' | 'spanish') {
                 return null;
             }
             
+            // Resolve language: prefer explicit input.language, then hook param
+            const resolvedLanguage = input.language || language;
+            if (!resolvedLanguage) {
+                console.warn('[useSavedSentences] saveSentence called without language — defaulting to "arabic". Pass language explicitly.');
+            }
+
             const { data, error: insertError } = await supabase
                 .from('saved_sentences')
                 .insert({
                     ...input,
+                    language: resolvedLanguage || 'arabic',
                     status: input.status || 'active',
                     memory_note: input.memory_note || null,
                     memory_image_url: input.memory_image_url || null,

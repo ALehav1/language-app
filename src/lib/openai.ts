@@ -118,7 +118,28 @@ export interface SpanishLookupResult {
 }
 
 /**
+ * Arabic lookup result - EXPLICIT Arabic fields.
+ * Alias for the existing LookupResult; use this name in new code.
+ */
+export type ArabicLookupResult = LookupResult;
+
+/**
+ * Discriminated union of Arabic and Spanish lookup results.
+ * Use structural type guards (isSpanishLookupResult / isArabicLookupResult) to narrow.
+ */
+export type LookupWordResult = ArabicLookupResult | SpanishLookupResult;
+
+export function isSpanishLookupResult(r: LookupWordResult): r is SpanishLookupResult {
+  return 'spanish_latam' in r;
+}
+
+export function isArabicLookupResult(r: LookupWordResult): r is ArabicLookupResult {
+  return 'arabic_word' in r;
+}
+
+/**
  * Arabic lookup result for a word or phrase.
+ * @deprecated Use ArabicLookupResult in new code. Kept for backward compatibility.
  */
 export interface LookupResult {
   detected_language: DetectedLanguage;
