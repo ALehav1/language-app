@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSavedPassages, type SavedPassage } from '../../hooks/useSavedPassages';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { MemoryAidEditor } from '../../components/MemoryAidEditor';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { SentenceDetailModal } from '../../components/modals/SentenceDetailModal';
 import type { SentenceSelectionContext } from '../../types/selection';
 import { makeSentenceSelection } from '../../types/selection-helpers';
@@ -25,6 +26,9 @@ export function MyPassagesView() {
     // Dialect preference from global context
     const dialectPreference = dialectPreferences.arabic;
 
+    // Delete confirmation state
+    const [passageToDelete, setPassageToDelete] = useState<string | null>(null);
+
     // Sentence modal state
     const [sentenceModalOpen, setSentenceModalOpen] = useState(false);
     const [sentenceSelection, setSentenceSelection] = useState<SentenceSelectionContext | null>(null);
@@ -36,10 +40,15 @@ export function MyPassagesView() {
     });
 
     // Handle delete with confirmation
-    const handleDelete = async (id: string) => {
-        if (confirm('Delete this passage?')) {
-            await deletePassage(id);
+    const handleDelete = (id: string) => {
+        setPassageToDelete(id);
+    };
+
+    const confirmDelete = async () => {
+        if (passageToDelete) {
+            await deletePassage(passageToDelete);
             setSelectedPassage(null);
+            setPassageToDelete(null);
         }
     };
 
@@ -370,6 +379,17 @@ export function MyPassagesView() {
                     selection={sentenceSelection}
                 />
             )}
+
+            {/* Delete confirmation dialog */}
+            <ConfirmDialog
+                isOpen={passageToDelete !== null}
+                title="Delete Passage"
+                message="Are you sure you want to delete this passage? This action cannot be undone."
+                confirmLabel="Delete"
+                variant="danger"
+                onConfirm={confirmDelete}
+                onCancel={() => setPassageToDelete(null)}
+            />
         </div>
     );
 }

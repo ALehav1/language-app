@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLessons } from '../../hooks/useLessons';
 import { LessonGenerator } from './LessonGenerator';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
+import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { ContentType, Lesson } from '../../types';
@@ -30,6 +31,8 @@ export function LessonLibrary() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
+
+    const { showToast } = useToast();
 
     const { lessons, loading, error, refetch } = useLessons({
         language,
@@ -70,7 +73,7 @@ export function LessonLibrary() {
             setLessonToDelete(null);
         } catch (err) {
             console.error('Failed to delete lesson:', err);
-            alert('Failed to delete lesson. Please try again.');
+            showToast({ type: 'error', message: 'Failed to delete lesson. Please try again.' });
         } finally {
             setIsDeleting(false);
         }
@@ -100,7 +103,7 @@ export function LessonLibrary() {
             setEditDescription('');
         } catch (err) {
             console.error('Failed to update lesson:', err);
-            alert('Failed to update lesson. Please try again.');
+            showToast({ type: 'error', message: 'Failed to update lesson. Please try again.' });
         } finally {
             setIsUpdating(false);
         }
@@ -127,7 +130,7 @@ export function LessonLibrary() {
             navigate(`/exercise/${lessonToRegenerate.id}`);
         } catch (err) {
             console.error('Failed to regenerate lesson:', err);
-            alert('Failed to regenerate lesson. Please try again.');
+            showToast({ type: 'error', message: 'Failed to regenerate lesson. Please try again.' });
         } finally {
             setIsRegenerating(false);
         }

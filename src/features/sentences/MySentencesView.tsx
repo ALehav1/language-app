@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSavedSentences, type SavedSentence } from '../../hooks/useSavedSentences';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { MemoryAidEditor } from '../../components/MemoryAidEditor';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { SentenceDisplay, type ArabicSentenceData } from '../../components/SentenceDisplay';
 
 /**
@@ -22,6 +23,9 @@ export function MySentencesView() {
     // Dialect preference from global context
     const dialectPreference = dialectPreferences.arabic;
 
+    // Delete confirmation state
+    const [sentenceToDelete, setSentenceToDelete] = useState<string | null>(null);
+
     // Filter sentences
     const filteredSentences = sentences.filter(s => {
         if (filter === 'all') return true;
@@ -29,10 +33,15 @@ export function MySentencesView() {
     });
 
     // Handle delete with confirmation
-    const handleDelete = async (id: string) => {
-        if (confirm('Delete this sentence?')) {
-            await deleteSentence(id);
+    const handleDelete = (id: string) => {
+        setSentenceToDelete(id);
+    };
+
+    const confirmDelete = async () => {
+        if (sentenceToDelete) {
+            await deleteSentence(sentenceToDelete);
             setSelectedSentence(null);
+            setSentenceToDelete(null);
         }
     };
 
@@ -301,6 +310,17 @@ export function MySentencesView() {
                     </div>
                 </div>
             )}
+
+            {/* Delete confirmation dialog */}
+            <ConfirmDialog
+                isOpen={sentenceToDelete !== null}
+                title="Delete Sentence"
+                message="Are you sure you want to delete this sentence? This action cannot be undone."
+                confirmLabel="Delete"
+                variant="danger"
+                onConfirm={confirmDelete}
+                onCancel={() => setSentenceToDelete(null)}
+            />
         </div>
     );
 }

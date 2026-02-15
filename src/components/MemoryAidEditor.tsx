@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { generateMemoryImage } from '../lib/openai';
+import { useToast } from '../contexts/ToastContext';
 
 /**
  * Props for MemoryAidEditor component.
@@ -38,6 +39,8 @@ export function MemoryAidEditor({
     onNoteChanged,
     compact = false,
 }: MemoryAidEditorProps) {
+    const { showToast } = useToast();
+
     // Image generation state
     const [generatingImage, setGeneratingImage] = useState(false);
     const [showCustomPrompt, setShowCustomPrompt] = useState(false);
@@ -67,7 +70,7 @@ export function MemoryAidEditor({
             }
         } catch (err) {
             console.error('Failed to generate image:', err);
-            alert('Failed to generate image. Please try again.');
+            showToast({ type: 'error', message: 'Failed to generate image. Please try again.' });
         } finally {
             setGeneratingImage(false);
         }
