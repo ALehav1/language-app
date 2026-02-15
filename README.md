@@ -1,446 +1,148 @@
 # Language Learning App
 
-**AI-powered Arabic learning focused on Egyptian dialect**
+**AI-powered Arabic and Spanish language learning**
 
-Last Updated: January 13, 2026 (Night) - Spanish UX Contract v1 Implementation
-
-**🚀 Current Production:** https://language-m6q3yz1z4-alehav1s-projects.vercel.app
+Production: https://language-m6q3yz1z4-alehav1s-projects.vercel.app
 
 ---
 
-## 🔒 Architectural Invariants (Do Not Violate)
+## What This App Does
 
-**These rules prevent regressions. Follow them strictly:**
+Look up words, sentences, and passages in Arabic (Egyptian dialect) or Spanish and get AI-generated breakdowns with pronunciation, cultural context, and memory aids. Save vocabulary, create themed lessons, and practice through interactive exercises.
 
-1. **WordSurface is the ONLY word renderer** - Never create parallel word display components
-2. **SentenceDisplay is the sentence renderer** - SentenceSurface was archived (zero imports)
-3. **Sentence = one tile, words = chips** - Single words are compact, never full-width
-4. **LanguageSwitcher controls language** - LanguageBadge is display-only, not interactive
-5. **Spanish and Arabic NEVER share field names** - No `arabic_word` for Spanish data
-6. **Canonical routes:**
-   - Vocabulary landing: `/vocabulary`
-   - Word list: `/vocabulary/word`
-   - Sentence list: `/vocabulary/sentence`
-   - Passage list: `/vocabulary/passage`
-   - Lookup: `/lookup`
-7. **LanguageContext is the single source of truth** for language and dialect preferences
+## Tech Stack
 
-⚠️ **Changes to these invariants require explicit intent and justification.**
+- **Frontend:** React 19.2.3, React Router 7.11.0, TypeScript 5.9.3 (strict mode)
+- **Build:** Vite 7.3.0, ESM (`"type": "module"`)
+- **Styling:** TailwindCSS 3.4.19, PostCSS 8.5.6
+- **Backend:** Supabase 2.89.0 (database + auth)
+- **AI:** OpenAI 6.15.0 (via serverless functions only)
+- **Testing:** Vitest 4.0.16, Testing Library (React 16.3.1, User Event 14.6.1), Happy-DOM 20.1.0
+- **Deployment:** Vercel with @vercel/node 5.6.3
 
----
+## Getting Started
 
-## Setup
+### Prerequisites
 
-**Prerequisites:** Node.js 18+, npm
+- Node.js 18+
+- npm
+- Supabase project (for database)
+- OpenAI API key
+
+### Setup
 
 ```bash
-# Install dependencies
+git clone https://github.com/ALehav1/language-app.git
+cd language-app
 npm install
-
-# Configure environment
 cp .env.example .env
-# Fill in VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_OPENAI_API_KEY
-
-# Run database migrations against your Supabase project
-# See supabase/migrations/001_initial_schema.sql
-
-# Start dev server
+# Fill in environment variables (see below)
 npm run dev
-
-# Run tests
-npm run test:run
 ```
 
----
+Dev server runs at http://localhost:5173
 
-## 📊 **Comprehensive Codebase Analysis (Jan 13, 2026)**
+### Environment Variables
 
-271 KB of detailed documentation in `docs/`:
-- **[Executive Summary](./docs/EXECUTIVE_SUMMARY.md)** - Critical issues, ROI analysis, roadmap
-- **[48+ Issues Identified](./docs/ISSUES_ANALYSIS.md)** - With fixes and priorities
-- **[52 Recommendations](./docs/RECOMMENDATIONS.md)** - Implementation guides with code examples
-- **[Complete Architecture](./docs/COMPREHENSIVE_ARCHITECTURE.md)** - System design and patterns
-- **[All User Flows](./docs/USER_FLOWS.md)** - Step-by-step journey maps
-- **[Data Architecture](./docs/DATA_ARCHITECTURE.md)** - Database and state management
+| Variable | Where Used | Description |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Client (browser) | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Client (browser) | Supabase anonymous/public key |
+| `OPENAI_API_KEY` | Server (API functions) | OpenAI API key — never exposed to browser |
 
-**Quick Start:** Read [START_HERE.md](./docs/START_HERE.md) for navigation guide.
+## Architecture
 
----
+### Architectural Invariants
 
-## 🔎 Latest Audit (Feb 13, 2026)
+1. **WordSurface is the ONLY word renderer** (`src/components/surfaces/WordSurface.tsx`) — delegates to `WordDisplay` (Arabic) and `SpanishWordBody` (Spanish) internally
+2. **SentenceDisplay is the sentence renderer** (`src/components/SentenceDisplay.tsx`)
+3. **Sentence = one tile, words = chips** — single words are compact, never full-width
+4. **LanguageSwitcher controls language** — `LanguageBadge` is display-only
+5. **LanguageContext is the single source of truth** for language and dialect preferences
+6. **Spanish and Arabic NEVER share field names** — no `arabic_word` for Spanish data
+7. **All API calls go through serverless functions in `api/`** — never expose API keys client-side
 
-For the current implementation-vs-documentation review and prioritized fix list, see:
+### Project Structure
 
-**[Codebase Audit - 2026-02-13](./docs/CODEBASE_AUDIT_2026-02-13.md)**
-
----
-
-## 🇲🇽 Spanish UX Contract v1 (Jan 13, 2026)
-
-**Architecture Changes - Composition Pattern:**
-
-| Component | Purpose |
-|-----------|---------||
-| `WordSurface.tsx` | **Canonical word renderer** - Composition shell for Arabic + Spanish |
-| `WordDisplay.tsx` | Arabic-specific rendering (internal to WordSurface) |
-| `SpanishWordBody.tsx` | Spanish-specific rendering (internal to WordSurface) |
-| `uiTokens.ts` | Shared Tailwind class tokens for consistent styling |
-
-**Data Types:**
-
-| File | Types |
-|------|-------|
-| `src/types/word.ts` | `SpanishWordData`, `ArabicWordData`, `WordData` union, type guards |
-| `src/contexts/LanguageContext.tsx` | `ArabicDialect`, `SpanishDialect`, `DialectPreferences` |
-
-**UX Contract Implementation:**
-
-1. **P2-A: Spanish inline chips** ✅ - `WordBreakdownList` renders Spanish as compact chips (not full-width rows)
-2. **P2-B: Word click → canonical Word Surface** ✅ - Clicks navigate to `/vocabulary/word` with `location.state`
-3. **P2-C: Spanish data parity** ✅ - `SpanishLookupResult` with proper Spanish fields (NO Arabic overloading)
-4. **P2-D: Spanish dialect toggle** ✅ - `LanguageContext` has `setSpanishDialect('latam' | 'spain')`
-5. **P2-E: Global language switcher** ✅ - `LanguageSwitcher` controls language; `LanguageBadge` is display-only
-6. **P2-F: Theme tokens** ✅ - `src/styles/uiTokens.ts` for consistent styling
-7. **P2-G: Double-click fix** ✅ - Translate button has `type="button"`, `touchAction: manipulation`
-8. **P2-H: Supabase 400s** ✅ - Fixed in P1.4 (queries use `in('status', ['active', 'learned'])`)
-
-**Spanish Data Contract (NO Arabic Field Overloading):**
-
-| API Response Field | Type | Purpose |
-|-------------------|------|---------||
-| `spanish_latam` | string | Primary Spanish form (LatAm neutral) |
-| `spanish_spain` | string | Spain variant (if different) |
-| `translation_en` | string | English translation |
-| `word_context.usage_notes` | string | Common usage contexts |
-| `word_context.latam_notes` | string | LatAm-specific notes |
-| `word_context.spain_notes` | string | Spain-specific notes |
-| `example_sentences[].spanish_latam` | string | LatAm example sentence |
-| `example_sentences[].spanish_spain` | string | Spain variant (if different) |
-| `memory_aid.mnemonic` | string | Memory trick |
-| `memory_aid.visual_cue` | string | Visual concept |
-
-**Storage Keys:**
-
-| Key | Value |
-|-----|-------|
-| `language-app-selected-language` | `'arabic'` \| `'spanish'` |
-| `language-app-dialect-preferences` | `{ arabic: 'egyptian' \| 'standard', spanish: 'latam' \| 'spain' }` |
-
-**User Flow - Spanish Word Drilldown:**
 ```
-Lookup → Enter Spanish text → Translate
-    ↓
-Sentence tile with inline word chips (Spanish + English gloss)
-    ↓
-Click chip → navigate to /vocabulary/word?from=lookup
-    ↓
-Word Surface with: translation, usage notes, memory aid, examples, save controls
-    ↓
-Save → returns to Lookup
+src/
+  components/     # Shared UI components (WordSurface, SentenceDisplay, ConfirmDialog, etc.)
+  contexts/       # React contexts (LanguageContext, ToastContext)
+  features/       # Feature modules (lookup, vocabulary, lessons, exercises, etc.)
+  hooks/          # Custom hooks (useSavedWords, useExercise, etc.)
+  lib/            # Client libraries (supabase, openai client wrappers)
+  domain/         # Domain logic (practice adapters, Hebrew cognates)
+  types/          # TypeScript type definitions
+  styles/         # UI tokens and shared styles
+  _archive/       # Dead code (excluded from tsconfig compilation)
+api/
+  _lib/           # Shared serverless utilities (dictionary, cognates, tokenization)
+  lookup.ts       # Word lookup with AI breakdown
+  analyze-passage.ts  # Sentence/passage analysis
+  chat.ts         # Chat completion
+  evaluate-answer.ts  # Exercise answer evaluation
+  generate-image.ts   # Memory aid image generation (DALL-E)
+  generate-lesson.ts  # Lesson content generation
 ```
 
----
+### Canonical Routes
 
-## Routes
+| Route | Component | Notes |
+|---|---|---|
+| `/` | MainMenu | Home screen |
+| `/lookup` | LookupView | Word/sentence/passage lookup |
+| `/vocabulary` | VocabularyLanding | Vocabulary hub |
+| `/vocabulary/word` | MyVocabularyView | Saved words list |
+| `/vocabulary/sentence` | MySentencesView | Saved sentences |
+| `/vocabulary/dialog` | MySentencesView | Dialog sentences |
+| `/vocabulary/passage` | MyPassagesView | Saved passages |
+| `/lessons` | LessonLibrary | Lesson list |
+| `/exercise/:lessonId` | ExerciseView | Exercise session |
 
-**Canonical routes:**
-
-| Path | Purpose |
-|------|---------|
-| `/` | Main menu |
-| `/lessons` | Browse/create lessons |
-| `/exercise/:id` | Practice flow |
-| `/vocabulary` | Vocabulary landing (words/sentences/passages) |
-| `/vocabulary/word` | Saved words list |
-| `/vocabulary/sentence` | Saved sentences list |
-| `/vocabulary/dialog` | Saved dialogs (uses sentences view) |
-| `/vocabulary/passage` | Saved passages list |
-| `/lookup` | Translation lookup |
-
-**Legacy routes** (redirect to canonical equivalents):
-- `/words` → `/vocabulary/word`
-- `/saved` → `/vocabulary/word`
-- `/sentences` → `/vocabulary/sentence`
-- `/passages` → `/vocabulary/passage`
-
----
+Legacy routes (`/words`, `/saved`, `/sentences`, `/passages`) redirect to their canonical equivalents via `<Navigate replace>`.
 
 ## Testing
 
-The project uses Vitest + React Testing Library for automated testing.
-
-**Run tests:**
 ```bash
 npm test              # Watch mode
 npm run test:run      # Single run
-npm run test:ui       # Visual UI
-npm run test:coverage # Coverage report
 npm run lint          # TypeScript type checking
+npm run build         # Production build
 ```
 
-**Current Coverage:** 161/161 tests passing
-- Domain + hooks + critical UX flows: **automated** (Vitest + RTL)
-- Full UX regression: **manual** at 375px viewport
-- `useExercise` - 19 tests (exercise logic, persistence)
-- **Domain Adapters** - 11 tests (transformations, golden equivalence)
-- **LookupView** - 11 tests (content classification, language switching, translate reliability)
-- Additional component + integration tests
+Current: 161/161 tests passing (11 test files)
 
-**Test Philosophy:**
-- Baseline tests document current behavior
-- Tests lock in behavior before refactoring
-- No test changes without intentional behavior changes
+## Development Notes
 
-See `docs/verification/` for PR notes and verification details.
+### Key Patterns
 
----
+- Mobile-first (test 375px first, then 768px, then 1024px)
+- TypeScript strict mode — no `any` types (aspirational; see known limitations)
+- 48px minimum touch targets
+- Loading states required for all async operations
+- `ConfirmDialog` for destructive action confirmations, `useToast()` for feedback
+- Native `alert()` and `confirm()` are banned
+- ESM: all local imports in `api/` must use `.js` extensions
 
-## Development
+### Known Limitations
 
-**Local dev server:** http://localhost:5173
+- **Spanish type safety** — 15+ `as any` casts in the Spanish lookup flow. Spanish response shares state variable typed for Arabic. Most P1 audit issues trace to this.
+- **Single-user, no auth** — localStorage for preferences, no cross-device sync
+- **RouteGuard redirects deep links** — `RouteGuard.tsx` redirects all routes to `/` on fresh page load. Bookmarked URLs won't work.
+- **No 404 route** — unmatched routes show a blank page
+- **Word deletion has no confirmation** — sentences and passages have ConfirmDialog; words delete immediately on click
+- **Exercise progress expires** — 24-hour limit on saved progress in localStorage
+- **Regenerate lesson** — button is disabled (coming soon). Previously deleted content without regenerating.
 
-**Mobile-First:** Test at 375px → 768px → 1024px
+## Documentation
 
-**TypeScript:** Strict mode. Some `any` casts remain in the Spanish lookup flow (tech debt).
-
----
-
-## Recent Updates
-
-### January 10, 2026 (Evening) - UI Polish & Consistency
-
-**Lessons UI Restructure:**
-- ✅ **4 Content Type Categories** - Words, Phrases, Passages, Dialogs
-  - Each category shows "View Saved" and "Create New" buttons
-  - Saved lessons filtered by selected category
-  - Back navigation from filtered view
-- ✅ **Quick Topics Integration** - Moved into LessonGenerator modal
-  - Topics appear below input field: Restaurant, Travel, Work, Family, Shopping
-  - Clicking fills topic field (doesn't auto-generate)
-- ✅ **Compact Saved Lessons** - Reduced spacing throughout
-  - Smaller padding (p-3 → p-2)
-  - Smaller fonts and icons
-  - More lessons visible on screen
-
-**UI Consistency Improvements:**
-- ✅ **Example Sentences** - Now collapsible (default: collapsed)
-  - Consistent teal color scheme matching Memory Aid, Context, Chat tiles
-  - Larger font sizes: Egyptian 2xl, MSA xl, English/transliteration base
-  - Applied across Lessons, Lookup, and My Vocabulary views
-- ✅ **Letter Breakdown** - Fixed RTL layout
-  - Letters now start from right side and wrap correctly
-  - Proper right-to-left flow with `dir="rtl"` and `justify-start`
-- ✅ **Dialogs Filter** - Added to My Vocabulary view
-  - Now shows all 4 content types: Words, Sentences, Passages, Dialogs
-  - Dialogs treated as multi-sentence content
-
-### January 10, 2026 (Morning) - Enhanced Context Tiles & Interactive Learning
-
-**Enhanced Learning Experience:**
-- ✅ **Context Tile (💡)** - Comprehensive word/phrase analysis in both Lessons and Lookup
-  - **Root Information** - Arabic trilateral root with meaning (e.g., ك-ت-ب = writing)
-  - **Egyptian Usage** - How Egyptians use this in everyday conversation
-  - **MSA Comparison** - How it differs from/relates to Modern Standard Arabic
-  - **Cultural Notes** - Contextual and cultural information when relevant
-  - Renamed from "Word Context" to just "Context" (applies to all content types)
-  - Available in both ExerciseFeedback (Lessons) and LookupModal
-
-- ✅ **Memory Aid Tile (🎨)** - Dedicated collapsible tile for learning aids
-  - Extracted from inline display to standalone expandable component
-  - Shows "(saved)" indicator when memory aid exists
-  - Contains full MemoryAidEditor with DALL-E image generation + notes
-  - Collapsible header to reduce visual clutter
-  - Persists in component state during session
-  - Available in both Lessons and Lookup
-
-- ✅ **Chat Tile (💬)** - NEW interactive AI tutor feature
-  - Ask questions about any word/phrase in real-time
-  - Context-aware responses (knows the word, translation, and Egyptian usage)
-  - Powered by GPT-4o-mini for fast, focused answers
-  - Chat history persists during session (in component state)
-  - Expandable/collapsible interface to save space
-  - Suggestion prompts: "When do I use this?", "What's the difference from...?", "Can you give more examples?"
-  - 2-3 sentence max responses for quick learning
-  - Available in both Lessons and Lookup
-
-**Feature Parity Achieved:**
-- Both **Lessons** and **Lookup** now show identical rich context:
-  - Word/phrase breakdown with pronunciations
-  - Context tile (root, usage, MSA comparison, cultural notes)
-  - Memory Aid tile (notes + AI images)
-  - Chat tile (interactive Q&A)
-  - Example sentences (MSA + Egyptian versions)
-  - Letter breakdown (organized by word)
-  - Hebrew cognates
-
-**UX Improvements:**
-- ✅ **Text dialect labels** - Replaced flag emojis (🇪🇬 📖) with clear text:
-  - "Egyptian" for Egyptian Arabic pronunciation
-  - "MSA" for Modern Standard Arabic pronunciation
-  - Egyptian always shows first (primary), MSA as reference
-  - More accessible and easier to understand
-
-- ✅ **Letter breakdown improvements**:
-  - Now organized by word (one word per line/row)
-  - Shows full phrase as quizzed (no dropped words)
-  - Uses `generateArabicBreakdownByWord()` for proper word-by-word splitting
-
-**New Components:**
-- `ChatTile.tsx` - Interactive Q&A component with OpenAI integration
-- `MemoryAidTile.tsx` - Collapsible wrapper for memory aid editor
-- `ContextTile.tsx` - Displays root/usage/cultural context information
-
-**Technical Implementation:**
-- Chat uses OpenAI's `gpt-4o-mini` model for cost-effective, fast responses
-- System prompt provides context about the word/phrase being studied
-- Chat history stored in component state (persists during session)
-- All tiles use collapsible/expandable pattern to reduce visual clutter
-- Memory aid state managed locally and synced with SaveDecisionPanel
-
-### January 10, 2026 (Earlier) - Lesson Management & Smart Deduplication
-
-**Lesson Management Features (Phase 1):**
-- ✅ **Delete Lesson** - Remove unwanted lessons from library
-  - Confirmation dialog before deletion
-  - Preserves any words already saved to vocabulary
-  - Automatically deletes associated vocabulary items from lesson
-  - Refreshes lesson list after deletion
-- ✅ **Edit Lesson** - Update lesson title and description
-  - Modal dialog with editable fields
-  - Title field (required), Description field (optional)
-  - Updates lesson metadata in database
-  - Refreshes lesson list after save
-- ✅ **Regenerate Lesson** - Replace lesson vocabulary with new content
-  - Confirmation dialog explaining regeneration
-  - Clears existing vocabulary items
-  - Preserves lesson metadata and practice progress
-  - Note: Full AI regeneration coming in Phase 2
-- ✅ **Action buttons** - Each lesson shows Edit/Regenerate/Delete buttons
-  - Organized in a clean button row below lesson info
-  - Color-coded (Delete is red, others neutral)
-  - Icons for visual clarity
-
-**Smart Lesson Deduplication:**
-
-**Lesson Creation Flow (New):**
-- ✅ **Duplicate detection** - System checks for similar existing lessons before creating
-- ✅ **Smart matching** - Finds lessons with matching keywords in title (case-insensitive)
-- ✅ **Resume existing lessons** - Click any similar lesson to resume practice
-- ✅ **Auto-numbering** - New versions automatically numbered ("Room 2", "Room 3")
-- ✅ **Success confirmation** - Clear feedback when lesson is created
-- ✅ **Flexible actions** - Start exercise immediately or view all lessons
-
-**How Lesson Creation Works:**
-1. User enters topic (e.g., "Room")
-2. System searches existing lessons with same language and content type
-3. If similar lesson found → Show "Similar Lesson Found" dialog with:
-   - List of existing lessons (clickable to resume)
-   - "Create New Version (N)" button
-   - Cancel option
-4. If no similar lessons → Generate new lesson directly
-5. AI generates vocabulary (excluding up to 100 already-saved words)
-6. Lesson auto-saves to database with:
-   - Title (with version number if duplicate)
-   - Description, language, difficulty, content type
-   - All vocabulary items linked to lesson
-7. Success dialog shows:
-   - Lesson title and item count
-   - "Start Exercise" button
-   - "View All Lessons" button
-
-**Key Technical Details:**
-- Similarity check: Case-insensitive keyword matching in titles
-- Searches last 20 lessons of same language/content type
-- Version numbering based on count of similar lessons
-- Lessons save automatically (no manual save needed)
-- Generated content stored for potential future features
-
-**Database Operations:**
-- Delete: `DELETE FROM lessons WHERE id = ?` (cascade deletes vocabulary_items)
-- Edit: `UPDATE lessons SET title = ?, description = ? WHERE id = ?`
-- Regenerate: `DELETE FROM vocabulary_items WHERE lesson_id = ?` (keeps lesson record)
-
-**Component Changes:**
-- `LessonLibrary.tsx`: Added lesson management state, handlers, and dialog UIs
-- Each lesson card now shows action buttons instead of just click-to-start
-- Three modal dialogs: Delete confirmation, Edit form, Regenerate confirmation
-
-### January 9, 2026 - Lesson Library Redesign & UX Improvements
-
-**Lesson Management:**
-- ✅ **New Lesson Library page** - Complete redesign of lesson navigation
-- ✅ Collapsible "Your Saved Lessons" section (default: collapsed)
-- ✅ Fixed-height scrollable dropdown (max 320px) with internal scrolling
-- ✅ Sticky header - can collapse from anywhere without scrolling back up
-- ✅ Compact lesson list view (clickable titles instead of large cards)
-- ✅ Chronological sorting (newest lessons first)
-- ✅ Single-column content type selector (dropdown-style, not grid)
-- ✅ Proper padding throughout (no edge-to-edge content)
-
-**Lesson Creation:**
-- ✅ **Egyptian dialect is now default** (was MSA)
-- ✅ Dialect buttons reordered: Egyptian first, MSA second
-- ✅ Dialect selector confirmed functional (passes to AI generation)
-
-**Vocabulary Classification:**
-- ✅ **Dynamic classification** based on actual text analysis
-- ✅ Words: Single word only (wordCount === 1)
-- ✅ Sentences: Multiple words, one sentence (wordCount > 1 && sentenceCount === 1)
-- ✅ Passages: Multiple sentences (sentenceCount > 1)
-- ✅ Classification uses word count (space-separated) and sentence detection (punctuation)
-- ✅ Content saved from any lesson type is classified by its actual structure
-
-**Word Context & Save UX:**
-- ✅ **Word Context section** - Shows root, everyday Egyptian usage, and MSA comparison
-- ✅ Root display with Arabic trilateral root and meaning
-- ✅ Egyptian usage explanation (how word is used in daily conversation)
-- ✅ MSA comparison (how MSA differs from Egyptian usage)
-- ✅ Optional cultural notes for additional context
-- ✅ Improved save experience for already-saved words
-- ✅ Replaced toggle buttons with explicit "Save to Practice" and "Save to Archive"
-- ✅ Users can now update image/note in place without moving between Practice/Archive
-- ✅ Fixed loading spinner to only show on clicked save button (not both)
-- ✅ Skip button in lookup now clears result and allows next lookup
-- ✅ Removed non-functional Continue button from saved words view
-- ✅ Translation consistency check to prevent mismatches with example sentences
-- ✅ **Fixed word mismatch bug** - Exercise details now show same word as quiz prompt
-
-### January 8, 2026 - Foundation Milestone
-- ✅ Main menu reorganized (2x2 grid: Lessons + Lookup / My Saved Vocabulary)
-- ✅ Content type filtering (Words/Sentences/Passages)
-- ✅ Loading/success feedback on all save buttons
-- ✅ Deprecated files archived to `src/_archive/`
-- ✅ TypeScript config excludes archive from compilation
-- ✅ Comprehensive ARCHITECTURE.md created
-
-### January 7, 2026
-- ✅ Egyptian Arabic display fixed (WordDisplay unified across app)
-- ✅ Letter breakdown with vowels (generateArabicBreakdown)
-- ✅ Memory aid persistence fixed
-- ✅ Image display improved (object-contain)
-
----
-
-## Known Limitations
-
-- **No user auth** - Single-user app
-- **No cross-device sync** - localStorage for preferences
-- **Resume expires** - 24-hour limit on saved progress
-
----
-
-## Future Enhancements
-
-- Audio pronunciation
-- Offline mode with sync
-- Community features
-
----
+- `CLAUDE.md` — Agent context (primary reference for AI-assisted development)
+- `docs/CODEBASE_AUDIT_2026-02-13.md` — February 2026 comprehensive audit (38 issues, prioritized)
+- `docs/COMPREHENSIVE_ARCHITECTURE.md` — System architecture reference
+- `docs/DATA_ARCHITECTURE.md` — Database schema and state management
+- `docs/USER_FLOWS.md` — User journey maps
+- `ARCHITECTURE.md` — Architecture overview (January 2026)
 
 ## License
 
 MIT
-
----
-
-**For detailed technical documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md)**
