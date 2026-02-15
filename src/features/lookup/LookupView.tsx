@@ -126,9 +126,9 @@ export function LookupView() {
         } catch (err) {
             // STEP 4: Catch and surface all errors
             console.error('[LOOKUP] Translate failed', err);
-            const errorMessage = err instanceof Error ? err.message : 'Translation failed. Please try again.';
+            const errorMessage = err instanceof Error ? err.message : String(err);
             console.error('[LOOKUP] Error details:', errorMessage);
-            setError(`Translate failed: ${errorMessage}. See console for details.`);
+            setError('Translation failed. Please try again.');
         } finally {
             // STEP 2: Always reset loading state
             console.log('[LOOKUP] Resetting loading state');

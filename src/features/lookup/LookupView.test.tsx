@@ -261,7 +261,7 @@ describe('LookupView', () => {
 
       // Should show error, not blank UI
       await waitFor(() => {
-        const errorElements = screen.getAllByText(/translate.*failed/i);
+        const errorElements = screen.getAllByText(/translation failed/i);
         expect(errorElements.length).toBeGreaterThan(0);
       });
     });
