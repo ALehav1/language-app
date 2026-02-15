@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './index.css';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -32,10 +32,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="/vocabulary/sentence" element={<MySentencesView />} />
               <Route path="/vocabulary/dialog" element={<MySentencesView />} />
               <Route path="/vocabulary/passage" element={<MyPassagesView />} />
-              <Route path="/words" element={<MyVocabularyView />} /> {/* Legacy route */}
-              <Route path="/saved" element={<MyVocabularyView />} /> {/* Legacy route */}
-              <Route path="/sentences" element={<MySentencesView />} /> {/* Legacy route */}
-              <Route path="/passages" element={<MyPassagesView />} /> {/* Legacy route */}
+              <Route path="/words" element={<Navigate to="/vocabulary/word" replace />} />
+              <Route path="/saved" element={<Navigate to="/vocabulary/word" replace />} />
+              <Route path="/sentences" element={<Navigate to="/vocabulary/sentence" replace />} />
+              <Route path="/passages" element={<Navigate to="/vocabulary/passage" replace />} />
               <Route path="/lookup" element={<LookupView />} />
               </Routes>
             </div>
