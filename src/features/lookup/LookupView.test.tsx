@@ -58,6 +58,17 @@ vi.mock('../../hooks/useSavedPassages', () => ({
 }));
 
 describe('LookupView', () => {
+  const mockSpanishWordResult = {
+    detected_language: 'spanish' as const,
+    spanish_latam: 'dormir',
+    translation_en: 'to sleep',
+    pronunciation: 'doɾˈmiɾ',
+    part_of_speech: 'verb',
+    example_sentences: [
+      { spanish_latam: 'Quiero dormir.', english: 'I want to sleep.' },
+    ],
+  };
+
   const mockPassageResult = {
     detected_language: 'spanish' as const,
     original_text: 'Hola, ¿cómo estás?',
@@ -301,6 +312,43 @@ describe('LookupView', () => {
           'Hola, ¿cómo estás?',
           expect.objectContaining({ language: 'spanish' })
         );
+      });
+    });
+
+    it('renders Spanish word result with SpanishLookupResult shape (no as-any casts)', async () => {
+      const user = userEvent.setup();
+      // Cast needed: lookupWord return type is still LookupResult (deferred to follow-up)
+      // but at runtime Spanish lookups return SpanishLookupResult shape
+      vi.mocked(openai.lookupWord).mockResolvedValue(mockSpanishWordResult as unknown as openai.LookupResult);
+
+      renderWithProvider(<LookupView />);
+
+      // Switch to Spanish mode
+      const spanishButton = screen.getByRole('button', { name: /Spanish/i });
+      await user.click(spanishButton);
+      await waitFor(() => {
+        expect(localStorage.getItem('language-app-selected-language')).toBe('spanish');
+      });
+
+      const textarea = screen.getByPlaceholderText(/Paste.*text or type English/i);
+      const translateButton = screen.getByRole('button', { name: /Translate/i });
+
+      await user.clear(textarea);
+      await user.type(textarea, 'dormir');
+      await user.click(translateButton);
+
+      // Verify lookupWord called with Spanish language
+      await waitFor(() => {
+        expect(openai.lookupWord).toHaveBeenCalledWith(
+          'dormir',
+          expect.objectContaining({ language: 'spanish' })
+        );
+      });
+
+      // Verify component renders result (empty state disappears, direction banner shows)
+      await waitFor(() => {
+        expect(screen.queryByText(/Translate anything/i)).not.toBeInTheDocument();
+        expect(screen.getByText(/Spanish → English/i)).toBeInTheDocument();
       });
     });
 
