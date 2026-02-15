@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { Language, ArabicDialect, SpanishDialect } from '../src/types/database';
 import OpenAI from 'openai';
-import { findHebrewCognate } from '../src/utils/hebrewCognates';
+import { findHebrewCognate } from './_lib/hebrewCognates';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -34,8 +34,8 @@ async function withRetry<T>(
 
   throw lastError || new Error('Unknown error during API call');
 }
-import { getEgyptianEquivalent } from '../src/utils/egyptianDictionary';
-import { shouldShowHebrewCognate } from '../src/domain/practice/hebrew/shouldShowHebrewCognate';
+import { getEgyptianEquivalent } from './_lib/egyptianDictionary';
+import { shouldShowHebrewCognate } from './_lib/shouldShowHebrewCognate';
 
 interface LookupRequest {
   input: string;
@@ -49,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { input, language, dialect } = req.body as LookupRequest;
+    const { input, language } = req.body as LookupRequest;
 
     if (!input || !language) {
       return res.status(400).json({ error: 'Missing required fields: input, language' });
