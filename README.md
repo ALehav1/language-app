@@ -178,11 +178,10 @@ npm run test:coverage # Coverage report
 npm run lint          # TypeScript type checking
 ```
 
-**Current Coverage:** 177/177 tests passing
+**Current Coverage:** 161/161 tests passing
 - Domain + hooks + critical UX flows: **automated** (Vitest + RTL)
 - Full UX regression: **manual** at 375px viewport
 - `useExercise` - 19 tests (exercise logic, persistence)
-- `useCardStack` - 16 tests (undo window, card actions)
 - **Domain Adapters** - 11 tests (transformations, golden equivalence)
 - **LookupView** - 11 tests (content classification, language switching, translate reliability)
 - Additional component + integration tests
