@@ -35,7 +35,7 @@ Higher-priority documents override lower ones. If you encounter a conflict, foll
 
 5. **LanguageContext is the single source of truth** (`src/contexts/LanguageContext.tsx`) for language and dialect preferences.
 
-6. **Spanish and Arabic SHOULD NOT share field names** — this is the target architecture. Currently violated: Spanish lookup results are stored in Arabic-typed fields in several paths (LookupView.tsx, openai.ts, analyze-passage.ts). Fixing this is tracked as a P1 issue. Do not add NEW shared field usage.
+6. **Spanish and Arabic SHOULD NOT share field names** — this is the target architecture. Currently violated in `openai.ts` (LookupResult interface) and `api/analyze-passage.ts` (Spanish results stored in Arabic-typed fields). LookupView.tsx was fixed in PR #19. Do not add NEW shared field usage.
 
 7. **All API calls go through serverless functions in `api/`** — Never expose API keys client-side.
 
@@ -70,7 +70,7 @@ IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning.
 
 ## Constraints
 - Mobile-first (test 375px first, then 768px, then 1024px)
-- TypeScript strict mode enabled. Goal: no `any` types. Current reality: 30+ `as any` casts remain, mostly in the Spanish lookup flow (LookupView.tsx, openai.ts). Do not add new `any` casts. When touching files with existing casts, prefer fixing them if scope allows.
+- TypeScript strict mode enabled. Goal: no `any` types. Current reality: ~15 `as any` casts remain, mostly in Supabase column mapping (useVocabulary.ts) and MyVocabularyView.tsx. Do not add new `any` casts. When touching files with existing casts, prefer fixing them if scope allows.
 - 48px minimum touch targets
 - Loading states required for all async operations
 - All API calls go through serverless functions in api/ — never expose API keys client-side
@@ -102,18 +102,15 @@ Shared utilities in `api/_lib/`:
 ## Common Gotchas
 
 ### `as any` type casts throughout the codebase
-The "no `any` types" constraint is aspirational. Current `as any` hotspots:
-- `src/features/lookup/LookupView.tsx` — 15+ casts for Spanish result fields (lines 47, 149-151, 313-320, 342, 348-349, 412-413). Root cause: `result` is typed as the Arabic lookup response; Spanish response has different fields but shares the same state variable.
-- `src/features/vocabulary/MyVocabularyView.tsx` — casts at lines 24, 170, 190, 247
+The "no `any` types" constraint is aspirational. Remaining `as any` hotspots:
+- `src/features/vocabulary/MyVocabularyView.tsx` — casts at lines 170–171 for Spanish lookup data
 - `src/hooks/useVocabulary.ts` — 10 casts (lines 59-66, 105-112) for Supabase column mapping
 - `src/components/WordDisplay.tsx` — letter breakdown typing (lines 307, 309)
-- `src/components/modals/WordDetailModal.tsx` — lines 57-58
+
+Eliminated hotspots: LookupView.tsx (PR #19), WordDetailModal.tsx (PR #22), LookupModal.tsx (PR #22).
 
 ### `_archive/` directory
 Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilation (`"exclude": ["src/_archive"]`) but still on disk. Do not import from it.
-
-### Console logging in LanguageSwitcher
-`src/components/LanguageSwitcher.tsx:13-16` has debug console.log statements that ship to production.
 
 ## Hard-Won Patterns
 
@@ -127,9 +124,17 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - **Prefer optional chaining with fallbacks** (`arabic?.field ?? ''`) over non-null assertions (`arabic!.field`). Non-null assertions crash if the value is unexpectedly null; optional chaining degrades gracefully.
 
 ### Comprehensive Audit Findings (PR #14 audit)
-- 2 P0, 16 P1, 18 P2 issues identified. Full report in session history.
-- Cross-cutting theme: Spanish language support is incomplete. Arabic path is solid. Spanish relies on `as any` casts and shares Arabic types. Most P1 issues trace to this.
-- Key P1s still open: Spanish type safety, missing save mechanism in Spanish exercises, sentence/passage save missing language parameter, RouteGuard swallows deep links, no 404 route, word deletion has no confirmation dialog.
+- 2 P0, 16 P1, 18 P2 issues identified. Full report in `docs/CODEBASE_AUDIT_2026-02-13.md`.
+- Cross-cutting theme: Spanish language support is incomplete. Arabic path is solid.
+- Key P1s still open: Spanish exercise save (ExerciseFeedback + ExerciseView coordination), schema migration drift, dialect preference key inconsistency. See audit doc "Still Open" table for full list.
+
+### vi.mock and Type Guards (PR #22)
+- `vi.mock('../../lib/openai')` auto-mocks ALL exports, including type guard functions like `isArabicLookupResult`. Tests must provide explicit mock implementations that replicate the guard logic:
+  ```ts
+  vi.mocked(openai.isArabicLookupResult).mockImplementation(
+    (r: openai.LookupWordResult) => 'arabic_word' in r
+  );
+  ```
 
 ## Regression Traps
 
@@ -138,10 +143,21 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - **Legacy route references in app code** — Symptom: app navigates to /words, /saved, /sentences, or /passages instead of canonical /vocabulary/* routes. Verify: `grep -rn '"/words"\|"/saved"\|"/sentences"\|"/passages"' src/ --include="*.tsx" --include="*.ts" | grep -v "_archive" | grep -v ".test." | grep -v "main.tsx"` should return 0 results.
 - **Word deletion confirmation** — MyVocabularyView must use ConfirmDialog for all delete paths. Do not add direct `deleteWord()` calls without confirmation.
 - **RouteGuard deep links** — RouteGuard must not redirect valid routes to home on fresh load. Deep links (bookmarked URLs) must work directly.
+- **LanguageBadge route hiding** — LanguageBadge returns `null` on `/lookup`, `/lessons`, `/vocabulary` where LanguageSwitcher is present. If adding LanguageSwitcher to new routes, add the route to `ROUTES_WITH_SWITCHER` in `LanguageBadge.tsx`.
+- **Console.log cleanup** — No debug `console.log` in production `src/`. `console.warn` and `console.error` are fine. When removing `console.log` inside `useEffect`, check if the `useEffect` import becomes unused.
+- **WordDetailModal type guards in tests** — `vi.mock` auto-mocks type guard functions. Tests must provide explicit mock implementations for `isArabicLookupResult` and `isSpanishLookupResult`.
+- **lookupWord return type** — `lookupWord` returns `LookupWordResult` (union), not `LookupResult`. All consumers must handle both Spanish and Arabic shapes. `ExerciseFeedback` is an exception: it narrows to `ArabicLookupResult` because it explicitly skips Spanish.
 
 
 ## Stable Files
 
+- `src/lib/openai.ts` — verified (PR #22, types and guards)
+- `src/lib/api.ts` — verified (PR #22, return type)
+- `src/features/lookup/LookupView.tsx` — verified (PR #19, Spanish type migration)
+- `src/components/modals/WordDetailModal.tsx` — verified (PR #22, Spanish support)
+- `src/features/vocabulary/LookupModal.tsx` — verified (PR #22, Spanish support)
+- `src/components/RouteGuard.tsx` — verified (PR #20, passthrough)
+- `src/components/LanguageBadge.tsx` — verified (PR #21, route-aware hiding)
 
 ## Running State
 `docs/WORKING.md` does not exist by default. Create it when starting multi-session work, and clean it up when done. When active, it should contain:
