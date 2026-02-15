@@ -31,15 +31,15 @@ Notable warnings observed:
 - Node experimental CJS/ESM warnings in test/build output
 - Bundle size warning: main chunk ~745 KB minified (`vite` warning threshold exceeded)
 
-## Resolution Status (Updated February 14, 2026)
+## Resolution Status (Updated February 15, 2026)
 
-11 of 12 priority findings resolved in PR #1 (merged to main).
+All 12 priority findings resolved.
 
 | # | Issue | Priority | Status |
 |---|-------|----------|--------|
 | 1 | Spanish save flow inconsistency | P0 | ✅ RESOLVED — Schema rebuilt with language-scoped unique constraint, save path fixed |
 | 2 | Migration/schema mismatch | P0 | ✅ RESOLVED — Full migration rewrite, all runtime tables now have matching migrations |
-| 3 | Client-side OpenAI key exposure | P0 | ⬚ OPEN — Next priority |
+| 3 | Client-side OpenAI key exposure | P0 | ✅ RESOLVED — All OpenAI calls moved to Vercel serverless functions, browser client removed, all 6 endpoints verified on production |
 | 4 | Passage counts wrong | P1 | ✅ RESOLVED — Field name aligned to match schema |
 | 5 | SentenceSurface vs SentenceDisplay contract drift | P1 | ✅ RESOLVED — Invariant updated to reflect actual renderer |
 | 6 | Spanish/Arabic field sharing | P1 | ✅ RESOLVED — Spanish save path uses proper Spanish fields |
@@ -50,8 +50,15 @@ Notable warnings observed:
 | 11 | Documentation link integrity | P2 | ✅ RESOLVED — Broken links fixed or archived |
 | 12 | Docs understate schema/quality | P2 | ✅ RESOLVED — Table counts and any-type claims corrected |
 
+### P0 #3 Resolution Details (PRs #3–#7)
+- **PR #3**: Moved all OpenAI calls to 6 Vercel serverless functions (`api/lookup`, `api/analyze-passage`, `api/generate-lesson`, `api/evaluate-answer`, `api/generate-image`, `api/chat`)
+- **PR #4**: Removed browser-side OpenAI client (`dangerouslyAllowBrowser`, `VITE_OPENAI_API_KEY`), bundle reduced from ~745 KB to ~602 KB
+- **PR #5**: Inlined OpenAI client + `withRetry` into each function (removed `api/_shared/`)
+- **PR #6**: Created `api/_lib/` with self-contained utility modules, eliminated runtime `../src/` imports
+- **PR #7**: Added `.js` extensions for ESM resolution under `"type": "module"`
+- All 6 endpoints returning HTTP 200 on Vercel production (verified February 15, 2026)
+
 ### Still Open
-- **P0 #3** — Move OpenAI calls to Vercel serverless functions
 - **Dead code cleanup** — 17 files identified (see Dead/Unused Code Candidates section)
 
 ## Priority Findings (Fix List)
@@ -256,14 +263,14 @@ Recommendation:
 
 ## Recommended Execution Order
 
-1. ~~Schema + save-path correctness (P0)~~ ✅ Done
-2. Security hardening (P0) ← **NEXT**
-3. ~~Route and renderer contract alignment (P1)~~ ✅ Done
-4. ~~Documentation normalization (P2)~~ ✅ Done
-5. Dead code cleanup + bundle-size optimization (P2/P3) ← After security
+1. ~~Schema + save-path correctness (P0)~~ ✅ Done (PR #1)
+2. ~~Security hardening (P0)~~ ✅ Done (PRs #3–#7)
+3. ~~Route and renderer contract alignment (P1)~~ ✅ Done (PR #1)
+4. ~~Documentation normalization (P2)~~ ✅ Done (PR #1, #2)
+5. Dead code cleanup + bundle-size optimization (P2/P3) ← **NEXT**
 
 ## Notes
 
 - Original audit performed February 13, 2026 (documentation only, no code changes).
 - Resolution work began February 13, 2026. PR #1 merged with 4 commits resolving 11 of 12 issues.
-- After implementation work begins on remaining items, rerun relevant audit checks and update this document.
+- Security hardening completed February 15, 2026. PRs #3–#7 moved OpenAI to serverless, removed browser client, fixed ESM resolution. All 6 API endpoints verified working on Vercel production.
