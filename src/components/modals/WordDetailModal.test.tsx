@@ -53,7 +53,13 @@ describe('WordDetailModal', () => {
     vi.clearAllMocks();
     
     vi.mocked(openai.lookupWord).mockImplementation(async () => mockLookupResult);
-    
+    vi.mocked(openai.isArabicLookupResult).mockImplementation(
+      (r: openai.LookupWordResult) => 'arabic_word' in r
+    );
+    vi.mocked(openai.isSpanishLookupResult).mockImplementation(
+      (r: openai.LookupWordResult) => 'spanish_latam' in r
+    );
+
     vi.mocked(useSavedWordsModule.useSavedWords).mockReturnValue({
       words: [],
       loading: false,
@@ -240,6 +246,17 @@ describe('WordDetailModal', () => {
     });
 
     it('hides Hebrew cognate for Spanish word even when present', async () => {
+      const spanishLookupResult = {
+        detected_language: 'spanish' as const,
+        spanish_latam: 'hola',
+        translation_en: 'hello',
+        pronunciation: 'ola',
+        part_of_speech: 'interjection',
+        example_sentences: [],
+      };
+
+      vi.mocked(openai.lookupWord).mockResolvedValue(spanishLookupResult);
+
       const spanishSelection: WordSelectionContext = {
         selectedText: 'hola',
         parentSentence: 'hola amigo',
@@ -258,7 +275,7 @@ describe('WordDetailModal', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('مرحبا')).toBeInTheDocument();
+        expect(screen.getByText('hola')).toBeInTheDocument();
       });
 
       expect(screen.queryByText('Hebrew Connection')).not.toBeInTheDocument();
@@ -336,6 +353,7 @@ describe('WordDetailModal', () => {
         expect.objectContaining({
           word: 'مرحبا',
           translation: 'hello',
+          language: 'arabic',
           pronunciation_standard: 'marḥaban',
           pronunciation_egyptian: 'marḥaba',
         }),

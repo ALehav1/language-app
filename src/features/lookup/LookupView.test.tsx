@@ -317,9 +317,7 @@ describe('LookupView', () => {
 
     it('renders Spanish word result with SpanishLookupResult shape (no as-any casts)', async () => {
       const user = userEvent.setup();
-      // Cast needed: lookupWord return type is still LookupResult (deferred to follow-up)
-      // but at runtime Spanish lookups return SpanishLookupResult shape
-      vi.mocked(openai.lookupWord).mockResolvedValue(mockSpanishWordResult as unknown as openai.LookupResult);
+      vi.mocked(openai.lookupWord).mockResolvedValue(mockSpanishWordResult);
 
       renderWithProvider(<LookupView />);
 
