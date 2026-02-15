@@ -13,6 +13,7 @@ import { CollapsibleSection } from '../../components/CollapsibleSection';
 import { AddedContextTile } from '../../components/AddedContextTile';
 import { WordBreakdownList, type WordBreakdownWord } from '../../components/WordBreakdownList';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * LookupView - Full-page lookup for translating Arabic/English text.
@@ -30,7 +31,8 @@ export function LookupView() {
     const { saveWord, isWordSaved } = useSavedWords();
     const { saveSentence, getSentenceByText, updateStatus, deleteSentence } = useSavedSentences();
     const { savePassage, getPassageByText, updateStatus: updatePassageStatus, deletePassage } = useSavedPassages();
-    
+    const { showToast } = useToast();
+
     const [input, setInput] = useState('');
     const [result, setResult] = useState<LookupResult | null>(null);
     const [passageResult, setPassageResult] = useState<PassageResult | null>(null);
@@ -159,8 +161,10 @@ export function LookupView() {
             });
             const word = getWordFromResult(result);
             setSavedWords(prev => new Set(prev).add(word));
+            showToast({ type: 'success', message: 'Word saved to vocabulary!' });
         } catch (err) {
             console.error('[LookupView] Failed to save word:', err);
+            showToast({ type: 'error', message: 'Could not save word. Please try again.' });
         }
     };
 

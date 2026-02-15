@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { LookupView } from './LookupView';
 import * as openai from '../../lib/openai';
 import { LanguageProvider } from '../../contexts/LanguageContext';
+import { ToastProvider } from '../../contexts/ToastContext';
 
 vi.mock('../../lib/openai');
 vi.mock('../../hooks/useSavedWords', () => ({
@@ -82,7 +83,9 @@ describe('LookupView', () => {
   const renderWithProvider = (ui: React.ReactElement) => {
     return render(
       <LanguageProvider>
-        <BrowserRouter>{ui}</BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>{ui}</BrowserRouter>
+        </ToastProvider>
       </LanguageProvider>
     );
   };
