@@ -58,8 +58,11 @@ All 12 priority findings resolved.
 - **PR #7**: Added `.js` extensions for ESM resolution under `"type": "module"`
 - All 6 endpoints returning HTTP 200 on Vercel production (verified February 15, 2026)
 
-### Still Open
-- **Dead code cleanup** — 17 files identified (see Dead/Unused Code Candidates section)
+### Dead Code Cleanup (PR #9)
+- 16 files archived to `src/_archive/` preserving directory structure (2 of original 17 were already archived)
+- `useCardStack.test.ts` also archived (tested dead code only)
+- Test count: 177 → 161 (16 removed tests were for archived `useCardStack` hook)
+- Build, lint, and all 161 tests passing after cleanup
 
 ## Priority Findings (Fix List)
 
@@ -197,34 +200,33 @@ All 12 priority findings resolved.
 - Impact:
   - Documentation gives an inaccurate picture of real schema/runtime behavior and typing standards.
 
-## Dead/Unused Code Candidates
+## Dead/Unused Code Candidates — ✅ RESOLVED (PR #9)
 
 Method used:
 - Static import-graph walk from `src/main.tsx`
-- Follow-up grep verification
+- Follow-up grep verification per file
 
-Likely not used by active runtime routes:
-- `src/components/ActionButtons.tsx`
-- `src/components/BottomNav.tsx`
-- `src/components/Card.tsx`
-- `src/components/CardStack.tsx`
-- `src/components/LessonCard.tsx`
-- `src/components/SwipeIndicator.tsx`
+All 16 files archived to `src/_archive/` (preserving directory structure):
+- `src/_archive/components/ActionButtons.tsx`
+- `src/_archive/components/BottomNav.tsx`
+- `src/_archive/components/Card.tsx`
+- `src/_archive/components/CardStack.tsx`
+- `src/_archive/components/LessonCard.tsx`
+- `src/_archive/components/SwipeIndicator.tsx`
+- `src/_archive/components/modals/SentenceDetailModal.test.tsx.backup`
+- `src/_archive/features/lessons/LessonFeed.tsx`
+- `src/_archive/hooks/useCardStack.ts`
+- `src/_archive/hooks/useCardStack.test.ts`
+- `src/_archive/hooks/useSavedVocabulary.ts`
+- `src/_archive/lib/testSupabase.ts`
+- `src/_archive/styles/uiTokens.ts`
+- `src/_archive/utils/arabicBreakdown.ts`
+- `src/_archive/utils/egyptianInference.ts`
+- `src/_archive/utils/soundAlikeWords.ts`
+
+Previously archived (not found at original paths during cleanup):
 - `src/components/surfaces/SentenceSurface.tsx`
 - `src/components/surfaces/index.ts`
-- `src/features/lessons/LessonFeed.tsx`
-- `src/hooks/useCardStack.ts` (used by tests and dead lesson feed path)
-- `src/hooks/useSavedVocabulary.ts` (referenced from archived code only)
-- `src/lib/testSupabase.ts`
-- `src/styles/uiTokens.ts` (README says active, no imports found)
-- `src/utils/arabicBreakdown.ts`
-- `src/utils/egyptianInference.ts`
-- `src/utils/soundAlikeWords.ts`
-- `src/components/modals/SentenceDetailModal.test.tsx.backup`
-
-Recommendation:
-- Move confirmed-dead files to `src/_archive/` or delete after one focused cleanup PR.
-- Keep test-only utilities only if they still validate active behavior.
 
 ## UI/UX Improvement Suggestions
 
@@ -267,10 +269,11 @@ Recommendation:
 2. ~~Security hardening (P0)~~ ✅ Done (PRs #3–#7)
 3. ~~Route and renderer contract alignment (P1)~~ ✅ Done (PR #1)
 4. ~~Documentation normalization (P2)~~ ✅ Done (PR #1, #2)
-5. Dead code cleanup + bundle-size optimization (P2/P3) ← **NEXT**
+5. ~~Dead code cleanup (P2/P3)~~ ✅ Done (PR #9)
 
 ## Notes
 
 - Original audit performed February 13, 2026 (documentation only, no code changes).
 - Resolution work began February 13, 2026. PR #1 merged with 4 commits resolving 11 of 12 issues.
 - Security hardening completed February 15, 2026. PRs #3–#7 moved OpenAI to serverless, removed browser client, fixed ESM resolution. All 6 API endpoints verified working on Vercel production.
+- Dead code cleanup completed February 15, 2026. PR #9 archived 16 files to `src/_archive/`. Tests: 161/161 passing.
