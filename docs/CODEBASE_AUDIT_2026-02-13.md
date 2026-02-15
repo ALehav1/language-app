@@ -277,3 +277,49 @@ Previously archived (not found at original paths during cleanup):
 - Resolution work began February 13, 2026. PR #1 merged with 4 commits resolving 11 of 12 issues.
 - Security hardening completed February 15, 2026. PRs #3–#7 moved OpenAI to serverless, removed browser client, fixed ESM resolution. All 6 API endpoints verified working on Vercel production.
 - Dead code cleanup completed February 15, 2026. PR #9 archived 16 files to `src/_archive/`. Tests: 161/161 passing.
+
+## Remediation Progress (Updated: February 15, 2026)
+
+### Resolved Issues
+
+| Issue | PR | What Changed |
+|-------|-----|-------------|
+| P0-1: Spanish save flow inconsistent | #18, #19 | SpanishLookupResult type created, LookupView migrated to LookupWordResult union, all saves pass language explicitly |
+| P0-3: Client-side OpenAI key | #14 | API calls moved to serverless functions |
+| P1-1: Spanish type safety (as any casts) | #19 | All 17 as-any casts eliminated from LookupView |
+| P1-4: Sentence/passage save errors | #14, #18 | Toast feedback added, language parameter added to hooks |
+| P1-5 (new): Word deletion no confirmation | #20 | ConfirmDialog added to MyVocabularyView |
+| P1-6 (new): RouteGuard redirects deep links | #20 | Redirect logic removed, deep links work |
+| P1-7 (new): No 404 route | #20 | NotFound component + catch-all route |
+| P1-8 (new): Dialect toggle shows in Spanish | #20 | Conditional on language === 'arabic' |
+| P1-9: LanguageBadge/LanguageSwitcher overlap | #21 | LanguageBadge hides on routes with LanguageSwitcher |
+| P1-12: English-source passages wrong language | #21 | Fallback changed from 'arabic' to context language |
+| P1-14 (new): Lesson library custom dialogs | #20 | Delete dialog migrated to ConfirmDialog |
+| P1-15: Console.log in production | #21 | 42 debug console.log removed from 9 files |
+| P1-16: Modal close buttons < 48px | #21 | 5 modals updated to min-w/h-[48px] |
+| New-1: useSavedWords defaults to Arabic | #18 | Hook accepts language parameter |
+| New-3: WordDetailModal spanish_word bug | #22 | Migrated to LookupWordResult with type guards |
+| Deferred: lookupWord return type | #22 | Changed to LookupWordResult, all consumers updated |
+| P2-8: README contradictions | #14 | README updated |
+| Dead code cleanup | #15 | 16 files removed |
+| CLAUDE.md inaccuracies | #17 | 3 claims corrected |
+| LookupModal Arabic-only | #22 | Full Spanish support added |
+| WordDetailModal Arabic-only | #22 | Full Spanish support with type guards |
+
+### Still Open
+
+| Issue | Priority | Notes |
+|-------|----------|-------|
+| P1-3: Spanish exercise save | P1 | ExerciseFeedback + ExerciseView coordination needed |
+| P0-2: Migration/schema drift | P0 | Migrations don't match runtime tables |
+| P1-5 (audit): Architectural invariant SentenceSurface vs SentenceDisplay | P1 | Contract drift |
+| P1-6 (audit): Spanish contract relies on Arabic fallback fields | P1 | openai.ts and analyze-passage.ts still overload |
+| P1-7 (audit): Dialect preference storage keys inconsistent | P1 | Feature views use separate keys |
+| P2-9: Route documentation misaligned | P2 | README routes vs actual routes |
+| P2-10: Missing setup instructions | P2 | No install/env section in README |
+| P2-11: Documentation link integrity | P2 | Broken links in docs |
+| P2-12: Documentation understates data model | P2 | Table count and any-type claims |
+| New-2 (partial): Cross-language word collision | P1 | DB unique constraint on word column lacks language scope |
+| New (Codex): No app-level error boundary | P2 | Runtime render exceptions can blank UI |
+| New (Codex): Eager route imports / large bundle | P2 | 605 kB initial bundle |
+| New (Codex): Serverless endpoints unauthenticated | Deferred | Single-user app decision |
