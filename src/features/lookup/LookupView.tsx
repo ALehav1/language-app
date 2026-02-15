@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { lookupWord, analyzePassage, type LookupResult, type PassageResult } from '../../lib/openai';
+import { lookupWord, analyzePassage, type LookupWordResult, type PassageResult, isSpanishLookupResult, isArabicLookupResult } from '../../lib/openai';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { useSavedSentences } from '../../hooks/useSavedSentences';
 import { useSavedPassages } from '../../hooks/useSavedPassages';
@@ -28,13 +28,13 @@ import { useToast } from '../../contexts/ToastContext';
 export function LookupView() {
     const navigate = useNavigate();
     const { language, dialectPreferences, setArabicDialect } = useLanguage();
-    const { saveWord, isWordSaved } = useSavedWords();
-    const { saveSentence, getSentenceByText, updateStatus, deleteSentence } = useSavedSentences();
-    const { savePassage, getPassageByText, updateStatus: updatePassageStatus, deletePassage } = useSavedPassages();
+    const { saveWord, isWordSaved } = useSavedWords({ language });
+    const { saveSentence, getSentenceByText, updateStatus, deleteSentence } = useSavedSentences(language);
+    const { savePassage, getPassageByText, updateStatus: updatePassageStatus, deletePassage } = useSavedPassages(language);
     const { showToast } = useToast();
 
     const [input, setInput] = useState('');
-    const [result, setResult] = useState<LookupResult | null>(null);
+    const [result, setResult] = useState<LookupWordResult | null>(null);
     const [passageResult, setPassageResult] = useState<PassageResult | null>(null);
     const [selectedSentence, setSelectedSentence] = useState<any | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -43,10 +43,14 @@ export function LookupView() {
     const [mode, setMode] = useState<'word' | 'sentence' | 'passage'>('word');
     const [memoryNote, setMemoryNote] = useState<string | null>(null);
     const [memoryImageUrl, setMemoryImageUrl] = useState<string | null>(null);
-    
+
+    // Narrow result by language once — use spanish/arabic throughout the JSX
+    const spanish = result && isSpanishLookupResult(result) ? result : null;
+    const arabic = result && isArabicLookupResult(result) ? result : null;
+
     // Helper: extract the primary word from a lookup result based on language
-    const getWordFromResult = (r: LookupResult) =>
-        language === 'spanish' ? (r as any).spanish_latam : r.arabic_word;
+    const getWordFromResult = (r: LookupWordResult) =>
+        isSpanishLookupResult(r) ? r.spanish_latam : r.arabic_word;
 
     // Dialect preference from global context
     const dialectPreference = dialectPreferences.arabic;
@@ -146,15 +150,15 @@ export function LookupView() {
         if (!result || decision === 'discard') return;
         
         try {
-            const isSpanish = language === 'spanish';
             await saveWord({
-                word: isSpanish ? (result as any).spanish_latam : result.arabic_word,
-                translation: isSpanish ? (result as any).translation_en : result.translation,
-                pronunciation_standard: isSpanish ? ((result as any).pronunciation || null) : result.pronunciation_standard,
-                pronunciation_egyptian: isSpanish ? undefined : result.pronunciation_egyptian,
-                letter_breakdown: isSpanish ? undefined : result.letter_breakdown,
-                hebrew_cognate: isSpanish ? undefined : result.hebrew_cognate,
-                example_sentences: result.example_sentences || null,
+                word: spanish ? spanish.spanish_latam : arabic?.arabic_word ?? '',
+                translation: spanish ? spanish.translation_en : arabic?.translation ?? '',
+                language,
+                pronunciation_standard: spanish ? spanish.pronunciation : arabic?.pronunciation_standard,
+                pronunciation_egyptian: arabic?.pronunciation_egyptian,
+                letter_breakdown: arabic?.letter_breakdown,
+                hebrew_cognate: arabic?.hebrew_cognate,
+                example_sentences: arabic?.example_sentences,
                 status: decision === 'practice' ? 'active' : 'learned', // archive = learned
                 memory_note: memoryAid?.note,
                 memory_image_url: memoryAid?.imageUrl,
@@ -204,6 +208,7 @@ export function LookupView() {
                 translation: sentence.english,
                 explanation: sentence.explanation,
                 source: 'lookup',
+                language,
             });
         } catch (err) {
             console.error('[LookupView] Failed to save sentence:', err);
@@ -311,110 +316,171 @@ export function LookupView() {
                     {/* Full word details using WordSurface (canonical renderer) */}
                     {/* Spanish: Use SpanishLookupResult fields directly (NO Arabic overloading) */}
                     <WordSurface
-                        word={language === 'spanish' ? {
-                            // SpanishLookupResult fields
+                        word={spanish ? {
                             language: 'spanish' as const,
-                            spanish_latam: (result as any).spanish_latam || result.arabic_word || '',
-                            spanish_spain: (result as any).spanish_spain || result.arabic_word_egyptian,
-                            translation: (result as any).translation_en || result.translation || '',
-                            pronunciation: (result as any).pronunciation,
-                            partOfSpeech: (result as any).part_of_speech,
-                            wordContext: (result as any).word_context,
-                            memoryAid: (result as any).memory_aid,
-                            exampleSentences: (result as any).example_sentences,
+                            spanish_latam: spanish.spanish_latam,
+                            spanish_spain: spanish.spanish_spain,
+                            translation: spanish.translation_en,
+                            pronunciation: spanish.pronunciation,
+                            partOfSpeech: spanish.part_of_speech,
+                            wordContext: spanish.word_context,
+                            memoryAid: spanish.memory_aid,
+                            exampleSentences: spanish.example_sentences,
                         } : {
-                            // Arabic: existing fields
-                            arabic: result.arabic_word,
-                            arabicEgyptian: result.arabic_word_egyptian,
-                            translation: result.translation,
-                            transliteration: result.pronunciation_standard,
-                            transliterationEgyptian: result.pronunciation_egyptian,
-                            hebrewCognate: result.hebrew_cognate,
+                            arabic: arabic?.arabic_word ?? '',
+                            arabicEgyptian: arabic?.arabic_word_egyptian,
+                            translation: arabic?.translation ?? '',
+                            transliteration: arabic?.pronunciation_standard ?? '',
+                            transliterationEgyptian: arabic?.pronunciation_egyptian,
+                            hebrewCognate: arabic?.hebrew_cognate,
                         }}
                         language={language}
-                        size={language === 'spanish' ? 'normal' : 'large'}
-                        showHebrewCognate={language === 'arabic'}
-                        showLetterBreakdown={language === 'arabic'}
+                        size={spanish ? 'normal' : 'large'}
+                        showHebrewCognate={!!arabic}
+                        showLetterBreakdown={!!arabic}
                         showExampleSentences={true}
-                        showPronunciations={language === 'arabic'}
+                        showPronunciations={!!arabic}
                         showSaveOption={false}
-                        dialectPreference={language === 'spanish' ? 'latam' : 'egyptian'}
+                        dialectPreference={spanish ? 'latam' : 'egyptian'}
                     />
 
                     {/* Added Context - Spanish uses SpanishWordContext */}
-                    <ContextTile 
-                        context={language === 'spanish' ? (result as any).word_context : result.word_context} 
-                        language={language} 
+                    <ContextTile
+                        context={spanish?.word_context ?? arabic?.word_context}
+                        language={language}
                     />
 
                     {/* Memory Aid */}
                     <MemoryAidTile
-                        primaryText={language === 'spanish' ? ((result as any).spanish_latam || result.arabic_word) : result.arabic_word}
-                        translation={(result as any).translation_en || result.translation}
+                        primaryText={spanish ? spanish.spanish_latam : arabic?.arabic_word ?? ''}
+                        translation={spanish ? spanish.translation_en : arabic?.translation ?? ''}
                         currentNote={memoryNote}
                         currentImageUrl={memoryImageUrl}
                         onImageGenerated={setMemoryImageUrl}
                         onNoteChanged={setMemoryNote}
                     />
 
-                    {/* Example sentences - Collapsed by default */}
-                    {result.example_sentences && result.example_sentences.length > 0 && (
+                    {/* Example sentences - Spanish */}
+                    {spanish?.example_sentences && spanish.example_sentences.length > 0 && (
                         <CollapsibleSection
                             title="Example Sentences"
-                            count={result.example_sentences.length}
+                            count={spanish.example_sentences.length}
                             defaultExpanded={false}
                         >
-                            {result.example_sentences.map((sentence, idx) => {
-                                        const savedSentence = getSentenceByText?.(sentence.arabic_msa);
-                                        const isSaved = !!savedSentence;
-                                        return (
-                                            <div key={idx} className="glass-card p-3">
-                                                <div className="text-white font-arabic text-2xl mb-1" dir={language === 'arabic' ? 'rtl' : 'ltr'}>
-                                                    {sentence.arabic_egyptian || sentence.arabic_msa}
-                                                </div>
-                                                <div className="text-white/60 text-sm mb-2">
-                                                    {sentence.english}
-                                                </div>
-                                                
-                                                {isSaved && savedSentence ? (
-                                                    <div className="space-y-2">
-                                                        <div className="text-xs text-green-400 font-medium">
-                                                            ✓ Saved to {savedSentence.status === 'active' ? 'Practice' : 'Archive'}
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <button
-                                                                onClick={() => updateStatus?.(savedSentence.id, savedSentence.status === 'active' ? 'learned' : 'active')}
-                                                                className="flex-1 py-2 px-3 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs rounded-lg transition-colors"
-                                                            >
-                                                                Move to {savedSentence.status === 'active' ? 'Archive' : 'Practice'}
-                                                            </button>
-                                                            <button
-                                                                onClick={() => deleteSentence?.(savedSentence.id)}
-                                                                className="py-2 px-3 bg-red-500/20 text-red-300 hover:bg-red-500/30 text-xs rounded-lg transition-colors"
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleSaveSentence(sentence)}
-                                                        className="w-full py-2 rounded-lg text-sm font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
-                                                    >
-                                                        💬 Save Sentence
-                                                    </button>
-                                                )}
+                            {spanish.example_sentences.map((sentence, idx) => {
+                                const savedSentence = getSentenceByText?.(sentence.spanish_latam);
+                                const isSaved = !!savedSentence;
+                                return (
+                                    <div key={idx} className="glass-card p-3">
+                                        <div className="text-white text-2xl mb-1" dir="ltr">
+                                            {sentence.spanish_latam}
+                                        </div>
+                                        {sentence.spanish_spain && (
+                                            <div className="text-white/50 text-sm mb-1">
+                                                Spain: {sentence.spanish_spain}
                                             </div>
-                                    );
-                                })}
+                                        )}
+                                        <div className="text-white/60 text-sm mb-2">
+                                            {sentence.english}
+                                        </div>
+
+                                        {isSaved && savedSentence ? (
+                                            <div className="space-y-2">
+                                                <div className="text-xs text-green-400 font-medium">
+                                                    ✓ Saved to {savedSentence.status === 'active' ? 'Practice' : 'Archive'}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => updateStatus?.(savedSentence.id, savedSentence.status === 'active' ? 'learned' : 'active')}
+                                                        className="flex-1 py-2 px-3 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs rounded-lg transition-colors"
+                                                    >
+                                                        Move to {savedSentence.status === 'active' ? 'Archive' : 'Practice'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => deleteSentence?.(savedSentence.id)}
+                                                        className="py-2 px-3 bg-red-500/20 text-red-300 hover:bg-red-500/30 text-xs rounded-lg transition-colors"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleSaveSentence({
+                                                    arabic_msa: sentence.spanish_latam,
+                                                    transliteration_msa: '',
+                                                    english: sentence.english,
+                                                    explanation: sentence.explanation,
+                                                })}
+                                                className="w-full py-2 rounded-lg text-sm font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                                            >
+                                                Save Sentence
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </CollapsibleSection>
+                    )}
+
+                    {/* Example sentences - Arabic */}
+                    {arabic && arabic.example_sentences && arabic.example_sentences.length > 0 && (
+                        <CollapsibleSection
+                            title="Example Sentences"
+                            count={arabic.example_sentences.length}
+                            defaultExpanded={false}
+                        >
+                            {arabic.example_sentences.map((sentence, idx) => {
+                                const savedSentence = getSentenceByText?.(sentence.arabic_msa);
+                                const isSaved = !!savedSentence;
+                                return (
+                                    <div key={idx} className="glass-card p-3">
+                                        <div className="text-white font-arabic text-2xl mb-1" dir="rtl">
+                                            {sentence.arabic_egyptian || sentence.arabic_msa}
+                                        </div>
+                                        <div className="text-white/60 text-sm mb-2">
+                                            {sentence.english}
+                                        </div>
+
+                                        {isSaved && savedSentence ? (
+                                            <div className="space-y-2">
+                                                <div className="text-xs text-green-400 font-medium">
+                                                    ✓ Saved to {savedSentence.status === 'active' ? 'Practice' : 'Archive'}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => updateStatus?.(savedSentence.id, savedSentence.status === 'active' ? 'learned' : 'active')}
+                                                        className="flex-1 py-2 px-3 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs rounded-lg transition-colors"
+                                                    >
+                                                        Move to {savedSentence.status === 'active' ? 'Archive' : 'Practice'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => deleteSentence?.(savedSentence.id)}
+                                                        className="py-2 px-3 bg-red-500/20 text-red-300 hover:bg-red-500/30 text-xs rounded-lg transition-colors"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleSaveSentence(sentence)}
+                                                className="w-full py-2 rounded-lg text-sm font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+                                            >
+                                                Save Sentence
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </CollapsibleSection>
                     )}
 
                     {/* Save decision panel - MOVED TO BOTTOM */}
                     <div className="glass-card p-4">
                         <SaveDecisionPanel
-                            primaryText={language === 'spanish' ? ((result as any).spanish_latam || result.arabic_word) : result.arabic_word}
-                            translation={(result as any).translation_en || result.translation}
+                            primaryText={spanish ? spanish.spanish_latam : arabic?.arabic_word ?? ''}
+                            translation={spanish ? spanish.translation_en : arabic?.translation ?? ''}
                             onDecision={handleWordDecision}
                             alreadySaved={isCurrentWordSaved}
                         />
@@ -524,6 +590,7 @@ export function LookupView() {
                                                 translation: selectedSentence.translation,
                                                 explanation: selectedSentence.explanation,
                                                 source: 'lookup',
+                                                language,
                                                 status: 'learned',
                                             });
                                         }}
@@ -838,7 +905,9 @@ export function LookupView() {
                         Translate anything
                     </h2>
                     <p className="text-white/40 text-sm max-w-xs">
-                        Paste Arabic text to see translation, pronunciation, and word breakdown. Or type English to get the Arabic.
+                        {language === 'spanish'
+                            ? 'Type or paste Spanish text to see translation and breakdown. Or type English to get the Spanish.'
+                            : 'Paste Arabic text to see translation, pronunciation, and word breakdown. Or type English to get the Arabic.'}
                     </p>
                 </div>
             )}
