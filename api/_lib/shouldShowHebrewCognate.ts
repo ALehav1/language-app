@@ -5,7 +5,7 @@
  * Source of truth: src/domain/practice/hebrew/shouldShowHebrewCognate.ts
  */
 
-import { tokenizeWords, getWordTokens } from './tokenizeWords';
+import { tokenizeWords, getWordTokens } from './tokenizeWords.js';
 
 type Language = 'arabic' | 'spanish';
 
