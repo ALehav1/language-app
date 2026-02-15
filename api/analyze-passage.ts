@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { Language, ArabicDialect, SpanishDialect } from '../src/types/database';
 import OpenAI from 'openai';
-import { findHebrewCognate } from '../src/utils/hebrewCognates';
+import { findHebrewCognate } from './_lib/hebrewCognates';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
