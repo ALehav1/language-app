@@ -10,7 +10,7 @@
  * - Drive routing, lesson generation, vocab filtering
  */
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import type { Language } from '../types';
 
 /** Dialect options for Arabic */
@@ -85,24 +85,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const newPrefs = { ...dialectPreferences, arabic: dialect };
     setDialectPreferences(newPrefs);
     localStorage.setItem(DIALECT_STORAGE_KEY, JSON.stringify(newPrefs));
-    console.log('[LanguageContext] Arabic dialect set to:', dialect);
   };
 
   const setSpanishDialect = (dialect: SpanishDialect) => {
     const newPrefs = { ...dialectPreferences, spanish: dialect };
     setDialectPreferences(newPrefs);
     localStorage.setItem(DIALECT_STORAGE_KEY, JSON.stringify(newPrefs));
-    console.log('[LanguageContext] Spanish dialect set to:', dialect);
   };
 
   // Convenience getter for current language's dialect
-  const currentDialect = language === 'arabic' 
-    ? dialectPreferences.arabic 
+  const currentDialect = language === 'arabic'
+    ? dialectPreferences.arabic
     : dialectPreferences.spanish;
-
-  useEffect(() => {
-    console.log('[LanguageContext] Current language:', language, '| dialect:', currentDialect);
-  }, [language, currentDialect]);
 
   return (
     <LanguageContext.Provider value={{ 

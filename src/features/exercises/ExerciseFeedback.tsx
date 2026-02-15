@@ -71,16 +71,12 @@ export function ExerciseFeedback({
     // Fetch enhanced data for Arabic words (both dialects + Hebrew cognate)
     useEffect(() => {
         if (!isArabic) {
-            console.log('[ExerciseFeedback] Not Arabic, skipping lookup');
             return;
         }
-        
-        // Always fetch for Arabic words to get both dialects
-        console.log('[ExerciseFeedback] Fetching enhanced data for:', item.word);
+
         setIsLoadingEnhanced(true);
         lookupWord(item.word, { language })
             .then(data => {
-                console.log('[ExerciseFeedback] Got enhanced data:', data);
                 setEnhancedData(data);
                 setIsLoadingEnhanced(false);
             })

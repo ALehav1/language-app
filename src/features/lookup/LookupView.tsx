@@ -87,57 +87,32 @@ export function LookupView() {
 
     // Handle lookup - auto-detect word vs passage
     const handleLookup = async () => {
-        // STEP 0: Hard proof signal
-        console.log('[LOOKUP] Translate clicked', { language, textLength: input.length });
-        console.log('[LOOKUP] Translate begin');
-        
         if (!input.trim()) {
-            console.warn('[LOOKUP] Empty input, aborting');
             setError('Please enter text to translate');
             return;
         }
-        
+
         try {
-            // STEP 2: Set loading state and clear previous results
             setIsLoading(true);
             setError(null);
             setResult(null);
             setPassageResult(null);
 
             const contentType = detectContentType(input);
-            console.log('[LOOKUP] Detected content type:', contentType);
             setMode(contentType);
             setSelectedSentence(null);
 
             if (contentType === 'word') {
-                console.log('[LOOKUP] Looking up word:', input.slice(0, 40));
-                // STEP 3: Log before API call
-                console.log('[LOOKUP] calling lookupWord', { language, textPreview: input.slice(0, 40) });
                 const data = await lookupWord(input.trim(), { language });
-                // STEP 3: Log after API call
-                console.log('[LOOKUP] lookupWord returned', data);
                 setResult(data);
             } else {
-                // Both sentence and passage use analyzePassage
-                console.log('[LOOKUP] Analyzing ${contentType}:', input.slice(0, 40));
-                // STEP 3: Log before API call
-                console.log('[LOOKUP] calling analyzePassage', { language, contentType, textPreview: input.slice(0, 40) });
                 const data = await analyzePassage(input.trim(), { language });
-                // STEP 3: Log after API call
-                console.log('[LOOKUP] analyzePassage returned', data);
                 setPassageResult(data);
             }
-            
-            console.log('[LOOKUP] Translate complete successfully');
         } catch (err) {
-            // STEP 4: Catch and surface all errors
             console.error('[LOOKUP] Translate failed', err);
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            console.error('[LOOKUP] Error details:', errorMessage);
             setError('Translation failed. Please try again.');
         } finally {
-            // STEP 2: Always reset loading state
-            console.log('[LOOKUP] Resetting loading state');
             setIsLoading(false);
         }
     };
@@ -180,7 +155,6 @@ export function LookupView() {
 
     // P2-B: Handle word click - navigates to unified word detail page
     const handleWordClick = (word: WordBreakdownWord) => {
-        console.log('[LOOKUP] Word chip clicked, navigating to word detail', { word, language });
         
         // Navigate to canonical /vocabulary/word route with lookup context
         // Pass word text as query param + full word data in state
@@ -222,7 +196,7 @@ export function LookupView() {
         try {
             await savePassage({
                 original_text: passageResult.original_text,
-                source_language: passageResult.detected_language || 'arabic',
+                source_language: passageResult.detected_language || language,
                 full_translation: passageResult.full_translation,
                 full_transliteration: passageResult.full_transliteration,
                 sentence_count: passageResult.sentences?.length || 1,
@@ -656,7 +630,7 @@ export function LookupView() {
                                             if (!passageResult || !passageResult.original_text) return;
                                             await savePassage({
                                                 original_text: passageResult.original_text,
-                                                source_language: passageResult.detected_language || 'arabic',
+                                                source_language: passageResult.detected_language || language,
                                                 full_translation: passageResult.full_translation,
                                                 full_transliteration: passageResult.full_transliteration,
                                                 sentence_count: passageResult.sentences?.length || 1,

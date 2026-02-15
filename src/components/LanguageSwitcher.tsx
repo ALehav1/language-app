@@ -10,10 +10,7 @@ export function LanguageSwitcher() {
   const { language, setLanguage } = useLanguage();
 
   const handleLanguageChange = (lang: 'arabic' | 'spanish') => {
-    console.log('[LanguageSwitcher] setLanguage', lang);
-    console.log('[LanguageSwitcher] current language before:', language);
     setLanguage(lang);
-    console.log('[LanguageSwitcher] localStorage after:', localStorage.getItem('language-app-selected-language'));
   };
 
   return (

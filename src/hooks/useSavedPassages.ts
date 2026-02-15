@@ -81,8 +81,6 @@ export function useSavedPassages(language?: 'arabic' | 'spanish') {
     // Save a new passage
     const savePassage = useCallback(async (input: SavePassageInput): Promise<SavedPassage | null> => {
         try {
-            console.log('[useSavedPassages] Saving passage:', input.original_text.slice(0, 50));
-            
             // Check if passage already exists (by original_text)
             const { data: existing } = await supabase
                 .from('saved_passages')
@@ -91,7 +89,6 @@ export function useSavedPassages(language?: 'arabic' | 'spanish') {
                 .single();
             
             if (existing) {
-                console.log('[useSavedPassages] Passage already saved');
                 return null;
             }
             
@@ -111,7 +108,6 @@ export function useSavedPassages(language?: 'arabic' | 'spanish') {
             
             // Update local state
             setPassages(prev => [data, ...prev]);
-            console.log('[useSavedPassages] Saved successfully:', data.id);
             return data;
         } catch (err) {
             console.error('[useSavedPassages] Save error:', err);

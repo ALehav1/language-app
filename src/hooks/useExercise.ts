@@ -186,7 +186,6 @@ export function useExercise({ vocabItems, lessonId, onComplete }: UseExerciseOpt
         const hydratedProgress = hydrateProgress(savedProgress, vocabItems);
         
         if (hydratedProgress) {
-            console.log('[useExercise] Restoring progress:', hydratedProgress.currentPos, 'of', hydratedProgress.queue.length);
             setQueue(hydratedProgress.queue);
             setCurrentPos(hydratedProgress.currentPos);
             setAnswers(hydratedProgress.answers);

@@ -246,7 +246,7 @@ export function MyPassagesView() {
                             </div>
                             <button
                                 onClick={() => setSelectedPassage(null)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white/70"
+                                className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-full bg-white/10 text-white/70"
                             >
                                 ✕
                             </button>
