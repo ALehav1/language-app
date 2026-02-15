@@ -115,18 +115,16 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 ### Console logging in LanguageSwitcher
 `src/components/LanguageSwitcher.tsx:13-16` has debug console.log statements that ship to production.
 
-### RouteGuard redirects deep links to home
-`src/components/RouteGuard.tsx:19` redirects all routes to `/` on fresh page load. Bookmarked URLs like `/lookup` won't work — user always lands on home first.
-
-### Word deletion has no confirmation
-MyVocabularyView deletes words immediately on click with no ConfirmDialog. Sentences and passages have confirmation dialogs; words do not.
-
 ## Hard-Won Patterns
 
 ### Dialog and Toast System (PR #12)
 - **ConfirmDialog** (`src/components/ConfirmDialog.tsx`): Styled modal for destructive action confirmations. Props: isOpen, title, message, confirmLabel, cancelLabel, variant ('danger' | 'default'), onConfirm, onCancel.
 - **Toast system** (`src/contexts/ToastContext.tsx`): App-wide toast notifications via `useToast()` hook. Usage: `showToast({ type: 'success' | 'error' | 'info', message: '...' })`. ToastProvider wraps the app in main.tsx.
 - Native `alert()` and `confirm()` are banned. All 6 original calls have been replaced. Any new user feedback should use these components.
+
+### Union Type Narrowing (PR #19, #20)
+- **Narrow-once pattern**: Derive `const spanish = result && isSpanish(result) ? result : null` at top of component, use throughout. Avoids scattered type guards.
+- **Prefer optional chaining with fallbacks** (`arabic?.field ?? ''`) over non-null assertions (`arabic!.field`). Non-null assertions crash if the value is unexpectedly null; optional chaining degrades gracefully.
 
 ### Comprehensive Audit Findings (PR #14 audit)
 - 2 P0, 16 P1, 18 P2 issues identified. Full report in session history.
@@ -138,6 +136,8 @@ MyVocabularyView deletes words immediately on click with no ConfirmDialog. Sente
 - **Native alert/confirm reintroduced** — Symptom: browser-native dialog appears instead of styled in-app component. Verify: `grep -rn "alert(\|confirm(" src/ --include="*.tsx" --include="*.ts" | grep -v "_archive" | grep -v ".test."` should return 0 results (except JSDoc comments in ConfirmDialog.tsx).
 - **Regenerate button re-enabled without implementation** — Symptom: clicking Regenerate deletes lesson vocabulary but produces no new content. Verify: check that regenerate is disabled or that the full generate→save→navigate flow is implemented before enabling.
 - **Legacy route references in app code** — Symptom: app navigates to /words, /saved, /sentences, or /passages instead of canonical /vocabulary/* routes. Verify: `grep -rn '"/words"\|"/saved"\|"/sentences"\|"/passages"' src/ --include="*.tsx" --include="*.ts" | grep -v "_archive" | grep -v ".test." | grep -v "main.tsx"` should return 0 results.
+- **Word deletion confirmation** — MyVocabularyView must use ConfirmDialog for all delete paths. Do not add direct `deleteWord()` calls without confirmation.
+- **RouteGuard deep links** — RouteGuard must not redirect valid routes to home on fresh load. Deep links (bookmarked URLs) must work directly.
 
 
 ## Stable Files

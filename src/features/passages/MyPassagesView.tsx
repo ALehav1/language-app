@@ -125,8 +125,8 @@ export function MyPassagesView() {
                 </div>
             )}
 
-            {/* Dialect toggle */}
-            {passages.length > 0 && (
+            {/* Dialect toggle - Arabic only */}
+            {passages.length > 0 && language === 'arabic' && (
                 <div className="flex items-center gap-2 mb-4">
                     <span className="text-xs text-white/40">Show:</span>
                     <button

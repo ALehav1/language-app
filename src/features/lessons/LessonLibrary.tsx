@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLessons } from '../../hooks/useLessons';
 import { LessonGenerator } from './LessonGenerator';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../lib/supabase';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -316,36 +317,15 @@ export function LessonLibrary() {
             />
 
             {/* Delete Lesson Confirmation Dialog */}
-            {lessonToDelete && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                    <div className="glass-card w-full max-w-md p-6 space-y-4">
-                        <h3 className="text-xl font-bold text-white">Delete Lesson?</h3>
-                        <p className="text-white/70 text-sm">
-                            Are you sure you want to delete <span className="font-semibold text-white">"{lessonToDelete.title}"</span>?
-                        </p>
-                        <p className="text-white/50 text-xs">
-                            This will remove the lesson but keep any words you've already saved to your vocabulary.
-                        </p>
-                        
-                        <div className="pt-2 space-y-2">
-                            <button
-                                onClick={handleDeleteLesson}
-                                disabled={isDeleting}
-                                className="w-full py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 font-bold rounded-xl transition-colors disabled:opacity-50"
-                            >
-                                {isDeleting ? 'Deleting...' : 'Delete Lesson'}
-                            </button>
-                            <button
-                                onClick={() => setLessonToDelete(null)}
-                                disabled={isDeleting}
-                                className="w-full py-3 text-white/70 font-medium hover:text-white transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmDialog
+                isOpen={!!lessonToDelete}
+                title="Delete Lesson?"
+                message={`Are you sure you want to delete "${lessonToDelete?.title}"? This will remove the lesson but keep any words you've already saved to your vocabulary.`}
+                confirmLabel={isDeleting ? 'Deleting...' : 'Delete Lesson'}
+                variant="danger"
+                onConfirm={handleDeleteLesson}
+                onCancel={() => setLessonToDelete(null)}
+            />
 
             {/* Edit Lesson Dialog */}
             {lessonToEdit && (
