@@ -102,7 +102,7 @@ export function LookupModal({ isOpen, onClose }: LookupModalProps) {
                     <h2 className="text-lg font-bold text-white">Look Up Word</h2>
                     <button
                         onClick={handleClose}
-                        className="text-white/50 hover:text-white"
+                        className="text-white/50 hover:text-white min-w-[48px] min-h-[48px] flex items-center justify-center"
                         aria-label="Close"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

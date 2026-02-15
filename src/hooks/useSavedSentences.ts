@@ -84,7 +84,6 @@ export function useSavedSentences(language?: 'arabic' | 'spanish') {
     // Save a new sentence
     const saveSentence = useCallback(async (input: SaveSentenceInput): Promise<SavedSentence | null> => {
         try {
-            console.log('[useSavedSentences] Saving sentence:', input.arabic_text);
             
             // Check if sentence already exists (by arabic_text)
             const { data: existing } = await supabase
@@ -94,7 +93,6 @@ export function useSavedSentences(language?: 'arabic' | 'spanish') {
                 .single();
             
             if (existing) {
-                console.log('[useSavedSentences] Sentence already saved');
                 return null;
             }
             
@@ -120,7 +118,6 @@ export function useSavedSentences(language?: 'arabic' | 'spanish') {
             
             // Update local state
             setSentences(prev => [data, ...prev]);
-            console.log('[useSavedSentences] Saved successfully:', data.id);
             return data;
         } catch (err) {
             console.error('[useSavedSentences] Save error:', err);

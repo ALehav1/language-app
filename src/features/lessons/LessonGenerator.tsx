@@ -220,7 +220,7 @@ export function LessonGenerator({
             <div className="glass-card w-full max-w-md p-6 relative animate-card-enter">
                 <button
                     onClick={() => setIsOpen(false)}
-                    className="absolute top-4 right-4 text-white/50 hover:text-white"
+                    className="absolute top-2 right-2 text-white/50 hover:text-white min-w-[48px] min-h-[48px] flex items-center justify-center"
                     aria-label="Close"
                 >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

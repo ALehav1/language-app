@@ -157,7 +157,6 @@ export function MyVocabularyView() {
         setIsLoadingEnhanced(true);
         lookupWord(spanishWord, { language: 'spanish' })
             .then(data => {
-                console.log('[MyVocabularyView] Enhanced Spanish data:', data);
                 setEnhancedSpanishData(data);
             })
             .catch(err => {
@@ -619,7 +618,7 @@ export function MyVocabularyView() {
                             
                             <button
                                 onClick={() => setSelectedWord(null)}
-                                className="text-white/50 hover:text-white"
+                                className="text-white/50 hover:text-white min-w-[48px] min-h-[48px] flex items-center justify-center"
                                 aria-label="Close"
                             >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
