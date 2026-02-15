@@ -135,30 +135,32 @@ export function MySentencesView() {
                 </div>
             )}
 
-            {/* Dialect toggle */}
-            <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs text-white/40">Show:</span>
-                <button
-                    onClick={() => setArabicDialect('egyptian')}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                        dialectPreference === 'egyptian'
-                            ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
-                            : 'bg-white/5 text-white/50 hover:bg-white/10'
-                    }`}
-                >
-                    🇪🇬 Egyptian
-                </button>
-                <button
-                    onClick={() => setArabicDialect('standard')}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                        dialectPreference === 'standard'
-                            ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
-                            : 'bg-white/5 text-white/50 hover:bg-white/10'
-                    }`}
-                >
-                    📖 MSA
-                </button>
-            </div>
+            {/* Dialect toggle - Arabic only */}
+            {language === 'arabic' && (
+                <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xs text-white/40">Show:</span>
+                    <button
+                        onClick={() => setArabicDialect('egyptian')}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                            dialectPreference === 'egyptian'
+                                ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
+                                : 'bg-white/5 text-white/50 hover:bg-white/10'
+                        }`}
+                    >
+                        🇪🇬 Egyptian
+                    </button>
+                    <button
+                        onClick={() => setArabicDialect('standard')}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                            dialectPreference === 'standard'
+                                ? 'bg-teal-500/30 text-teal-300 border border-teal-500/50'
+                                : 'bg-white/5 text-white/50 hover:bg-white/10'
+                        }`}
+                    >
+                        📖 MSA
+                    </button>
+                </div>
+            )}
 
             {/* Sentence list */}
             <div className="space-y-3">

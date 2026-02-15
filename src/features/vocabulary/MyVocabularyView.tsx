@@ -5,6 +5,7 @@ import { LookupModal } from './LookupModal';
 import { WordSurface } from '../../components/surfaces/WordSurface';
 import { type ArabicWordData } from '../../components/WordDisplay';
 import { MemoryAidEditor } from '../../components/MemoryAidEditor';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { findHebrewCognate } from '../../utils/hebrewCognates';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { lookupWord, type LookupResult } from '../../lib/openai';
@@ -47,6 +48,7 @@ export function MyVocabularyView() {
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [showLookup, setShowLookup] = useState(false);
+    const [wordToDelete, setWordToDelete] = useState<{ id: string; word: string } | null>(null);
 
     // Fetch words with filters - now filtered by language
     const { 
@@ -528,9 +530,9 @@ export function MyVocabularyView() {
                                                 {word.status === 'learned' ? '📚 Move to Practice' : '📦 Move to Archive'}
                                             </button>
                                             <button
-                                                onClick={(e) => { 
-                                                    e.stopPropagation(); 
-                                                    deleteWord(word.id);
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setWordToDelete({ id: word.id, word: word.word });
                                                 }}
                                                 className="px-3 py-2 bg-red-500/20 text-red-300 rounded-lg font-medium text-sm hover:bg-red-500/30 transition-colors"
                                             >
@@ -712,8 +714,7 @@ export function MyVocabularyView() {
                             </button>
                             <button
                                 onClick={() => {
-                                    deleteWord(selectedWord.id);
-                                    setSelectedWord(null);
+                                    setWordToDelete({ id: selectedWord.id, word: selectedWord.word });
                                 }}
                                 className="px-4 py-3 bg-red-500/20 text-red-300 rounded-xl font-medium hover:bg-red-500/30"
                             >
@@ -738,12 +739,31 @@ export function MyVocabularyView() {
             )}
 
             {/* Lookup Modal */}
-            <LookupModal 
-                isOpen={showLookup} 
+            <LookupModal
+                isOpen={showLookup}
                 onClose={() => {
                     setShowLookup(false);
                     refetch();  // Refresh list after adding words
-                }} 
+                }}
+            />
+
+            {/* Delete confirmation dialog */}
+            <ConfirmDialog
+                isOpen={!!wordToDelete}
+                title="Delete Word"
+                message={`Delete "${wordToDelete?.word}" from your vocabulary? This cannot be undone.`}
+                confirmLabel="Delete"
+                variant="danger"
+                onConfirm={() => {
+                    if (wordToDelete) {
+                        deleteWord(wordToDelete.id);
+                        if (selectedWord?.id === wordToDelete.id) {
+                            setSelectedWord(null);
+                        }
+                    }
+                    setWordToDelete(null);
+                }}
+                onCancel={() => setWordToDelete(null)}
             />
         </div>
     );
