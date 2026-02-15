@@ -3,7 +3,7 @@
  * instead of calling OpenAI directly from the browser.
  */
 import type { Language, MasteryLevel, ContentType, ArabicDialect, SpanishDialect } from '../types/database';
-import type { LookupResult, PassageResult, AIContent } from './openai';
+import type { LookupWordResult, PassageResult, AIContent } from './openai';
 
 async function post<T>(url: string, body: Record<string, unknown>): Promise<T> {
   const response = await fetch(url, {
@@ -23,8 +23,8 @@ async function post<T>(url: string, body: Record<string, unknown>): Promise<T> {
 export async function apiLookupWord(
   input: string,
   options: { language: Language; dialect?: ArabicDialect | SpanishDialect }
-): Promise<LookupResult> {
-  return post<LookupResult>('/api/lookup', {
+): Promise<LookupWordResult> {
+  return post<LookupWordResult>('/api/lookup', {
     input,
     language: options.language,
     dialect: options.dialect,

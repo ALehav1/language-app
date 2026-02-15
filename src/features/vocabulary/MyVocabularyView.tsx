@@ -8,7 +8,7 @@ import { MemoryAidEditor } from '../../components/MemoryAidEditor';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { findHebrewCognate } from '../../utils/hebrewCognates';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { lookupWord, type LookupResult } from '../../lib/openai';
+import { lookupWord, type LookupWordResult } from '../../lib/openai';
 import type { SavedWordWithContexts, WordStatus } from '../../types';
 import type { SpanishWordData } from '../../types/word';
 
@@ -139,7 +139,7 @@ export function MyVocabularyView() {
     };
 
     // State for enhanced Spanish word data (fetched on demand)
-    const [enhancedSpanishData, setEnhancedSpanishData] = useState<LookupResult | null>(null);
+    const [enhancedSpanishData, setEnhancedSpanishData] = useState<LookupWordResult | null>(null);
     const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(false);
 
     // TRANSIENT WORD VIEW: When navigating from lookup chip click

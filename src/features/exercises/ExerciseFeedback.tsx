@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { AnswerResult, VocabularyItem } from '../../types';
-import { lookupWord, type LookupResult } from '../../lib/openai';
+import { lookupWord, type ArabicLookupResult, isArabicLookupResult } from '../../lib/openai';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecisionPanel';
 import { WordSurface } from '../../components/surfaces/WordSurface';
@@ -55,7 +55,7 @@ export function ExerciseFeedback({
     const { language } = useLanguage();
 
     // State for enhanced word data (both dialects, Hebrew cognate)
-    const [enhancedData, setEnhancedData] = useState<LookupResult | null>(null);
+    const [enhancedData, setEnhancedData] = useState<ArabicLookupResult | null>(null);
     const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(isArabic);
     
     // State for memory aid
@@ -77,7 +77,7 @@ export function ExerciseFeedback({
         setIsLoadingEnhanced(true);
         lookupWord(item.word, { language })
             .then(data => {
-                setEnhancedData(data);
+                if (isArabicLookupResult(data)) setEnhancedData(data);
                 setIsLoadingEnhanced(false);
             })
             .catch(err => {

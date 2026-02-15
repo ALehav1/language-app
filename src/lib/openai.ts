@@ -178,7 +178,7 @@ export interface LookupResult {
 export async function lookupWord(
   input: string,
   options: { language: Language; dialect?: ArabicDialect | SpanishDialect }
-): Promise<LookupResult> {
+): Promise<LookupWordResult> {
   return apiLookupWord(input, options);
 }
 
