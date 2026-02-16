@@ -8,6 +8,7 @@ export interface SavedPassage {
     id: string;
     original_text: string;
     source_language: 'arabic' | 'english' | 'spanish';
+    language: 'arabic' | 'spanish';
     full_translation: string;
     full_transliteration?: string;
     sentence_count: number;
@@ -25,6 +26,7 @@ export interface SavedPassage {
 export interface SavePassageInput {
     original_text: string;
     source_language: 'arabic' | 'english' | 'spanish';
+    language: 'arabic' | 'spanish';
     full_translation: string;
     full_transliteration?: string;
     sentence_count?: number;
@@ -57,7 +59,7 @@ export function useSavedPassages(language?: 'arabic' | 'spanish') {
             
             // Apply language filter if provided
             if (language) {
-                query = query.eq('source_language', language);
+                query = query.eq('language', language);
             }
             
             const { data, error: fetchError } = await query;

@@ -127,6 +127,7 @@ CREATE TABLE saved_passages (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     original_text text NOT NULL,
     source_language text NOT NULL CHECK (source_language IN ('arabic', 'english', 'spanish')),
+    language text NOT NULL DEFAULT 'arabic' CHECK (language IN ('arabic', 'spanish')),
     full_translation text NOT NULL,
     full_transliteration text,
     sentence_count integer NOT NULL DEFAULT 1,

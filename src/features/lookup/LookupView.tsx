@@ -224,6 +224,7 @@ export function LookupView() {
             await savePassage({
                 original_text: passageResult.original_text,
                 source_language: passageResult.detected_language || language,
+                language,
                 full_translation: passageResult.full_translation,
                 full_transliteration: passageResult.full_transliteration,
                 sentence_count: passageResult.sentences?.length || 1,
@@ -678,6 +679,7 @@ export function LookupView() {
                                             await savePassage({
                                                 original_text: passageResult.original_text,
                                                 source_language: passageResult.detected_language || language,
+                                                language,
                                                 full_translation: passageResult.full_translation,
                                                 full_transliteration: passageResult.full_transliteration,
                                                 sentence_count: passageResult.sentences?.length || 1,
