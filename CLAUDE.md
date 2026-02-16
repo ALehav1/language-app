@@ -33,7 +33,7 @@ Higher-priority documents override lower ones. If you encounter a conflict, foll
    - Used on first-level screens (Lookup, Vocabulary Landing, Lesson Library)
    - **LanguageBadge** (`src/components/LanguageBadge.tsx`) is display-only (`pointer-events-none`), shown globally via `main.tsx`
 
-5. **LanguageContext is the single source of truth** (`src/contexts/LanguageContext.tsx`) for language and dialect preferences.
+5. **LanguageContext is the single source of truth** (`src/contexts/LanguageContext.tsx`) for language and dialect preferences. `LANGUAGE_STORAGE_KEY` is exported from this file — never hardcode the localStorage key string elsewhere.
 
 6. **Spanish and Arabic SHOULD NOT share field names** — enforced across all paths. Word lookup (PR #19), passage pipeline (PR #27), and sentence save hook (PR #28) all use language-neutral or properly-mapped fields. `openai.ts` LookupResult interface still uses Arabic field names internally but consumers access via typed union (`LookupWordResult`). Do not add new shared field usage.
 
@@ -45,7 +45,7 @@ Defined in `src/main.tsx:25-37`:
 
 | Route | Component | Notes |
 |---|---|---|
-| `/` | MainMenu | Home screen |
+| `/` | MainMenu | Home screen — unified layout, language cards + tools always visible |
 | `/lookup` | LookupView | Word/sentence/passage lookup |
 | `/vocabulary` | VocabularyLanding | Vocabulary hub |
 | `/vocabulary/word` | MyVocabularyView | Saved words list |
@@ -166,6 +166,8 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - **Saved-word language scoping (all paths)** — All `useSavedWords()` callers must pass `language`. All `saveWord` callers must include `language` in the payload. All `isWordSaved`/`getSavedWord` callers must pass `language`. The hook's fallback to `'arabic'` exists for backward compatibility but produces wrong data for Spanish. PR #26 fixed write-path, PR #31 fixed read-path, PR #32 fixed SentenceDetailModal. No unscoped callers should remain.
 - **Exercise phase must be persisted in progress** — `saveProgress()` must include `phase`. Reload during feedback must resume in feedback, not prompting. Duplicate submit is blocked by the existing `phase !== 'prompting'` guard in `submitAnswer`. Old saved progress without `phase` defaults to `'prompting'` (backward compat).
 - **Passage listing filters by target language, not source language** — `saved_passages` has both `source_language` (what language the input text was) and `language` (what mode the user was learning in). Listing and counting must filter on `language`. English-source passages analyzed in Spanish mode must appear in Spanish view. PR #37 added the `language` column.
+- **MainMenu phase gate reintroduced** — MainMenu must show language cards and learning tools simultaneously on one screen. Do not add conditional rendering that hides menu items behind a language selection step. The phase gate (`hasSelectedLanguage`/`showActions`) was removed in PR #39. Verify: `grep -rn "hasSelectedLanguage\|showActions" src/features/home/MainMenu.tsx` should return 0 results.
+- **Hardcoded localStorage keys in MainMenu** — MainMenu must not contain hardcoded `'language-app-selected-language'` strings. Use `LANGUAGE_STORAGE_KEY` from LanguageContext if needed. Removed in PR #39. Verify: `grep -rn "'language-app-selected-language'" src/features/home/MainMenu.tsx` should return 0 results.
 
 
 ## Stable Files
@@ -183,6 +185,8 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - `src/hooks/useSavedSentences.ts` — verified (PR #28, mapping layer for language-neutral interface)
 - `src/hooks/useSavedWords.ts` — verified (PR #26, language-scoped lookups)
 - `src/components/WordBreakdownList.tsx` — verified (PR #27, extracted from passage pipeline)
+- `src/features/home/MainMenu.tsx` — verified (PR #39, unified layout, consistent error handling)
+- `src/contexts/LanguageContext.tsx` — verified (PR #39, exported LANGUAGE_STORAGE_KEY)
 
 ## Running State
 `docs/WORKING.md` does not exist by default. Create it when starting multi-session work, and clean it up when done. When active, it should contain:

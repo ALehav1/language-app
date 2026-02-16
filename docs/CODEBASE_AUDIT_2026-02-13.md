@@ -291,6 +291,7 @@ Previously archived (not found at original paths during cleanup):
 - Exercise resume fix completed February 15, 2026. PR #36 persists exercise phase in progress data; reload during feedback resumes correctly. Tests: 166/166 passing.
 - Passage filtering fix completed February 15, 2026. PR #37 added `language` column to `saved_passages`; filters use target language instead of source language.
 - All audit issues fully resolved as of February 15, 2026.
+- MainMenu unified layout completed February 16, 2026. PR #39 removed phase gate, exported LANGUAGE_STORAGE_KEY, added consistent error handling. PR #40 added row spacing.
 
 ## Remediation Progress (Updated: February 15, 2026)
 
