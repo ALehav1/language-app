@@ -123,10 +123,13 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - **Narrow-once pattern**: Derive `const spanish = result && isSpanish(result) ? result : null` at top of component, use throughout. Avoids scattered type guards.
 - **Prefer optional chaining with fallbacks** (`arabic?.field ?? ''`) over non-null assertions (`arabic!.field`). Non-null assertions crash if the value is unexpectedly null; optional chaining degrades gracefully.
 
-### Comprehensive Audit Findings (PR #14 audit)
+### Comprehensive Audit Findings (PR #14 audit, updated post-PR #24)
 - 2 P0, 16 P1, 18 P2 issues identified. Full report in `docs/CODEBASE_AUDIT_2026-02-13.md`.
-- Cross-cutting theme: Spanish language support is incomplete. Arabic path is solid.
-- Key P1s still open: Spanish exercise save (ExerciseFeedback + ExerciseView coordination), schema migration drift, dialect preference key inconsistency. See audit doc "Still Open" table for full list.
+- 11 of 12 original findings resolved. Remaining open issues:
+  - Spanish/Arabic field overloading in passage pipeline (`api/analyze-passage.ts` lines 123, 131, 171)
+  - Cross-language DB collision (`saved_words` has `UNIQUE(word)` without language scope)
+  - No app-level error boundary
+  - Schema/type status drift (`retired` in DB, not in TypeScript `WordStatus`)
 
 ### vi.mock and Type Guards (PR #22)
 - `vi.mock('../../lib/openai')` auto-mocks ALL exports, including type guard functions like `isArabicLookupResult`. Tests must provide explicit mock implementations that replicate the guard logic:
@@ -159,6 +162,8 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - `src/features/vocabulary/LookupModal.tsx` — verified (PR #22, Spanish support)
 - `src/components/RouteGuard.tsx` — verified (PR #20, passthrough)
 - `src/components/LanguageBadge.tsx` — verified (PR #21, route-aware hiding)
+- `src/features/exercises/ExerciseFeedback.tsx` — verified (PR #24, Spanish exercise save)
+- `src/features/exercises/ExerciseView.tsx` — verified (PR #24, language-branched save)
 
 ## Running State
 `docs/WORKING.md` does not exist by default. Create it when starting multi-session work, and clean it up when done. When active, it should contain:
