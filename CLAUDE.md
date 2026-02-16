@@ -157,6 +157,7 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - **Sentence save language parameter** — `useSavedSentences.saveSentence()` requires `language` in its input. The hook maps neutral field names (`primary_text`, `alt_text`) to DB columns (`arabic_text`, `arabic_egyptian`). Do not pass Arabic-named fields to the hook's public interface.
 - **Word save language scoping** — `useSavedWords` duplicate checks and lookups must include `.eq('language', ...)`. Cross-language collision was a real bug (PR #26).
 - **WordStatus type completeness** — `WordStatus` must include `'retired'` to match the DB CHECK constraint. Any `Record<WordStatus, ...>` must handle all three values.
+- **Saved-word read-path language scoping** — `isWordSaved` and `getSavedWord` must receive `language` parameter. The in-memory array can contain multiple languages if the hook is called without a language filter. PR #26 fixed write-path scoping; PR #31 fixes read-path. When adding new saved-word lookups, always pass language. Known gap: `SentenceDetailModal` calls `useSavedWords()` without language but only uses `saveWord`.
 
 
 ## Stable Files

@@ -4,6 +4,7 @@ import { useExercise } from '../../hooks/useExercise';
 import { useVocabulary } from '../../hooks/useVocabulary';
 import { useLessonProgress } from '../../hooks/useLessonProgress';
 import { useSavedWords } from '../../hooks/useSavedWords';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { ExercisePrompt } from './ExercisePrompt';
 import { AnswerInput } from './AnswerInput';
 import { ExerciseFeedback } from './ExerciseFeedback';
@@ -34,7 +35,8 @@ export function ExerciseView() {
         fromSavedWords: isSavedPractice,  // Fetch from saved_words table for practice
     });
     const { saveProgress, updateVocabularyMastery } = useLessonProgress();
-    const { saveWord, getSavedWord, deleteWord } = useSavedWords();
+    const { language } = useLanguage();
+    const { saveWord, getSavedWord, deleteWord } = useSavedWords({ language });
 
     const {
         phase,
@@ -140,7 +142,7 @@ export function ExerciseView() {
 
             if (decision === 'remove') {
                 // Delete the word from saved_words
-                const savedWord = getSavedWord(currentItem.word);
+                const savedWord = getSavedWord(currentItem.word, currentItem.language);
                 if (savedWord) {
                     await deleteWord(savedWord.id);
                 }
@@ -536,7 +538,7 @@ export function ExerciseView() {
                             )}
 
                             {phase === 'feedback' && lastAnswer && currentItem && (() => {
-                                const savedWord = getSavedWord(currentItem.word);
+                                const savedWord = getSavedWord(currentItem.word, currentItem.language);
                                 return (
                                     <ExerciseFeedback
                                         result={lastAnswer}

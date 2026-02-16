@@ -350,19 +350,19 @@ export function useSavedWords(options?: {
         }
     }, [updateStatus, saveWord]);
 
-    // Check if a word is already saved
-    const isWordSaved = useCallback((arabicWord: string): boolean => {
-        return words.some(w => w.word === arabicWord);
+    // Check if a word is already saved (pass language for cross-language safety)
+    const isWordSaved = useCallback((word: string, language?: Language): boolean => {
+        return words.some(w => w.word === word && (!language || w.language === language));
     }, [words]);
 
     // Get full saved word data (returns null if not saved)
-    const getSavedWord = useCallback((arabicWord: string): SavedWordWithContexts | null => {
-        return words.find(w => w.word === arabicWord) || null;
+    const getSavedWord = useCallback((word: string, language?: Language): SavedWordWithContexts | null => {
+        return words.find(w => w.word === word && (!language || w.language === language)) || null;
     }, [words]);
 
     // Check if a word is active (still practicing)
-    const isActive = useCallback((arabicWord: string): boolean => {
-        return words.some(w => w.word === arabicWord && w.status === 'active');
+    const isActive = useCallback((word: string, language?: Language): boolean => {
+        return words.some(w => w.word === word && (!language || w.language === language) && w.status === 'active');
     }, [words]);
 
     // Update memory aids (note and/or image)
