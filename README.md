@@ -137,6 +137,7 @@ Current: 162/162 tests passing (11 test files)
 - **PR #27:** Fixed passage pipeline field overloading — Spanish data stored in language-neutral fields
 - **PR #28:** Fixed sentence save hook — mapping layer for language-neutral interface to DB columns
 - **PR #29:** Added app-level error boundary + fixed `WordStatus` type to include `'retired'`
+- **PR #33:** Route-level code splitting — initial bundle 609 kB → 239 kB (-61%)
 - All original audit issues now resolved (see audit doc for full history)
 
 ## Documentation
