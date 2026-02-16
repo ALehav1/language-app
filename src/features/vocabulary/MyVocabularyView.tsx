@@ -129,11 +129,17 @@ export function MyVocabularyView() {
         const styles: Record<WordStatus, string> = {
             active: 'bg-teal-500/20 text-teal-300',
             learned: 'bg-amber-500/20 text-amber-300',
+            retired: 'bg-white/10 text-white/40',
         };
-        
+        const labels: Record<WordStatus, string> = {
+            active: ' Practice',
+            learned: ' Archive',
+            retired: ' Retired',
+        };
+
         return (
             <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${styles[status]}`}>
-                {status === 'active' ? ' Practice' : ' Archive'}
+                {labels[status]}
             </span>
         );
     };

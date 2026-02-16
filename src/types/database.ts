@@ -82,12 +82,13 @@ export interface DbVocabularyItem extends VocabularyItem {
   lesson_id: string;
 }
 
-/** 
+/**
  * Word status for saved vocabulary:
  * - 'active': Still practicing this word (default for saved/looked up words)
  * - 'learned': Archived - you know this word well, kept for reference
+ * - 'retired': Permanently shelved (DB allows this; not used in the UI yet)
  */
-export type WordStatus = 'active' | 'learned';
+export type WordStatus = 'active' | 'learned' | 'retired';
 
 /** Saved word (supports Arabic and Spanish) */
 export interface SavedWord {
