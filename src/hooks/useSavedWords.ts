@@ -124,11 +124,19 @@ export function useSavedWords(options?: {
         }
     ): Promise<SavedWord | null> => {
         try {
-            // Check if word already exists
+            // Resolve language: prefer explicit wordData.language, then hook option
+            const resolvedLanguage = wordData.language || options?.language;
+            if (!resolvedLanguage) {
+                console.warn('[useSavedWords] saveWord called without language — defaulting to "arabic". Pass language explicitly.');
+            }
+            const language = resolvedLanguage || 'arabic';
+
+            // Check if word already exists (scoped by language)
             const { data: existing } = await supabase
                 .from('saved_words')
                 .select('id')
                 .eq('word', wordData.word)
+                .eq('language', language)
                 .single();
 
             let savedWord: SavedWord;
@@ -157,19 +165,13 @@ export function useSavedWords(options?: {
                 if (error) throw error;
                 savedWord = data;
             } else {
-                // Resolve language: prefer explicit wordData.language, then hook option
-                const resolvedLanguage = wordData.language || options?.language;
-                if (!resolvedLanguage) {
-                    console.warn('[useSavedWords] saveWord called without language — defaulting to "arabic". Pass language explicitly.');
-                }
-
                 // Insert new word - default to 'active' (still practicing)
                 const { data, error } = await supabase
                     .from('saved_words')
                     .insert({
                         word: wordData.word,
                         translation: wordData.translation,
-                        language: resolvedLanguage || 'arabic',
+                        language,
                         pronunciation_standard: wordData.pronunciation_standard || null,
                         pronunciation_egyptian: wordData.pronunciation_egyptian || null,
                         letter_breakdown: wordData.letter_breakdown || null,
@@ -326,11 +328,12 @@ export function useSavedWords(options?: {
         }
     ): Promise<void> => {
         try {
-            // Check if word already exists
+            // Check if word already exists (scoped by language)
             const { data: existing } = await supabase
                 .from('saved_words')
                 .select('id, status')
                 .eq('word', wordData.word)
+                .eq('language', options?.language || 'arabic')
                 .single();
 
             if (existing) {
