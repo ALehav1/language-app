@@ -213,7 +213,7 @@ export function MainMenu() {
                         key={item.id}
                         onClick={() => navigate(item.path)}
                         className={`
-                            relative p-6 rounded-2xl border w-full
+                            mt-4 relative p-6 rounded-2xl border w-full
                             bg-gradient-to-br ${item.color}
                             hover:scale-[1.01] active:scale-[0.99]
                             transition-all duration-200
