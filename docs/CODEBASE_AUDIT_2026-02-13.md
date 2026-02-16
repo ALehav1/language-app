@@ -21,8 +21,13 @@ Commands run:
 - `npm run lint`
 - `npm run build`
 
-Results:
+Results (at time of audit):
 - Tests: **177/177 passing** (12 test files)
+- Type check: **pass**
+- Build: **pass**
+
+Current state (February 15, 2026, post-PR #24):
+- Tests: **162/162 passing** (11 test files — 16 tests removed with dead code in PR #9, 1 test added in PR #24 work)
 - Type check: **pass**
 - Build: **pass**
 
@@ -31,24 +36,24 @@ Notable warnings observed:
 - Node experimental CJS/ESM warnings in test/build output
 - Bundle size warning: main chunk ~745 KB minified (`vite` warning threshold exceeded)
 
-## Resolution Status (Updated February 15, 2026)
+## Resolution Status (Updated February 15, 2026, post-PR #24)
 
-All 12 priority findings resolved.
+11 of 12 original findings resolved. #6 is partially resolved (word lookup fixed, passage pipeline still overloads Arabic fields for Spanish). See "Still Open" section below for remaining work.
 
 | # | Issue | Priority | Status |
 |---|-------|----------|--------|
-| 1 | Spanish save flow inconsistency | P0 | ✅ RESOLVED — Schema rebuilt with language-scoped unique constraint, save path fixed |
-| 2 | Migration/schema mismatch | P0 | ✅ RESOLVED — Full migration rewrite, all runtime tables now have matching migrations |
-| 3 | Client-side OpenAI key exposure | P0 | ✅ RESOLVED — All OpenAI calls moved to Vercel serverless functions, browser client removed, all 6 endpoints verified on production |
-| 4 | Passage counts wrong | P1 | ✅ RESOLVED — Field name aligned to match schema |
-| 5 | SentenceSurface vs SentenceDisplay contract drift | P1 | ✅ RESOLVED — Invariant updated to reflect actual renderer |
-| 6 | Spanish/Arabic field sharing | P1 | ✅ RESOLVED — Spanish save path uses proper Spanish fields |
-| 7 | Dialect preference key inconsistency | P1 | ✅ RESOLVED — All views now use LanguageContext, no local storage keys |
-| 8 | README test coverage contradictions | P2 | ✅ RESOLVED — Contradictions removed, counts updated |
-| 9 | Route documentation mismatch | P2 | ✅ RESOLVED — Routes documented to match actual main.tsx |
-| 10 | Missing setup instructions | P2 | ✅ RESOLVED — Setup section added to README |
-| 11 | Documentation link integrity | P2 | ✅ RESOLVED — Broken links fixed or archived |
-| 12 | Docs understate schema/quality | P2 | ✅ RESOLVED — Table counts and any-type claims corrected |
+| 1 | Spanish save flow inconsistency | P0 | ✅ RESOLVED (PR #1, #18, #19, #24) — Schema rebuilt, save path fixed for lookup + exercises |
+| 2 | Migration/schema mismatch | P0 | ✅ RESOLVED (PR #1) — Full migration rewrite, all runtime tables now have matching migrations |
+| 3 | Client-side OpenAI key exposure | P0 | ✅ RESOLVED (PRs #3–#7) — All OpenAI calls moved to Vercel serverless functions, browser client removed, all 6 endpoints verified on production |
+| 4 | Passage counts wrong | P1 | ✅ RESOLVED (PR #1) — Field name aligned to match schema |
+| 5 | SentenceSurface vs SentenceDisplay contract drift | P1 | ✅ RESOLVED (PR #1, #9) — Invariant updated, SentenceSurface archived as dead code |
+| 6 | Spanish/Arabic field sharing | P1 | ⚠️ PARTIALLY RESOLVED — Word lookup path fixed (PRs #1, #17–#19). `api/analyze-passage.ts` still stores Spanish data in Arabic-named fields (`arabic_msa`, `arabic_egyptian`) at lines 123, 131, 171 |
+| 7 | Dialect preference key inconsistency | P1 | ✅ RESOLVED (PR #1) — All views now use LanguageContext, no local storage keys |
+| 8 | README test coverage contradictions | P2 | ✅ RESOLVED (PR #1, #8) — Contradictions removed, counts updated |
+| 9 | Route documentation mismatch | P2 | ✅ RESOLVED (PR #1, #10) — Routes documented to match actual main.tsx |
+| 10 | Missing setup instructions | P2 | ✅ RESOLVED (PR #1) — Setup section added to README |
+| 11 | Documentation link integrity | P2 | ✅ RESOLVED (PR #1) — Broken links fixed or archived |
+| 12 | Docs understate schema/quality | P2 | ✅ RESOLVED (PR #1) — Table counts and any-type claims corrected |
 
 ### P0 #3 Resolution Details (PRs #3–#7)
 - **PR #3**: Moved all OpenAI calls to 6 Vercel serverless functions (`api/lookup`, `api/analyze-passage`, `api/generate-lesson`, `api/evaluate-answer`, `api/generate-image`, `api/chat`)
@@ -277,6 +282,8 @@ Previously archived (not found at original paths during cleanup):
 - Resolution work began February 13, 2026. PR #1 merged with 4 commits resolving 11 of 12 issues.
 - Security hardening completed February 15, 2026. PRs #3–#7 moved OpenAI to serverless, removed browser client, fixed ESM resolution. All 6 API endpoints verified working on Vercel production.
 - Dead code cleanup completed February 15, 2026. PR #9 archived 16 files to `src/_archive/`. Tests: 161/161 passing.
+- Type system migration completed February 15, 2026. PRs #17–#22 introduced `LookupWordResult` union type, type guards, narrow-once pattern across LookupView, WordDetailModal, LookupModal, ExerciseFeedback. Tests: 162/162 passing.
+- Spanish exercise save completed February 15, 2026. PR #24 enabled save controls and language-branched payloads in ExerciseFeedback + ExerciseView. Tests: 162/162 passing.
 
 ## Remediation Progress (Updated: February 15, 2026)
 
@@ -305,21 +312,15 @@ Previously archived (not found at original paths during cleanup):
 | CLAUDE.md inaccuracies | #17 | 3 claims corrected |
 | LookupModal Arabic-only | #22 | Full Spanish support added |
 | WordDetailModal Arabic-only | #22 | Full Spanish support with type guards |
+| P1-3: Spanish exercise save | #24 | ExerciseFeedback + ExerciseView: save panel and payload for both Arabic and Spanish |
 
 ### Still Open
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
-| P1-3: Spanish exercise save | P1 | ExerciseFeedback + ExerciseView coordination needed |
-| P0-2: Migration/schema drift | P0 | Migrations don't match runtime tables |
-| P1-5 (audit): Architectural invariant SentenceSurface vs SentenceDisplay | P1 | Contract drift |
-| P1-6 (audit): Spanish contract relies on Arabic fallback fields | P1 | openai.ts and analyze-passage.ts still overload |
-| P1-7 (audit): Dialect preference storage keys inconsistent | P1 | Feature views use separate keys |
-| P2-9: Route documentation misaligned | P2 | README routes vs actual routes |
-| P2-10: Missing setup instructions | P2 | No install/env section in README |
-| P2-11: Documentation link integrity | P2 | Broken links in docs |
-| P2-12: Documentation understates data model | P2 | Table count and any-type claims |
-| New-2 (partial): Cross-language word collision | P1 | DB unique constraint on word column lacks language scope |
-| New (Codex): No app-level error boundary | P2 | Runtime render exceptions can blank UI |
-| New (Codex): Eager route imports / large bundle | P2 | 605 kB initial bundle |
-| New (Codex): Serverless endpoints unauthenticated | Deferred | Single-user app decision |
+| P1-6 (partial): Spanish/Arabic field sharing in passage pipeline | P1 | `api/analyze-passage.ts` still stores Spanish data in Arabic-named fields (`arabic_msa`, `arabic_egyptian`) at lines 123, 131, 171. Word lookup path is fixed. |
+| Cross-language DB collision | P1 | `saved_words` has `UNIQUE(word)` without language scope (migration line 63). `useSavedWords.ts` lookups at lines 131, 333 are by word only. Same word in Arabic and Spanish can overwrite. |
+| No app-level error boundary | P2 | Runtime render exceptions can blank the entire UI |
+| Schema/type status drift | P2 | DB allows `retired` status (`001_initial_schema.sql` line 73), TypeScript `WordStatus` only allows `'active' \| 'learned'` (`src/types/database.ts` line 90) |
+| Eager route imports / large bundle | P2 | ~609 kB initial bundle, no code splitting |
+| Serverless endpoints unauthenticated | Deferred | Single-user app, accepted risk |

@@ -59,7 +59,7 @@ Dev server runs at http://localhost:5173
 3. **Sentence = one tile, words = chips** — single words are compact, never full-width
 4. **LanguageSwitcher controls language** — `LanguageBadge` is display-only
 5. **LanguageContext is the single source of truth** for language and dialect preferences
-6. **Spanish and Arabic NEVER share field names** — no `arabic_word` for Spanish data
+6. **Spanish and Arabic SHOULD NOT share field names** — target architecture. Word lookup path is clean. `api/analyze-passage.ts` still overloads Arabic fields for Spanish (known issue).
 7. **All API calls go through serverless functions in `api/`** — never expose API keys client-side
 
 ### Project Structure
@@ -110,7 +110,7 @@ npm run lint          # TypeScript type checking
 npm run build         # Production build
 ```
 
-Current: 161/161 tests passing (11 test files)
+Current: 162/162 tests passing (11 test files)
 
 ## Development Notes
 
@@ -126,11 +126,12 @@ Current: 161/161 tests passing (11 test files)
 
 ### Known Limitations
 
-- **Spanish type safety** — 15+ `as any` casts in the Spanish lookup flow. Spanish response shares state variable typed for Arabic. Most P1 audit issues trace to this.
+- **Cross-language DB collision** — `saved_words` has `UNIQUE(word)` without language scope. The same word saved in Arabic and Spanish can overwrite each other.
+- **Spanish passage field overloading** — `api/analyze-passage.ts` stores Spanish data in Arabic-named fields (`arabic_msa`, `arabic_egyptian`). Word lookup path is clean.
+- **No app-level error boundary** — runtime render exceptions can blank the entire UI
+- **Schema/type status drift** — DB allows `retired` word status, but TypeScript `WordStatus` only allows `active` | `learned`
 - **Single-user, no auth** — localStorage for preferences, no cross-device sync
-- **RouteGuard redirects deep links** — `RouteGuard.tsx` redirects all routes to `/` on fresh page load. Bookmarked URLs won't work.
-- **No 404 route** — unmatched routes show a blank page
-- **Word deletion has no confirmation** — sentences and passages have ConfirmDialog; words delete immediately on click
+- **~15 `as any` casts remain** — mostly in Supabase column mapping (`useVocabulary.ts`) and `MyVocabularyView.tsx`. Not adding new ones.
 - **Exercise progress expires** — 24-hour limit on saved progress in localStorage
 - **Regenerate lesson** — button is disabled (coming soon). Previously deleted content without regenerating.
 
