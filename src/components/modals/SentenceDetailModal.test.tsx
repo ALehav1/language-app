@@ -194,6 +194,41 @@ describe('SentenceDetailModal', () => {
       );
     });
 
+    it('passes spanish language when saving a Spanish sentence', async () => {
+      const user = userEvent.setup();
+      mockSaveWord.mockResolvedValue(undefined);
+
+      const spanishSelection: SentenceSelectionContext = {
+        selectedSentence: 'Hola, ¿cómo estás?',
+        parentPassage: undefined,
+        sourceView: 'vocab',
+        language: 'spanish',
+        dialect: 'latam',
+        contentType: 'sentence',
+      };
+
+      render(
+        <SentenceDetailModal
+          isOpen={true}
+          onClose={vi.fn()}
+          selection={spanishSelection}
+        />
+      );
+
+      const saveButton = screen.getByText('Save This Sentence');
+      await user.click(saveButton);
+
+      expect(mockSaveWord).toHaveBeenCalledWith(
+        expect.objectContaining({ word: 'Hola, ¿cómo estás?', language: 'spanish' }),
+        expect.objectContaining({ content_type: 'sentence', full_text: 'Hola, ¿cómo estás?' })
+      );
+
+      // Verify the hook was called with language scoping
+      expect(useSavedWordsModule.useSavedWords).toHaveBeenCalledWith(
+        expect.objectContaining({ language: 'spanish' })
+      );
+    });
+
     it('shows saved state after save completes', async () => {
       const user = userEvent.setup();
       mockSaveWord.mockResolvedValue(undefined);
