@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { AnswerResult, VocabularyItem } from '../../types';
-import { lookupWord, type ArabicLookupResult, isArabicLookupResult } from '../../lib/openai';
+import { lookupWord, type LookupWordResult, isArabicLookupResult, isSpanishLookupResult } from '../../lib/openai';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecisionPanel';
 import { WordSurface } from '../../components/surfaces/WordSurface';
@@ -14,8 +14,8 @@ import type { WordSelectionContext } from '../../types/selection';
 interface ExerciseFeedbackProps {
     result: AnswerResult;
     item: VocabularyItem; // Need the item for details
-    onContinue: (saveDecision?: { 
-        decision: SaveDecision; 
+    onContinue: (saveDecision?: {
+        decision: SaveDecision;
         memoryAid?: { note?: string; imageUrl?: string };
         enhancedData?: {
             arabicWordEgyptian?: string;
@@ -25,9 +25,12 @@ interface ExerciseFeedbackProps {
             hebrewCognate?: any;
             letterBreakdown?: any[];
             exampleSentences?: any[];
+            spanishLatam?: string;
+            spanishSpain?: string;
+            translationEn?: string;
+            pronunciation?: string;
         };
     }) => void;
-    isLastQuestion: boolean;
     isWordAlreadySaved?: boolean; // Check if word is already in saved_words
     savedWordStatus?: 'active' | 'learned'; // Current status if already saved
     savedWordMemoryAid?: { note?: string; imageUrl?: string }; // Existing memory aid if saved
@@ -41,11 +44,10 @@ interface ExerciseFeedbackProps {
  * - Arabic Letter Breakdown (if available)
  * - Hebrew Cognate (if available)
  */
-export function ExerciseFeedback({ 
-    result, 
-    item, 
-    onContinue, 
-    isLastQuestion, 
+export function ExerciseFeedback({
+    result,
+    item,
+    onContinue,
     isWordAlreadySaved = false,
     savedWordStatus,
     savedWordMemoryAid,
@@ -54,9 +56,9 @@ export function ExerciseFeedback({
     const isArabic = item.language === 'arabic';
     const { language } = useLanguage();
 
-    // State for enhanced word data (both dialects, Hebrew cognate)
-    const [enhancedData, setEnhancedData] = useState<ArabicLookupResult | null>(null);
-    const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(isArabic);
+    // State for enhanced word data (both dialects, Hebrew cognate, or Spanish details)
+    const [enhancedData, setEnhancedData] = useState<LookupWordResult | null>(null);
+    const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(true);
     
     // State for memory aid
     const [memoryNote, setMemoryNote] = useState<string | null>(savedWordMemoryAid?.note || null);
@@ -68,25 +70,23 @@ export function ExerciseFeedback({
     const [wordModalOpen, setWordModalOpen] = useState(false);
     const [wordSelection, setWordSelection] = useState<WordSelectionContext | null>(null);
 
-    // Fetch enhanced data for Arabic words (both dialects + Hebrew cognate)
+    // Fetch enhanced data for all words (Arabic: both dialects + Hebrew cognate; Spanish: full details)
     useEffect(() => {
-        if (!isArabic) {
-            return;
-        }
-
         setIsLoadingEnhanced(true);
         lookupWord(item.word, { language })
             .then(data => {
-                if (isArabicLookupResult(data)) setEnhancedData(data);
+                setEnhancedData(data);
                 setIsLoadingEnhanced(false);
             })
             .catch(err => {
                 console.error('[ExerciseFeedback] Failed to fetch enhanced data:', err);
                 setIsLoadingEnhanced(false);
             });
-    }, [item.word, isArabic]);
+    }, [item.word, language]);
 
-    // Use enhanced data if available, otherwise fall back to item data
+    // Narrow-once: derive typed variables for each language
+    const arabicEnhanced = enhancedData && isArabicLookupResult(enhancedData) ? enhancedData : null;
+    const spanishEnhanced = enhancedData && isSpanishLookupResult(enhancedData) ? enhancedData : null;
 
     // Generate letter breakdown - WordSurface will handle this internally
     // We don't need to pass it explicitly since WordSurface generates it when showLetterBreakdown=true
@@ -178,23 +178,23 @@ export function ExerciseFeedback({
                 <h4 className="text-white/70 font-semibold px-1">Word Details</h4>
 
                 {/* Use WordSurface for the word details (canonical renderer) */}
-                {isArabic && isLoadingEnhanced ? (
-                    /* Loading skeleton for Arabic words */
+                {isLoadingEnhanced ? (
+                    /* Loading skeleton while fetching enhanced data */
                     <div className="glass-card p-4 animate-pulse">
                         <div className="h-10 bg-white/10 rounded mb-4"></div>
                         <div className="h-6 bg-white/10 rounded mb-2 w-3/4"></div>
                         <div className="h-6 bg-white/10 rounded w-1/2"></div>
                     </div>
-                ) : isArabic && enhancedData ? (
+                ) : arabicEnhanced ? (
                     <WordSurface
                         word={{
                             arabic: item.word,
-                            arabicEgyptian: enhancedData.arabic_word_egyptian || item.word,
+                            arabicEgyptian: arabicEnhanced.arabic_word_egyptian || item.word,
                             translation: item.translation,
-                            transliteration: enhancedData.pronunciation_standard || item.transliteration,
-                            transliterationEgyptian: enhancedData.pronunciation_egyptian,
-                            hebrewCognate: enhancedData.hebrew_cognate,
-                            exampleSentences: enhancedData.example_sentences,
+                            transliteration: arabicEnhanced.pronunciation_standard || item.transliteration,
+                            transliterationEgyptian: arabicEnhanced.pronunciation_egyptian,
+                            hebrewCognate: arabicEnhanced.hebrew_cognate,
+                            exampleSentences: arabicEnhanced.example_sentences,
                         }}
                         language="arabic"
                         size="large"
@@ -204,13 +204,18 @@ export function ExerciseFeedback({
                         showSaveOption={false}
                         dialectPreference="egyptian"
                     />
-                ) : (
-                    /* Non-Arabic word display - use WordSurface for Spanish too */
+                ) : spanishEnhanced ? (
                     <WordSurface
                         word={{
                             language: 'spanish' as const,
-                            spanish_latam: item.word,
-                            translation: item.translation,
+                            spanish_latam: spanishEnhanced.spanish_latam,
+                            spanish_spain: spanishEnhanced.spanish_spain,
+                            translation: spanishEnhanced.translation_en,
+                            pronunciation: spanishEnhanced.pronunciation,
+                            partOfSpeech: spanishEnhanced.part_of_speech,
+                            wordContext: spanishEnhanced.word_context,
+                            memoryAid: spanishEnhanced.memory_aid,
+                            exampleSentences: spanishEnhanced.example_sentences,
                         }}
                         language="spanish"
                         size="large"
@@ -218,33 +223,51 @@ export function ExerciseFeedback({
                         showSaveOption={false}
                         dialectPreference="latam"
                     />
+                ) : (
+                    /* Fallback when enhanced data fetch failed */
+                    <WordSurface
+                        word={isArabic ? {
+                            arabic: item.word,
+                            translation: item.translation,
+                            transliteration: item.transliteration,
+                        } : {
+                            language: 'spanish' as const,
+                            spanish_latam: item.word,
+                            translation: item.translation,
+                        }}
+                        language={isArabic ? 'arabic' : 'spanish'}
+                        size="large"
+                        showExampleSentences={false}
+                        showSaveOption={false}
+                        dialectPreference={isArabic ? 'egyptian' : 'latam'}
+                    />
                 )}
                 
-                {/* Context and tiles for Arabic words */}
-                {isArabic && !isLoadingEnhanced && enhancedData && (
+                {/* Context and tiles for all languages */}
+                {!isLoadingEnhanced && enhancedData && (
                     <div className="space-y-3 mt-4">
                         {/* Context Tile - Root, Usage, Cultural Notes */}
-                        <ContextTile context={enhancedData.word_context} language={language} />
-                        
+                        <ContextTile context={arabicEnhanced?.word_context ?? spanishEnhanced?.word_context} language={language} />
+
                         {/* Memory Aid Tile - Separate dropdown */}
                         <MemoryAidTile
-                            primaryText={item.word}
-                            translation={item.translation}
+                            primaryText={spanishEnhanced ? spanishEnhanced.spanish_latam : item.word}
+                            translation={spanishEnhanced ? spanishEnhanced.translation_en : item.translation}
                             currentNote={memoryNote}
                             currentImageUrl={memoryImageUrl}
                             onImageGenerated={(imageUrl) => setMemoryImageUrl(imageUrl)}
                             onNoteChanged={(note) => setMemoryNote(note)}
                         />
-                        
-                        {/* Example Sentences - Collapsible (default collapsed) */}
-                        {enhancedData.example_sentences && enhancedData.example_sentences.length > 0 && (
+
+                        {/* Example Sentences - Collapsible (default collapsed, Arabic only) */}
+                        {arabicEnhanced && arabicEnhanced.example_sentences && arabicEnhanced.example_sentences.length > 0 && (
                             <div className="glass-card p-4">
                                 <button
                                     onClick={() => setExampleSentencesExpanded(!exampleSentencesExpanded)}
                                     className="w-full flex items-center justify-between text-left"
                                 >
                                     <div className="text-teal-400/70 text-xs font-bold uppercase tracking-wider">
-                                        Example Sentences ({enhancedData.example_sentences.length})
+                                        Example Sentences ({arabicEnhanced.example_sentences.length})
                                     </div>
                                     <svg
                                         className={`w-4 h-4 text-teal-400/70 transition-transform ${exampleSentencesExpanded ? 'rotate-180' : ''}`}
@@ -255,10 +278,10 @@ export function ExerciseFeedback({
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </button>
-                                
+
                                 {exampleSentencesExpanded && (
                                     <div className="space-y-3 mt-3">
-                                        {enhancedData.example_sentences.map((sentence, idx) => (
+                                        {arabicEnhanced.example_sentences.map((sentence, idx) => (
                                             <div key={idx} className="bg-white/5 rounded-xl p-3 space-y-2">
                                                 {sentence.arabic_egyptian && (
                                                     <div className="space-y-1">
@@ -319,61 +342,56 @@ export function ExerciseFeedback({
                                 )}
                             </div>
                         )}
-                        
-                        {/* Chat Tile - After Example Sentences */}
-                        <ChatTile
-                            word={item.word}
-                            translation={item.translation}
-                            context={enhancedData.word_context?.egyptian_usage}
-                            savedMessages={chatMessages}
-                            onMessagesChange={setChatMessages}
-                        />
+
+                        {/* Chat Tile - After Example Sentences (Arabic only) */}
+                        {arabicEnhanced && (
+                            <ChatTile
+                                word={item.word}
+                                translation={item.translation}
+                                context={arabicEnhanced.word_context?.egyptian_usage}
+                                savedMessages={chatMessages}
+                                onMessagesChange={setChatMessages}
+                            />
+                        )}
                     </div>
                 )}
             </div>
 
-            {/* Save Decision Panel for Arabic words */}
-            {isArabic && !isLoadingEnhanced && (
+            {/* Save Decision Panel for all languages */}
+            {!isLoadingEnhanced && (
                 <div className="glass-card p-4">
                     <SaveDecisionPanel
-                        primaryText={item.word}
-                        translation={item.translation}
+                        primaryText={spanishEnhanced ? spanishEnhanced.spanish_latam : item.word}
+                        translation={spanishEnhanced ? spanishEnhanced.translation_en : item.translation}
                         onDecision={(decision, memoryAid) => {
                             // Merge memory aid from tile with SaveDecisionPanel
                             const finalMemoryAid = {
                                 note: memoryNote || memoryAid?.note,
                                 imageUrl: memoryImageUrl || memoryAid?.imageUrl,
                             };
-                            onContinue({ 
-                                decision, 
+                            onContinue({
+                                decision,
                                 memoryAid: finalMemoryAid,
-                                enhancedData: enhancedData ? {
-                                    arabicWordEgyptian: enhancedData.arabic_word_egyptian,
-                                    arabicWordMSA: enhancedData.arabic_word,
-                                    pronunciationStandard: enhancedData.pronunciation_standard,
-                                    pronunciationEgyptian: enhancedData.pronunciation_egyptian,
-                                    hebrewCognate: enhancedData.hebrew_cognate,
-                                    letterBreakdown: enhancedData.letter_breakdown,
-                                    exampleSentences: enhancedData.example_sentences
-                                } : undefined
+                                enhancedData: arabicEnhanced ? {
+                                    arabicWordEgyptian: arabicEnhanced.arabic_word_egyptian,
+                                    arabicWordMSA: arabicEnhanced.arabic_word,
+                                    pronunciationStandard: arabicEnhanced.pronunciation_standard,
+                                    pronunciationEgyptian: arabicEnhanced.pronunciation_egyptian,
+                                    hebrewCognate: arabicEnhanced.hebrew_cognate,
+                                    letterBreakdown: arabicEnhanced.letter_breakdown,
+                                    exampleSentences: arabicEnhanced.example_sentences,
+                                } : spanishEnhanced ? {
+                                    spanishLatam: spanishEnhanced.spanish_latam,
+                                    spanishSpain: spanishEnhanced.spanish_spain,
+                                    translationEn: spanishEnhanced.translation_en,
+                                    pronunciation: spanishEnhanced.pronunciation,
+                                } : undefined,
                             });
                         }}
                         alreadySaved={isWordAlreadySaved}
                         currentStatus={savedWordStatus}
                         existingMemoryAid={savedWordMemoryAid}
                     />
-                </div>
-            )}
-
-            {/* Simple Next button for non-Arabic (Spanish) */}
-            {!isArabic && (
-                <div className="flex gap-3 pt-4">
-                    <button
-                        onClick={() => onContinue()}
-                        className="flex-1 touch-btn py-4 text-lg font-semibold rounded-xl btn-primary"
-                    >
-                        {isLastQuestion ? 'See Results' : 'Next'}
-                    </button>
                 </div>
             )}
 

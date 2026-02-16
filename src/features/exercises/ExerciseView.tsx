@@ -116,8 +116,8 @@ export function ExerciseView() {
 
     // Handle save decision from ExerciseFeedback and continue to next
     const handleFeedbackContinue = useCallback(async (
-        saveDecision?: { 
-            decision: SaveDecision; 
+        saveDecision?: {
+            decision: SaveDecision;
             memoryAid?: { note?: string; imageUrl?: string };
             enhancedData?: {
                 arabicWordEgyptian?: string;
@@ -127,13 +127,17 @@ export function ExerciseView() {
                 hebrewCognate?: any;
                 letterBreakdown?: any[];
                 exampleSentences?: any[];
+                spanishLatam?: string;
+                spanishSpain?: string;
+                translationEn?: string;
+                pronunciation?: string;
             };
         }
     ) => {
-        // Handle word save/update/remove decisions
-        if (saveDecision && currentItem && currentItem.language === 'arabic') {
+        // Handle word save/update/remove decisions for both languages
+        if (saveDecision && currentItem) {
             const { decision, memoryAid } = saveDecision;
-            
+
             if (decision === 'remove') {
                 // Delete the word from saved_words
                 const savedWord = getSavedWord(currentItem.word);
@@ -141,31 +145,56 @@ export function ExerciseView() {
                     await deleteWord(savedWord.id);
                 }
             } else if (decision !== 'discard') {
-                // Save or update word (practice or archive)
-                await saveWord(
-                    {
-                        word: saveDecision.enhancedData?.arabicWordEgyptian || currentItem.word,
-                        translation: currentItem.translation,
-                        pronunciation_standard: saveDecision.enhancedData?.pronunciationStandard || currentItem.transliteration,
-                        pronunciation_egyptian: saveDecision.enhancedData?.pronunciationEgyptian || undefined,
-                        letter_breakdown: saveDecision.enhancedData?.letterBreakdown || currentItem.letter_breakdown || undefined,
-                        hebrew_cognate: saveDecision.enhancedData?.hebrewCognate || currentItem.hebrew_cognate || undefined,
-                        example_sentences: saveDecision.enhancedData?.exampleSentences || undefined,
-                        status: decision === 'practice' ? 'active' : 'learned',
-                        times_practiced: 1,
-                        times_correct: lastAnswer?.correct ? 1 : 0,
-                        memory_note: memoryAid?.note,
-                        memory_image_url: memoryAid?.imageUrl,
-                    },
-                    {
-                        content_type: currentItem.content_type || 'word',
-                        full_text: currentItem.word,
-                        full_transliteration: currentItem.transliteration,
-                        full_translation: currentItem.translation,
-                        lesson_id: lessonId,
-                        vocabulary_item_id: currentItem.id,
-                    }
-                );
+                // Save or update word (practice or archive) — branch by language
+                if (currentItem.language === 'arabic') {
+                    await saveWord(
+                        {
+                            word: saveDecision.enhancedData?.arabicWordEgyptian || currentItem.word,
+                            translation: currentItem.translation,
+                            language: 'arabic',
+                            pronunciation_standard: saveDecision.enhancedData?.pronunciationStandard || currentItem.transliteration,
+                            pronunciation_egyptian: saveDecision.enhancedData?.pronunciationEgyptian || undefined,
+                            letter_breakdown: saveDecision.enhancedData?.letterBreakdown || currentItem.letter_breakdown || undefined,
+                            hebrew_cognate: saveDecision.enhancedData?.hebrewCognate || currentItem.hebrew_cognate || undefined,
+                            example_sentences: saveDecision.enhancedData?.exampleSentences || undefined,
+                            status: decision === 'practice' ? 'active' : 'learned',
+                            times_practiced: 1,
+                            times_correct: lastAnswer?.correct ? 1 : 0,
+                            memory_note: memoryAid?.note,
+                            memory_image_url: memoryAid?.imageUrl,
+                        },
+                        {
+                            content_type: currentItem.content_type || 'word',
+                            full_text: currentItem.word,
+                            full_transliteration: currentItem.transliteration,
+                            full_translation: currentItem.translation,
+                            lesson_id: lessonId,
+                            vocabulary_item_id: currentItem.id,
+                        }
+                    );
+                } else {
+                    await saveWord(
+                        {
+                            word: saveDecision.enhancedData?.spanishLatam || currentItem.word,
+                            translation: saveDecision.enhancedData?.translationEn || currentItem.translation,
+                            language: 'spanish',
+                            pronunciation_standard: saveDecision.enhancedData?.pronunciation || currentItem.transliteration,
+                            status: decision === 'practice' ? 'active' : 'learned',
+                            times_practiced: 1,
+                            times_correct: lastAnswer?.correct ? 1 : 0,
+                            memory_note: memoryAid?.note,
+                            memory_image_url: memoryAid?.imageUrl,
+                        },
+                        {
+                            content_type: currentItem.content_type || 'word',
+                            full_text: currentItem.word,
+                            full_transliteration: currentItem.transliteration,
+                            full_translation: currentItem.translation,
+                            lesson_id: lessonId,
+                            vocabulary_item_id: currentItem.id,
+                        }
+                    );
+                }
             }
         }
         // Continue to next question
@@ -507,13 +536,12 @@ export function ExerciseView() {
                             )}
 
                             {phase === 'feedback' && lastAnswer && currentItem && (() => {
-                                const savedWord = currentItem.language === 'arabic' ? getSavedWord(currentItem.word) : null;
+                                const savedWord = getSavedWord(currentItem.word);
                                 return (
                                     <ExerciseFeedback
                                         result={lastAnswer}
                                         item={currentItem}
                                         onContinue={handleFeedbackContinue}
-                                        isLastQuestion={currentIndex === totalItems - 1}
                                         isWordAlreadySaved={!!savedWord}
                                         savedWordStatus={savedWord?.status}
                                         savedWordMemoryAid={savedWord ? {
