@@ -30,7 +30,7 @@ export function SentenceDetailModal({ isOpen, onClose, selection }: SentenceDeta
   const [wordSelection, setWordSelection] = useState<WordSelectionContext | null>(null);
   const [showWordModal, setShowWordModal] = useState(false);
 
-  const { saveWord } = useSavedWords();
+  const { saveWord } = useSavedWords({ language: selection.language });
 
   const handleSaveSentence = async () => {
     try {
@@ -39,6 +39,7 @@ export function SentenceDetailModal({ isOpen, onClose, selection }: SentenceDeta
         {
           word: selection.selectedSentence,
           translation: '', // Will be populated by lookup if needed
+          language: selection.language,
           pronunciation_standard: '',
           pronunciation_egyptian: '',
         },
