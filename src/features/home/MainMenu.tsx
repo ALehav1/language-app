@@ -58,7 +58,7 @@ export function MainMenu() {
                 const { count: passages } = await supabase
                     .from('saved_passages')
                     .select('*', { count: 'exact', head: true })
-                    .eq('source_language', language)
+                    .eq('language', language)
                     .in('status', ['active', 'learned']);
                 setPassageCount(passages || 0);
             } catch (err) {
