@@ -1,6 +1,6 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import './index.css';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -17,6 +17,14 @@ const MyVocabularyView = lazy(() => import('./features/vocabulary/MyVocabularyVi
 const MySentencesView = lazy(() => import('./features/sentences/MySentencesView').then(m => ({ default: m.MySentencesView })));
 const MyPassagesView = lazy(() => import('./features/passages/MyPassagesView').then(m => ({ default: m.MyPassagesView })));
 const LookupView = lazy(() => import('./features/lookup/LookupView').then(m => ({ default: m.LookupView })));
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 
 function NotFound() {
   return (
@@ -41,6 +49,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <LanguageProvider>
       <ToastProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <ErrorBoundary>
           <Suspense fallback={
             <div className="min-h-screen bg-surface-300 flex items-center justify-center">
