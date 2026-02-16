@@ -183,28 +183,64 @@ export async function lookupWord(
 }
 
 /**
- * Word breakdown for passage analysis.
+ * Arabic word breakdown for passage analysis.
  */
-export interface PassageWord {
+export interface ArabicPassageWord {
   arabic: string;           // Arabic word with diacritics
   arabic_egyptian?: string; // Egyptian variant if different
   transliteration: string;
   transliteration_egyptian?: string;
   translation: string;
-  part_of_speech?: string;  // noun, verb, adjective, etc.
+  part_of_speech?: string;
+  hebrew_cognate?: { root: string; meaning: string; notes?: string };
 }
 
 /**
- * Sentence breakdown for passage analysis.
+ * Spanish word breakdown for passage analysis (NO Arabic field overloading).
  */
-export interface PassageSentence {
+export interface SpanishPassageWord {
+  spanish_latam: string;
+  spanish_spain?: string;
+  pronunciation?: string;
+  translation: string;
+  part_of_speech?: string;
+}
+
+export type PassageWord = ArabicPassageWord | SpanishPassageWord;
+
+/**
+ * Arabic sentence breakdown for passage analysis.
+ */
+export interface ArabicPassageSentence {
   arabic_msa: string;
   arabic_egyptian: string;
   transliteration_msa: string;
   transliteration_egyptian: string;
   translation: string;
-  words: PassageWord[];
+  words: ArabicPassageWord[];
   explanation?: string;
+}
+
+/**
+ * Spanish sentence breakdown for passage analysis (NO Arabic field overloading).
+ */
+export interface SpanishPassageSentence {
+  spanish_latam: string;
+  spanish_spain?: string;
+  pronunciation?: string;
+  translation: string;
+  words: SpanishPassageWord[];
+  explanation?: string;
+}
+
+export type PassageSentence = ArabicPassageSentence | SpanishPassageSentence;
+
+export function isArabicPassageSentence(s: PassageSentence): s is ArabicPassageSentence {
+  return 'arabic_msa' in s;
+}
+
+export function isSpanishPassageSentence(s: PassageSentence): s is SpanishPassageSentence {
+  return 'spanish_latam' in s;
 }
 
 /**

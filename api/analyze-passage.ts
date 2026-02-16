@@ -41,7 +41,8 @@ interface AnalyzePassageRequest {
   dialect?: ArabicDialect | SpanishDialect;
 }
 
-interface PassageWord {
+// Arabic passage shapes
+interface ArabicPassageWord {
   arabic: string;
   arabic_egyptian?: string;
   transliteration: string;
@@ -50,15 +51,35 @@ interface PassageWord {
   part_of_speech?: string;
 }
 
-interface PassageSentence {
+interface ArabicPassageSentence {
   arabic_msa: string;
   arabic_egyptian: string;
   transliteration_msa: string;
   transliteration_egyptian: string;
   translation: string;
-  words: PassageWord[];
+  words: ArabicPassageWord[];
   explanation?: string;
 }
+
+// Spanish passage shapes (NO Arabic field overloading)
+interface SpanishPassageWord {
+  spanish_latam: string;
+  spanish_spain?: string;
+  pronunciation?: string;
+  translation: string;
+  part_of_speech?: string;
+}
+
+interface SpanishPassageSentence {
+  spanish_latam: string;
+  spanish_spain?: string;
+  pronunciation?: string;
+  translation: string;
+  words: SpanishPassageWord[];
+  explanation?: string;
+}
+
+type PassageSentence = ArabicPassageSentence | SpanishPassageSentence;
 
 interface PassageResult {
   detected_language?: string;
@@ -103,12 +124,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     1. This is SPANISH text - do NOT translate to or mention Arabic
     2. Split into sentences
     3. For EACH sentence provide:
-       - Original Spanish text
+       - Original Spanish text (LatAm neutral)
+       - Spain variant if notably different
        - English translation
        - Word-by-word breakdown
 
     4. For EACH word in the breakdown:
-       - Spanish word
+       - Spanish word (LatAm neutral)
+       - Spain variant if different
        - English translation
        - Part of speech
 
@@ -120,18 +143,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "full_transliteration": "${text}",
       "sentences": [
         {
-          "arabic_msa": "Spanish sentence here",
-          "arabic_egyptian": "Spanish sentence here",
-          "transliteration_msa": "Spanish sentence here",
-          "transliteration_egyptian": "Spanish sentence here",
+          "spanish_latam": "Spanish sentence here",
+          "spanish_spain": "Spain variant if different, otherwise same",
+          "pronunciation": "Pronunciation guide",
           "translation": "English translation of this sentence",
           "explanation": "Grammar notes (optional)",
           "words": [
             {
-              "arabic": "palabra",
-              "arabic_egyptian": "palabra",
-              "transliteration": "palabra",
-              "transliteration_egyptian": "palabra",
+              "spanish_latam": "palabra",
+              "spanish_spain": "palabra",
+              "pronunciation": "pa-LA-bra",
               "translation": "word",
               "part_of_speech": "noun"
             }
@@ -151,12 +172,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     2. Translate the ENTIRE passage to Spanish (not just first sentence)
     3. Split into sentences
     4. For EACH sentence provide:
-       - Spanish translation
+       - Spanish translation (LatAm neutral)
+       - Spain variant if notably different
        - Original English
        - Word-by-word breakdown of the Spanish
 
     5. For EACH word in the breakdown:
-       - Spanish word
+       - Spanish word (LatAm neutral)
+       - Spain variant if different
        - English translation
        - Part of speech
 
@@ -168,18 +191,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "full_transliteration": "Complete Spanish translation",
       "sentences": [
         {
-          "arabic_msa": "Spanish sentence",
-          "arabic_egyptian": "Spanish sentence",
-          "transliteration_msa": "Spanish sentence",
-          "transliteration_egyptian": "Spanish sentence",
+          "spanish_latam": "Spanish sentence",
+          "spanish_spain": "Spain variant if different, otherwise same",
+          "pronunciation": "Pronunciation guide",
           "translation": "Original English sentence",
           "explanation": "Grammar notes (optional)",
           "words": [
             {
-              "arabic": "palabra",
-              "arabic_egyptian": "palabra",
-              "transliteration": "palabra",
-              "transliteration_egyptian": "palabra",
+              "spanish_latam": "palabra",
+              "spanish_spain": "palabra",
+              "pronunciation": "pa-LA-bra",
               "translation": "word",
               "part_of_speech": "noun"
             }
@@ -328,9 +349,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Translation failed: API returned empty sentence list. Please try again.' });
     }
 
-    // Validate each sentence has required fields
+    // Validate each sentence has required fields (language-aware)
     for (const sentence of result.sentences) {
-      const primaryText = sentence.arabic_msa || sentence.arabic_egyptian;
+      const s = sentence as Record<string, unknown>;
+      const primaryText = isSpanish
+        ? (s.spanish_latam || s.spanish_spain)
+        : (s.arabic_msa || s.arabic_egyptian);
       if (!primaryText || !sentence.translation) {
         console.error('[api/analyze-passage] Invalid sentence: missing primary_text or translation');
         return res.status(500).json({ error: 'Translation failed: incomplete sentence data. Please try again.' });
@@ -355,14 +379,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Apply static Hebrew cognate lookup to each word
-    if (result.sentences) {
+    // Apply static Hebrew cognate lookup to each word (Arabic only)
+    if (isArabic && result.sentences) {
       for (const sentence of result.sentences) {
         if (sentence.words) {
           for (const word of sentence.words) {
-            const cognate = findHebrewCognate(word.arabic);
+            const arabicWord = word as ArabicPassageWord;
+            const cognate = findHebrewCognate(arabicWord.arabic);
             if (cognate) {
-              (word as PassageWord & { hebrew_cognate?: typeof cognate }).hebrew_cognate = cognate;
+              (arabicWord as ArabicPassageWord & { hebrew_cognate?: typeof cognate }).hebrew_cognate = cognate;
             }
           }
         }
