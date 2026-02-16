@@ -60,7 +60,7 @@ CREATE TABLE lesson_progress (
 -- ============================================================
 CREATE TABLE saved_words (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    word text NOT NULL UNIQUE,
+    word text NOT NULL,
     translation text NOT NULL,
     language text NOT NULL DEFAULT 'arabic' CHECK (language IN ('arabic', 'spanish')),
     pronunciation_standard text,
@@ -78,7 +78,8 @@ CREATE TABLE saved_words (
     memory_note text,
     memory_image_url text,
     created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now()
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(word, language)
 );
 
 -- ============================================================
