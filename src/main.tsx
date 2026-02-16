@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import './index.css';
@@ -7,14 +7,16 @@ import { ToastProvider } from './contexts/ToastContext';
 import { LanguageBadge } from './components/LanguageBadge';
 import { RouteGuard } from './components/RouteGuard';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { MainMenu } from './features/home/MainMenu';
-import { LessonLibrary } from './features/lessons/LessonLibrary';
-import { ExerciseView } from './features/exercises/ExerciseView';
-import { VocabularyLanding } from './features/vocabulary/VocabularyLanding';
-import { MyVocabularyView } from './features/vocabulary/MyVocabularyView';
-import { MySentencesView } from './features/sentences/MySentencesView';
-import { MyPassagesView } from './features/passages/MyPassagesView';
-import { LookupView } from './features/lookup/LookupView';
+
+// Route-level code splitting — each page loads on demand
+const MainMenu = lazy(() => import('./features/home/MainMenu').then(m => ({ default: m.MainMenu })));
+const LessonLibrary = lazy(() => import('./features/lessons/LessonLibrary').then(m => ({ default: m.LessonLibrary })));
+const ExerciseView = lazy(() => import('./features/exercises/ExerciseView').then(m => ({ default: m.ExerciseView })));
+const VocabularyLanding = lazy(() => import('./features/vocabulary/VocabularyLanding').then(m => ({ default: m.VocabularyLanding })));
+const MyVocabularyView = lazy(() => import('./features/vocabulary/MyVocabularyView').then(m => ({ default: m.MyVocabularyView })));
+const MySentencesView = lazy(() => import('./features/sentences/MySentencesView').then(m => ({ default: m.MySentencesView })));
+const MyPassagesView = lazy(() => import('./features/passages/MyPassagesView').then(m => ({ default: m.MyPassagesView })));
+const LookupView = lazy(() => import('./features/lookup/LookupView').then(m => ({ default: m.LookupView })));
 
 function NotFound() {
   return (
@@ -40,6 +42,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <ToastProvider>
         <BrowserRouter>
           <ErrorBoundary>
+          <Suspense fallback={
+            <div className="min-h-screen bg-surface-300 flex items-center justify-center">
+              <div className="text-white/60 text-lg">Loading...</div>
+            </div>
+          }>
           <RouteGuard>
             <div className="min-h-screen bg-surface-300">
               <LanguageBadge />
@@ -61,6 +68,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               </Routes>
             </div>
           </RouteGuard>
+          </Suspense>
           </ErrorBoundary>
         </BrowserRouter>
       </ToastProvider>
