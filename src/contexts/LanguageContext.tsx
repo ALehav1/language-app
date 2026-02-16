@@ -40,7 +40,7 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 
-const LANGUAGE_STORAGE_KEY = 'language-app-selected-language';
+export const LANGUAGE_STORAGE_KEY = 'language-app-selected-language';
 const DIALECT_STORAGE_KEY = 'language-app-dialect-preferences';
 
 /** Default dialect preferences */
