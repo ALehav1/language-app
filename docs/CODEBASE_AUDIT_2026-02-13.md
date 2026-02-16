@@ -38,7 +38,7 @@ Notable warnings observed:
 
 ## Resolution Status (Updated February 15, 2026, post-PR #24)
 
-11 of 12 original findings resolved. #6 is partially resolved (word lookup fixed, passage pipeline still overloads Arabic fields for Spanish). See "Still Open" section below for remaining work.
+All 12 original findings fully resolved. Sentence save hook also fixed (PR #28). See deferred items at bottom (bundle size, endpoint auth).
 
 | # | Issue | Priority | Status |
 |---|-------|----------|--------|
@@ -47,7 +47,7 @@ Notable warnings observed:
 | 3 | Client-side OpenAI key exposure | P0 | ✅ RESOLVED (PRs #3–#7) — All OpenAI calls moved to Vercel serverless functions, browser client removed, all 6 endpoints verified on production |
 | 4 | Passage counts wrong | P1 | ✅ RESOLVED (PR #1) — Field name aligned to match schema |
 | 5 | SentenceSurface vs SentenceDisplay contract drift | P1 | ✅ RESOLVED (PR #1, #9) — Invariant updated, SentenceSurface archived as dead code |
-| 6 | Spanish/Arabic field sharing | P1 | ⚠️ PARTIALLY RESOLVED — Word lookup path fixed (PRs #1, #17–#19). `api/analyze-passage.ts` still stores Spanish data in Arabic-named fields (`arabic_msa`, `arabic_egyptian`) at lines 123, 131, 171 |
+| 6 | Spanish/Arabic field sharing | P1 | ✅ RESOLVED (PRs #1, #17–#19, #27, #28) — Word lookup fixed, passage pipeline fixed (PR #27), sentence save hook fixed (PR #28) |
 | 7 | Dialect preference key inconsistency | P1 | ✅ RESOLVED (PR #1) — All views now use LanguageContext, no local storage keys |
 | 8 | README test coverage contradictions | P2 | ✅ RESOLVED (PR #1, #8) — Contradictions removed, counts updated |
 | 9 | Route documentation mismatch | P2 | ✅ RESOLVED (PR #1, #10) — Routes documented to match actual main.tsx |
@@ -284,6 +284,11 @@ Previously archived (not found at original paths during cleanup):
 - Dead code cleanup completed February 15, 2026. PR #9 archived 16 files to `src/_archive/`. Tests: 161/161 passing.
 - Type system migration completed February 15, 2026. PRs #17–#22 introduced `LookupWordResult` union type, type guards, narrow-once pattern across LookupView, WordDetailModal, LookupModal, ExerciseFeedback. Tests: 162/162 passing.
 - Spanish exercise save completed February 15, 2026. PR #24 enabled save controls and language-branched payloads in ExerciseFeedback + ExerciseView. Tests: 162/162 passing.
+- Cross-language DB collision fix completed February 15, 2026. PR #26 scoped UNIQUE constraint and hook lookups by language.
+- Passage pipeline field overloading fix completed February 15, 2026. PR #27 stores Spanish passage data in language-neutral fields.
+- Sentence save hook fix completed February 15, 2026. PR #28 added mapping layer to useSavedSentences: language-neutral interface → DB column mapping.
+- Error boundary + status drift fix completed February 15, 2026. PR #29 added ErrorBoundary component and added 'retired' to WordStatus type. Tests: 162/162 passing.
+- All audit issues fully resolved as of February 15, 2026.
 
 ## Remediation Progress (Updated: February 15, 2026)
 
@@ -313,14 +318,15 @@ Previously archived (not found at original paths during cleanup):
 | LookupModal Arabic-only | #22 | Full Spanish support added |
 | WordDetailModal Arabic-only | #22 | Full Spanish support with type guards |
 | P1-3: Spanish exercise save | #24 | ExerciseFeedback + ExerciseView: save panel and payload for both Arabic and Spanish |
+| Cross-language DB collision | #26 | `saved_words` UNIQUE constraint scoped by language, hook lookups scoped by language |
+| Passage pipeline field overloading | #27 | `api/analyze-passage.ts` stores Spanish in language-neutral fields, not Arabic-named |
+| Sentence save hook field overloading | #28 | `useSavedSentences` mapping layer: neutral interface → DB columns |
+| Error boundary | #29 | `ErrorBoundary` class component wraps app in `main.tsx` |
+| WordStatus type drift | #29 | `WordStatus` type includes `'retired'` matching DB CHECK constraint |
 
-### Still Open
+### Deferred Items (Not Fixing)
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
-| P1-6 (partial): Spanish/Arabic field sharing in passage pipeline | P1 | `api/analyze-passage.ts` still stores Spanish data in Arabic-named fields (`arabic_msa`, `arabic_egyptian`) at lines 123, 131, 171. Word lookup path is fixed. |
-| Cross-language DB collision | P1 | `saved_words` has `UNIQUE(word)` without language scope (migration line 63). `useSavedWords.ts` lookups at lines 131, 333 are by word only. Same word in Arabic and Spanish can overwrite. |
-| No app-level error boundary | P2 | Runtime render exceptions can blank the entire UI |
-| Schema/type status drift | P2 | DB allows `retired` status (`001_initial_schema.sql` line 73), TypeScript `WordStatus` only allows `'active' \| 'learned'` (`src/types/database.ts` line 90) |
-| Eager route imports / large bundle | P2 | ~609 kB initial bundle, no code splitting |
+| Eager route imports / large bundle | P2 | ~609 kB initial bundle, no code splitting. Not causing user-facing issues. |
 | Serverless endpoints unauthenticated | Deferred | Single-user app, accepted risk |
