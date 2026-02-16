@@ -462,4 +462,103 @@ describe('useExercise - Baseline Tests (PR 1)', () => {
       expect(result.current.correctCount).toBe(1);
     });
   });
+
+  describe('Feedback Phase Persistence (PR #36)', () => {
+    it('reload during feedback resumes in feedback phase', async () => {
+      const { result, unmount } = renderHook(() =>
+        useExercise({ vocabItems: mockItems, lessonId: 'lesson-1' })
+      );
+
+      await waitFor(() => {
+        expect(result.current.isHydrated).toBe(true);
+      });
+
+      // Submit answer → phase becomes feedback
+      await act(async () => {
+        await result.current.submitAnswer('hello');
+      });
+      expect(result.current.phase).toBe('feedback');
+
+      // Simulate reload
+      unmount();
+      const { result: result2 } = renderHook(() =>
+        useExercise({ vocabItems: mockItems, lessonId: 'lesson-1' })
+      );
+
+      await waitFor(() => {
+        expect(result2.current.isHydrated).toBe(true);
+      });
+
+      // Phase should be restored as 'feedback', not reset to 'prompting'
+      expect(result2.current.phase).toBe('feedback');
+      expect(result2.current.answers).toHaveLength(1);
+    });
+
+    it('duplicate submit blocked after reload during feedback', async () => {
+      const { result, unmount } = renderHook(() =>
+        useExercise({ vocabItems: mockItems, lessonId: 'lesson-1' })
+      );
+
+      await waitFor(() => {
+        expect(result.current.isHydrated).toBe(true);
+      });
+
+      await act(async () => {
+        await result.current.submitAnswer('hello');
+      });
+      expect(result.current.answers).toHaveLength(1);
+
+      // Simulate reload
+      unmount();
+      const { result: result2 } = renderHook(() =>
+        useExercise({ vocabItems: mockItems, lessonId: 'lesson-1' })
+      );
+
+      await waitFor(() => {
+        expect(result2.current.isHydrated).toBe(true);
+      });
+
+      // Try to submit again — blocked because phase is feedback
+      await act(async () => {
+        await result2.current.submitAnswer('hello again');
+      });
+
+      // Answer count unchanged
+      expect(result2.current.answers).toHaveLength(1);
+    });
+
+    it('continue still works after resumed feedback', async () => {
+      const { result, unmount } = renderHook(() =>
+        useExercise({ vocabItems: mockItems, lessonId: 'lesson-1' })
+      );
+
+      await waitFor(() => {
+        expect(result.current.isHydrated).toBe(true);
+      });
+
+      await act(async () => {
+        await result.current.submitAnswer('hello');
+      });
+
+      // Simulate reload
+      unmount();
+      const { result: result2 } = renderHook(() =>
+        useExercise({ vocabItems: mockItems, lessonId: 'lesson-1' })
+      );
+
+      await waitFor(() => {
+        expect(result2.current.isHydrated).toBe(true);
+      });
+
+      expect(result2.current.phase).toBe('feedback');
+
+      // Continue should advance to next item
+      act(() => {
+        result2.current.continueToNext();
+      });
+
+      expect(result2.current.phase).toBe('prompting');
+      expect(result2.current.currentItem?.id).toBe('2');
+    });
+  });
 });
