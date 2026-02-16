@@ -129,10 +129,16 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - **Narrow-once pattern**: Derive `const spanish = result && isSpanish(result) ? result : null` at top of component, use throughout. Avoids scattered type guards.
 - **Prefer optional chaining with fallbacks** (`arabic?.field ?? ''`) over non-null assertions (`arabic!.field`). Non-null assertions crash if the value is unexpectedly null; optional chaining degrades gracefully.
 
+### Route-Level Code Splitting (PR #33)
+- All route components in `main.tsx` use `React.lazy` with `Suspense`. Named exports need the `.then(m => ({ default: m.ComponentName }))` pattern.
+- `Suspense` sits inside `ErrorBoundary` so chunk load failures are caught. Dark-themed fallback prevents white flash.
+- Initial chunk: 239 kB (down from 609 kB). Vite auto-splits shared deps (supabase, WordSurface, etc.) into separate chunks.
+- When adding new routes, use the same `lazy(() => import(...).then(...))` pattern. Keep providers, ErrorBoundary, RouteGuard, and LanguageBadge as static imports.
+
 ### Comprehensive Audit Findings (PR #14 audit, all resolved as of PR #29)
 - 2 P0, 16 P1, 18 P2 issues identified. Full report in `docs/CODEBASE_AUDIT_2026-02-13.md`.
 - All 12 original findings fully resolved. Sentence save hook also fixed (PR #28).
-- Deferred items (not fixing): eager route imports / large bundle (~609 kB), serverless endpoints unauthenticated (single-user app).
+- Deferred items (not fixing): serverless endpoints unauthenticated (single-user app).
 
 ### vi.mock and Type Guards (PR #22)
 - `vi.mock('../../lib/openai')` auto-mocks ALL exports, including type guard functions like `isArabicLookupResult`. Tests must provide explicit mock implementations that replicate the guard logic:

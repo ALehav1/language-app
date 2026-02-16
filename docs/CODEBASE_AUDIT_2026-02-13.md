@@ -323,10 +323,10 @@ Previously archived (not found at original paths during cleanup):
 | Sentence save hook field overloading | #28 | `useSavedSentences` mapping layer: neutral interface → DB columns |
 | Error boundary | #29 | `ErrorBoundary` class component wraps app in `main.tsx` |
 | WordStatus type drift | #29 | `WordStatus` type includes `'retired'` matching DB CHECK constraint |
+| Bundle size / code splitting | #33 | Route-level React.lazy splitting. Initial chunk 609 kB → 239 kB (-61%) |
 
 ### Deferred Items (Not Fixing)
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
-| Eager route imports / large bundle | P2 | ~609 kB initial bundle, no code splitting. Not causing user-facing issues. |
 | Serverless endpoints unauthenticated | Deferred | Single-user app, accepted risk |
