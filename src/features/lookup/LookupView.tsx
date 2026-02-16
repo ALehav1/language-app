@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { lookupWord, analyzePassage, type LookupWordResult, type PassageResult, isSpanishLookupResult, isArabicLookupResult } from '../../lib/openai';
+import { lookupWord, analyzePassage, type LookupWordResult, type PassageResult, type ArabicPassageSentence, type SpanishPassageSentence, type ArabicPassageWord, type SpanishPassageWord, isSpanishLookupResult, isArabicLookupResult, isArabicPassageSentence, isSpanishPassageSentence } from '../../lib/openai';
 import { useSavedWords } from '../../hooks/useSavedWords';
 import { useSavedSentences } from '../../hooks/useSavedSentences';
 import { useSavedPassages } from '../../hooks/useSavedPassages';
@@ -10,7 +10,6 @@ import { MemoryAidTile } from '../../components/MemoryAidTile';
 import { ContextTile } from '../../components/ContextTile';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { CollapsibleSection } from '../../components/CollapsibleSection';
-import { AddedContextTile } from '../../components/AddedContextTile';
 import { WordBreakdownList, type WordBreakdownWord } from '../../components/WordBreakdownList';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -36,7 +35,7 @@ export function LookupView() {
     const [input, setInput] = useState('');
     const [result, setResult] = useState<LookupWordResult | null>(null);
     const [passageResult, setPassageResult] = useState<PassageResult | null>(null);
-    const [selectedSentence, setSelectedSentence] = useState<any | null>(null);
+    const [selectedSentence, setSelectedSentence] = useState<ArabicPassageSentence | SpanishPassageSentence | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
@@ -54,6 +53,26 @@ export function LookupView() {
 
     // Dialect preference from global context
     const dialectPreference = dialectPreferences.arabic;
+
+    // Normalize passage words into the language-neutral WordBreakdownWord shape
+    const normalizeArabicWords = (words: ArabicPassageWord[]): WordBreakdownWord[] =>
+        words.map(w => ({
+            word: w.arabic,
+            wordAlt: w.arabic_egyptian,
+            transliteration: w.transliteration,
+            transliterationAlt: w.transliteration_egyptian,
+            translation: w.translation,
+            part_of_speech: w.part_of_speech,
+        }));
+
+    const normalizeSpanishWords = (words: SpanishPassageWord[]): WordBreakdownWord[] =>
+        words.map(w => ({
+            word: w.spanish_latam,
+            wordAlt: w.spanish_spain,
+            transliteration: w.pronunciation,
+            translation: w.translation,
+            part_of_speech: w.part_of_speech,
+        }));
 
     // Detect content type from input
     const detectContentType = (text: string): 'word' | 'sentence' | 'passage' => {
@@ -155,18 +174,26 @@ export function LookupView() {
 
     // P2-B: Handle word click - navigates to unified word detail page
     const handleWordClick = (word: WordBreakdownWord) => {
-        
+
         // Navigate to canonical /vocabulary/word route with lookup context
-        // Pass word text as query param + full word data in state
-        const wordText = language === 'arabic' 
-            ? (word.arabic || word.arabic_egyptian || '')
-            : (word.arabic || ''); // Spanish stored in .arabic field temporarily
-            
+        // WordBreakdownWord uses language-neutral fields: word is the primary form
+        const wordText = word.word || word.wordAlt || '';
+
+        // Get parent sentence text using language-aware narrowing
+        let parentSentenceText = passageResult?.original_text || '';
+        if (selectedSentence) {
+            if (isArabicPassageSentence(selectedSentence)) {
+                parentSentenceText = selectedSentence.arabic_msa || selectedSentence.arabic_egyptian;
+            } else if (isSpanishPassageSentence(selectedSentence)) {
+                parentSentenceText = selectedSentence.spanish_latam;
+            }
+        }
+
         navigate(`/vocabulary/word?text=${encodeURIComponent(wordText)}&from=lookup`, {
             state: {
                 wordData: word,
                 language: language,
-                parentSentence: selectedSentence?.arabic_msa || selectedSentence?.arabic_egyptian || passageResult?.original_text || '',
+                parentSentence: parentSentenceText,
             }
         });
     };
@@ -463,7 +490,23 @@ export function LookupView() {
             )}
 
             {/* Sentence View (when clicked from passage or directly looked up) */}
-            {selectedSentence && mode === 'sentence' && (
+            {selectedSentence && mode === 'sentence' && (() => {
+                // Narrow-once for the selected sentence
+                const arSentence = isArabicPassageSentence(selectedSentence) ? selectedSentence : null;
+                const esSentence = isSpanishPassageSentence(selectedSentence) ? selectedSentence : null;
+                const sentencePrimaryText = arSentence
+                    ? (dialectPreference === 'egyptian'
+                        ? (arSentence.arabic_egyptian || arSentence.arabic_msa)
+                        : (arSentence.arabic_msa || arSentence.arabic_egyptian))
+                    : (esSentence?.spanish_latam ?? '');
+                const sentenceLookupKey = arSentence?.arabic_msa ?? esSentence?.spanish_latam ?? '';
+                const normalizedWords = arSentence
+                    ? normalizeArabicWords(arSentence.words)
+                    : esSentence
+                    ? normalizeSpanishWords(esSentence.words)
+                    : [];
+
+                return (
                 <div className="space-y-6">
                     {/* Back button */}
                     <button
@@ -481,11 +524,8 @@ export function LookupView() {
 
                     {/* Sentence Header */}
                     <div className="glass-card p-4">
-                        <div className="text-3xl font-arabic text-white mb-3" dir="rtl">
-                            {dialectPreference === 'egyptian' 
-                                ? (selectedSentence.arabic_egyptian || selectedSentence.arabic_msa)
-                                : (selectedSentence.arabic_msa || selectedSentence.arabic_egyptian)
-                            }
+                        <div className={`text-3xl text-white mb-3 ${arSentence ? 'font-arabic' : ''}`} dir={arSentence ? 'rtl' : 'ltr'}>
+                            {sentencePrimaryText}
                         </div>
                         <div className="text-white/80 text-lg mb-2">
                             {selectedSentence.translation}
@@ -497,23 +537,15 @@ export function LookupView() {
                         )}
                     </div>
 
-                    {/* Added Context for Sentence */}
-                    {selectedSentence.context && (
-                        <AddedContextTile
-                            language={language}
-                            context={selectedSentence.context}
-                        />
-                    )}
-
                     {/* Word Breakdown (collapsed by default) */}
-                    {selectedSentence.words && selectedSentence.words.length > 0 && (
+                    {normalizedWords.length > 0 && (
                         <CollapsibleSection
                             title="Word Breakdown"
-                            count={selectedSentence.words.length}
+                            count={normalizedWords.length}
                             defaultExpanded={false}
                         >
                             <WordBreakdownList
-                                words={selectedSentence.words}
+                                words={normalizedWords}
                                 language={language}
                                 dialectPreference={dialectPreference}
                                 onWordClick={handleWordClick}
@@ -523,7 +555,7 @@ export function LookupView() {
 
                     {/* Save Sentence Controls */}
                     {(() => {
-                        const savedSentence = getSentenceByText?.(selectedSentence.arabic_msa);
+                        const savedSentence = getSentenceByText?.(sentenceLookupKey);
                         return savedSentence ? (
                             <div className="glass-card p-4 space-y-2">
                                 <div className="text-xs text-green-400 font-medium">
@@ -549,18 +581,25 @@ export function LookupView() {
                                 <div className="text-sm text-white/60 mb-3">Save this sentence to:</div>
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => handleSaveSentence(selectedSentence)}
+                                        onClick={() => handleSaveSentence({
+                                            arabic_msa: sentenceLookupKey,
+                                            arabic_egyptian: arSentence?.arabic_egyptian,
+                                            transliteration_msa: arSentence?.transliteration_msa ?? '',
+                                            transliteration_egyptian: arSentence?.transliteration_egyptian,
+                                            english: selectedSentence.translation,
+                                            explanation: selectedSentence.explanation,
+                                        })}
                                         className="flex-1 py-3 rounded-lg text-sm font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
                                     >
-                                        💬 Save to Practice
+                                        Save to Practice
                                     </button>
                                     <button
                                         onClick={async () => {
                                             await saveSentence({
-                                                arabic_text: selectedSentence.arabic_msa,
-                                                arabic_egyptian: selectedSentence.arabic_egyptian,
-                                                transliteration: selectedSentence.transliteration_msa,
-                                                transliteration_egyptian: selectedSentence.transliteration_egyptian,
+                                                arabic_text: sentenceLookupKey,
+                                                arabic_egyptian: arSentence?.arabic_egyptian,
+                                                transliteration: arSentence?.transliteration_msa ?? '',
+                                                transliteration_egyptian: arSentence?.transliteration_egyptian,
                                                 translation: selectedSentence.translation,
                                                 explanation: selectedSentence.explanation,
                                                 source: 'lookup',
@@ -570,14 +609,15 @@ export function LookupView() {
                                         }}
                                         className="flex-1 py-3 rounded-lg text-sm font-medium transition-colors bg-blue-500/20 text-blue-300 hover:bg-blue-500/30"
                                     >
-                                        📚 Save to Archive
+                                        Save to Archive
                                     </button>
                                 </div>
                             </div>
                         );
                     })()}
                 </div>
-            )}
+                );
+            })()}
 
             {/* Passage Results (includes single-sentence results) */}
             {passageResult && !selectedSentence && (
@@ -685,18 +725,29 @@ export function LookupView() {
                     )}
 
                     {/* Sentence by sentence breakdown */}
-                    {passageResult.sentences?.map((sentence, sentenceIdx) => (
+                    {passageResult.sentences?.map((sentence, sentenceIdx) => {
+                        // Narrow-once per sentence
+                        const arS = isArabicPassageSentence(sentence) ? sentence : null;
+                        const esS = isSpanishPassageSentence(sentence) ? sentence : null;
+                        const lookupKey = arS?.arabic_msa ?? esS?.spanish_latam ?? '';
+                        const wordsNormalized = arS
+                            ? normalizeArabicWords(arS.words)
+                            : esS
+                            ? normalizeSpanishWords(esS.words)
+                            : [];
+
+                        return (
                         <div key={sentenceIdx} className="glass-card p-4 space-y-4">
                             {/* Sentence header with save state */}
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs text-white/40">Sentence {sentenceIdx + 1}</span>
                                 </div>
-                                
+
                                 {(() => {
-                                    const savedSentence = getSentenceByText?.(sentence.arabic_msa);
+                                    const savedSentence = getSentenceByText?.(lookupKey);
                                     const isSaved = !!savedSentence;
-                                    
+
                                     return isSaved && savedSentence ? (
                                         <div className="space-y-2">
                                             <div className="text-xs text-green-400 font-medium">
@@ -720,52 +771,50 @@ export function LookupView() {
                                     ) : (
                                         <button
                                             onClick={() => handleSaveSentence({
-                                                arabic_msa: sentence.arabic_msa,
-                                                arabic_egyptian: sentence.arabic_egyptian,
-                                                transliteration_msa: sentence.transliteration_msa,
-                                                transliteration_egyptian: sentence.transliteration_egyptian,
+                                                arabic_msa: lookupKey,
+                                                arabic_egyptian: arS?.arabic_egyptian,
+                                                transliteration_msa: arS?.transliteration_msa ?? '',
+                                                transliteration_egyptian: arS?.transliteration_egyptian,
                                                 english: sentence.translation,
                                                 explanation: sentence.explanation,
                                             })}
                                             className="px-3 py-1 rounded-lg text-xs font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
                                         >
-                                            💬 Save Sentence
+                                            Save Sentence
                                         </button>
                                     );
                                 })()}
                             </div>
 
                             {/* Language-aware sentence rendering */}
-                            {language === 'spanish' ? (
-                                // Spanish mode: show Spanish text + English translation
-                                <>
-                                    <div className="text-2xl text-white mb-3" dir="ltr">
-                                        {sentence.arabic_msa}
-                                    </div>
-                                </>
-                            ) : (
+                            {esS ? (
+                                // Spanish mode: show Spanish text
+                                <div className="text-2xl text-white mb-3" dir="ltr">
+                                    {esS.spanish_latam}
+                                </div>
+                            ) : arS ? (
                                 // Arabic mode: show dialect variants
                                 <>
                             {dialectPreference === 'egyptian' ? (
                                 <>
                                     {/* Egyptian first */}
                                     <div>
-                                        <div className="text-xs text-amber-400/60 mb-1">🇪🇬 Egyptian (Spoken)</div>
+                                        <div className="text-xs text-amber-400/60 mb-1">Egyptian (Spoken)</div>
                                         <div className="text-2xl font-arabic text-white" dir="rtl">
-                                            {sentence.arabic_egyptian}
+                                            {arS.arabic_egyptian}
                                         </div>
                                         <div className="text-amber-300">
-                                            {sentence.transliteration_egyptian}
+                                            {arS.transliteration_egyptian}
                                         </div>
                                     </div>
                                     {/* MSA as reference */}
                                     <div className="bg-white/5 rounded-lg p-3">
-                                        <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
+                                        <div className="text-xs text-teal-400/60 mb-1">MSA (Formal)</div>
                                         <div className="text-lg font-arabic text-white/70" dir="rtl">
-                                            {sentence.arabic_msa}
+                                            {arS.arabic_msa}
                                         </div>
                                         <div className="text-teal-300/60 text-sm">
-                                            {sentence.transliteration_msa}
+                                            {arS.transliteration_msa}
                                         </div>
                                     </div>
                                 </>
@@ -773,28 +822,28 @@ export function LookupView() {
                                 <>
                                     {/* MSA first */}
                                     <div>
-                                        <div className="text-xs text-teal-400/60 mb-1">📖 MSA (Formal)</div>
+                                        <div className="text-xs text-teal-400/60 mb-1">MSA (Formal)</div>
                                         <div className="text-2xl font-arabic text-white" dir="rtl">
-                                            {sentence.arabic_msa}
+                                            {arS.arabic_msa}
                                         </div>
                                         <div className="text-teal-300">
-                                            {sentence.transliteration_msa}
+                                            {arS.transliteration_msa}
                                         </div>
                                     </div>
                                     {/* Egyptian as reference */}
                                     <div className="bg-white/5 rounded-lg p-3">
-                                        <div className="text-xs text-amber-400/60 mb-1">🇪🇬 Egyptian (Spoken)</div>
+                                        <div className="text-xs text-amber-400/60 mb-1">Egyptian (Spoken)</div>
                                         <div className="text-lg font-arabic text-white/70" dir="rtl">
-                                            {sentence.arabic_egyptian}
+                                            {arS.arabic_egyptian}
                                         </div>
                                         <div className="text-amber-300/60 text-sm">
-                                            {sentence.transliteration_egyptian}
+                                            {arS.transliteration_egyptian}
                                         </div>
                                     </div>
                                 </>
                             )}
                                 </>
-                            )}
+                            ) : null}
 
                             {/* Translation */}
                             <div className="text-white">
@@ -804,15 +853,15 @@ export function LookupView() {
                             {/* Explanation */}
                             {sentence.explanation && (
                                 <div className="text-white/50 text-sm italic">
-                                    💡 {sentence.explanation}
+                                    {sentence.explanation}
                                 </div>
                             )}
 
-                            {/* Word-by-word breakdown - Vertical RTL */}
-                            {sentence.words && sentence.words.length > 0 && (
+                            {/* Word-by-word breakdown */}
+                            {wordsNormalized.length > 0 && (
                                 <div>
                                     <div className="text-xs text-white/40 mb-2 flex items-center justify-between">
-                                        <span>Word Breakdown ({sentence.words.length} words)</span>
+                                        <span>Word Breakdown ({wordsNormalized.length} words)</span>
                                         <button
                                             onClick={() => handleSentenceClick(sentence)}
                                             className="text-teal-400 hover:text-teal-300 text-xs flex items-center gap-1"
@@ -824,7 +873,7 @@ export function LookupView() {
                                         </button>
                                     </div>
                                     <WordBreakdownList
-                                        words={sentence.words}
+                                        words={wordsNormalized}
                                         language={language}
                                         dialectPreference={dialectPreference}
                                         onWordClick={handleWordClick}
@@ -832,7 +881,8 @@ export function LookupView() {
                                 </div>
                             )}
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 

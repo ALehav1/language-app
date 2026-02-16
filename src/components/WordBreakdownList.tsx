@@ -18,11 +18,19 @@
  * Clicking a word triggers onWordClick(word) for page navigation - NEVER saves directly
  */
 
+/**
+ * Language-neutral word breakdown shape.
+ * Callers normalize Arabic/Spanish passage words into this common shape.
+ * - word: the word in the target language (Arabic MSA or Spanish LatAm)
+ * - wordAlt: dialect/regional variant (Egyptian Arabic or Spain Spanish)
+ * - transliteration / transliterationAlt: pronunciation guides
+ * - translation: English meaning
+ */
 export interface WordBreakdownWord {
-  arabic?: string;
-  arabic_egyptian?: string;
+  word: string;
+  wordAlt?: string;
   transliteration?: string;
-  transliteration_egyptian?: string;
+  transliterationAlt?: string;
   translation: string;
   part_of_speech?: string;
 }
@@ -48,8 +56,7 @@ export function WordBreakdownList({
     return (
       <div className="flex flex-wrap gap-2" dir="ltr">
         {words.map((word, idx) => {
-          // Spanish: word.arabic contains Spanish text, word.translation contains English
-          const spanishWord = word.arabic || word.arabic_egyptian || '';
+          const spanishWord = word.word || '';
           const englishGloss = word.translation || '';
 
           return (
@@ -89,17 +96,13 @@ export function WordBreakdownList({
     >
       {words.map((word, idx) => {
         // For Arabic, show preferred dialect first
-        const primaryText = language === 'arabic'
-          ? (dialectPreference === 'egyptian'
-              ? (word.arabic_egyptian || word.arabic)
-              : (word.arabic || word.arabic_egyptian))
-          : word.translation;
+        const primaryText = dialectPreference === 'egyptian'
+          ? (word.wordAlt || word.word)
+          : (word.word || word.wordAlt);
 
-        const primaryTranslit = language === 'arabic'
-          ? (dialectPreference === 'egyptian'
-              ? (word.transliteration_egyptian || word.transliteration)
-              : (word.transliteration || word.transliteration_egyptian))
-          : undefined;
+        const primaryTranslit = dialectPreference === 'egyptian'
+          ? (word.transliterationAlt || word.transliteration)
+          : (word.transliteration || word.transliterationAlt);
 
         // Check if word is saved (simplified - would need actual ID matching in production)
         const isSaved = false; // TODO: implement proper saved state checking
