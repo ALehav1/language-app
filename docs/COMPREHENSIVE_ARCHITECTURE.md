@@ -381,7 +381,8 @@ main.tsx
             └─ RouteGuard (ensures language selected)
                  └─ Routes
                       ├─ MainMenu (/)
-                      │    └─ LanguageSwitcher
+                      │    ├─ Language cards (inline, always visible)
+                      │    └─ Learning tools (Lessons, Lookup, My Vocabulary)
                       │
                       ├─ LessonLibrary (/lessons)
                       │    ├─ LessonGenerator (modal)
