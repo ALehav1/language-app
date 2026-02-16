@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useSavedSentences, type SavedSentence } from '../../hooks/useSavedSentences';
+import { useSavedSentences, type SentenceData } from '../../hooks/useSavedSentences';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { MemoryAidEditor } from '../../components/MemoryAidEditor';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
@@ -16,7 +16,7 @@ export function MySentencesView() {
     const [searchParams] = useSearchParams();
     const mode = searchParams.get('mode') || 'practice';
     const { sentences, loading, counts, deleteSentence, updateStatus, updateMemoryAids } = useSavedSentences(language);
-    const [selectedSentence, setSelectedSentence] = useState<SavedSentence | null>(null);
+    const [selectedSentence, setSelectedSentence] = useState<SentenceData | null>(null);
     const defaultFilter: 'all' | 'active' | 'learned' = mode === 'archive' ? 'learned' : 'active';
     const [filter, setFilter] = useState<'all' | 'active' | 'learned'>(defaultFilter);
     
@@ -46,7 +46,7 @@ export function MySentencesView() {
     };
 
     // Handle marking as learned
-    const handleToggleStatus = async (sentence: SavedSentence) => {
+    const handleToggleStatus = async (sentence: SentenceData) => {
         const newStatus = sentence.status === 'active' ? 'learned' : 'active';
         await updateStatus(sentence.id, newStatus);
     };
@@ -167,10 +167,10 @@ export function MySentencesView() {
                 {filteredSentences.map(sentence => {
                     // Map to SentenceDisplay format
                     const sentenceData: ArabicSentenceData = {
-                        arabicMsa: sentence.arabic_text,
-                        arabicEgyptian: sentence.arabic_egyptian || sentence.arabic_text,
-                        transliterationMsa: sentence.transliteration,
-                        transliterationEgyptian: sentence.transliteration_egyptian || sentence.transliteration,
+                        arabicMsa: sentence.primary_text,
+                        arabicEgyptian: sentence.alt_text || sentence.primary_text,
+                        transliterationMsa: sentence.transliteration || '',
+                        transliterationEgyptian: sentence.transliteration_alt || sentence.transliteration || '',
                         english: sentence.translation,
                     };
                     
@@ -247,10 +247,10 @@ export function MySentencesView() {
                             {/* Use SentenceDisplay for consistent rendering */}
                             <SentenceDisplay
                                 sentence={{
-                                    arabicMsa: selectedSentence.arabic_text,
-                                    arabicEgyptian: selectedSentence.arabic_egyptian || selectedSentence.arabic_text,
-                                    transliterationMsa: selectedSentence.transliteration,
-                                    transliterationEgyptian: selectedSentence.transliteration_egyptian || selectedSentence.transliteration,
+                                    arabicMsa: selectedSentence.primary_text,
+                                    arabicEgyptian: selectedSentence.alt_text || selectedSentence.primary_text,
+                                    transliterationMsa: selectedSentence.transliteration || '',
+                                    transliterationEgyptian: selectedSentence.transliteration_alt || selectedSentence.transliteration || '',
                                     english: selectedSentence.translation,
                                 }}
                                 size="large"
@@ -273,7 +273,7 @@ export function MySentencesView() {
                             {/* Memory Aids Section */}
                             <div className="glass-card p-3">
                                 <MemoryAidEditor
-                                    primaryText={selectedSentence.arabic_egyptian || selectedSentence.arabic_text}
+                                    primaryText={selectedSentence.alt_text || selectedSentence.primary_text}
                                     translation={selectedSentence.translation}
                                     currentImageUrl={selectedSentence.memory_image_url}
                                     currentNote={selectedSentence.memory_note}

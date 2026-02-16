@@ -199,14 +199,14 @@ export function LookupView() {
     };
 
     // Handle save sentence (from example sentences or passage)
-    const handleSaveSentence = async (sentence: { arabic_msa: string; transliteration_msa: string; arabic_egyptian?: string; transliteration_egyptian?: string; english: string; explanation?: string }) => {
+    const handleSaveSentence = async (sentence: { primary_text: string; alt_text?: string; transliteration?: string; transliteration_alt?: string; translation: string; explanation?: string }) => {
         try {
             await saveSentence({
-                arabic_text: sentence.arabic_msa,
-                arabic_egyptian: sentence.arabic_egyptian,
-                transliteration: sentence.transliteration_msa,
-                transliteration_egyptian: sentence.transliteration_egyptian,
-                translation: sentence.english,
+                primary_text: sentence.primary_text,
+                alt_text: sentence.alt_text,
+                transliteration: sentence.transliteration,
+                transliteration_alt: sentence.transliteration_alt,
+                translation: sentence.translation,
                 explanation: sentence.explanation,
                 source: 'lookup',
                 language,
@@ -408,9 +408,9 @@ export function LookupView() {
                                         ) : (
                                             <button
                                                 onClick={() => handleSaveSentence({
-                                                    arabic_msa: sentence.spanish_latam,
-                                                    transliteration_msa: '',
-                                                    english: sentence.english,
+                                                    primary_text: sentence.spanish_latam,
+                                                    alt_text: sentence.spanish_spain,
+                                                    translation: sentence.english,
                                                     explanation: sentence.explanation,
                                                 })}
                                                 className="w-full py-2 rounded-lg text-sm font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
@@ -465,7 +465,14 @@ export function LookupView() {
                                             </div>
                                         ) : (
                                             <button
-                                                onClick={() => handleSaveSentence(sentence)}
+                                                onClick={() => handleSaveSentence({
+                                                    primary_text: sentence.arabic_msa,
+                                                    alt_text: sentence.arabic_egyptian,
+                                                    transliteration: sentence.transliteration_msa,
+                                                    transliteration_alt: sentence.transliteration_egyptian,
+                                                    translation: sentence.english,
+                                                    explanation: sentence.explanation,
+                                                })}
                                                 className="w-full py-2 rounded-lg text-sm font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
                                             >
                                                 Save Sentence
@@ -582,11 +589,11 @@ export function LookupView() {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => handleSaveSentence({
-                                            arabic_msa: sentenceLookupKey,
-                                            arabic_egyptian: arSentence?.arabic_egyptian,
-                                            transliteration_msa: arSentence?.transliteration_msa ?? '',
-                                            transliteration_egyptian: arSentence?.transliteration_egyptian,
-                                            english: selectedSentence.translation,
+                                            primary_text: sentenceLookupKey,
+                                            alt_text: arSentence?.arabic_egyptian ?? esSentence?.spanish_spain,
+                                            transliteration: arSentence?.transliteration_msa,
+                                            transliteration_alt: arSentence?.transliteration_egyptian,
+                                            translation: selectedSentence.translation,
                                             explanation: selectedSentence.explanation,
                                         })}
                                         className="flex-1 py-3 rounded-lg text-sm font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
@@ -596,10 +603,10 @@ export function LookupView() {
                                     <button
                                         onClick={async () => {
                                             await saveSentence({
-                                                arabic_text: sentenceLookupKey,
-                                                arabic_egyptian: arSentence?.arabic_egyptian,
-                                                transliteration: arSentence?.transliteration_msa ?? '',
-                                                transliteration_egyptian: arSentence?.transliteration_egyptian,
+                                                primary_text: sentenceLookupKey,
+                                                alt_text: arSentence?.arabic_egyptian ?? esSentence?.spanish_spain,
+                                                transliteration: arSentence?.transliteration_msa,
+                                                transliteration_alt: arSentence?.transliteration_egyptian,
                                                 translation: selectedSentence.translation,
                                                 explanation: selectedSentence.explanation,
                                                 source: 'lookup',
@@ -771,11 +778,11 @@ export function LookupView() {
                                     ) : (
                                         <button
                                             onClick={() => handleSaveSentence({
-                                                arabic_msa: lookupKey,
-                                                arabic_egyptian: arS?.arabic_egyptian,
-                                                transliteration_msa: arS?.transliteration_msa ?? '',
-                                                transliteration_egyptian: arS?.transliteration_egyptian,
-                                                english: sentence.translation,
+                                                primary_text: lookupKey,
+                                                alt_text: arS?.arabic_egyptian ?? esS?.spanish_spain,
+                                                transliteration: arS?.transliteration_msa,
+                                                transliteration_alt: arS?.transliteration_egyptian,
+                                                translation: sentence.translation,
                                                 explanation: sentence.explanation,
                                             })}
                                             className="px-3 py-1 rounded-lg text-xs font-medium transition-colors bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
