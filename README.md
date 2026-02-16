@@ -110,7 +110,7 @@ npm run lint          # TypeScript type checking
 npm run build         # Production build
 ```
 
-Current: 162/162 tests passing (11 test files)
+Current: 166/166 tests passing (11 test files)
 
 ## Development Notes
 
@@ -138,6 +138,8 @@ Current: 162/162 tests passing (11 test files)
 - **PR #28:** Fixed sentence save hook — mapping layer for language-neutral interface to DB columns
 - **PR #29:** Added app-level error boundary + fixed `WordStatus` type to include `'retired'`
 - **PR #33:** Route-level code splitting — initial bundle 609 kB → 239 kB (-61%)
+- **PR #36:** Fixed exercise resume — reload during feedback no longer allows duplicate answers
+- **PR #37:** Fixed passage filtering — English-source passages now visible in target language view
 - All original audit issues now resolved (see audit doc for full history)
 
 ## Documentation

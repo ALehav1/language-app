@@ -27,7 +27,7 @@ Results (at time of audit):
 - Build: **pass**
 
 Current state (February 15, 2026, post-PR #24):
-- Tests: **162/162 passing** (11 test files — 16 tests removed with dead code in PR #9, 1 test added in PR #24 work)
+- Tests: **166/166 passing** (11 test files — 16 tests removed with dead code in PR #9, 4 added in PRs #24, #32, #36)
 - Type check: **pass**
 - Build: **pass**
 
@@ -288,6 +288,8 @@ Previously archived (not found at original paths during cleanup):
 - Passage pipeline field overloading fix completed February 15, 2026. PR #27 stores Spanish passage data in language-neutral fields.
 - Sentence save hook fix completed February 15, 2026. PR #28 added mapping layer to useSavedSentences: language-neutral interface → DB column mapping.
 - Error boundary + status drift fix completed February 15, 2026. PR #29 added ErrorBoundary component and added 'retired' to WordStatus type. Tests: 162/162 passing.
+- Exercise resume fix completed February 15, 2026. PR #36 persists exercise phase in progress data; reload during feedback resumes correctly. Tests: 166/166 passing.
+- Passage filtering fix completed February 15, 2026. PR #37 added `language` column to `saved_passages`; filters use target language instead of source language.
 - All audit issues fully resolved as of February 15, 2026.
 
 ## Remediation Progress (Updated: February 15, 2026)
@@ -324,6 +326,8 @@ Previously archived (not found at original paths during cleanup):
 | Error boundary | #29 | `ErrorBoundary` class component wraps app in `main.tsx` |
 | WordStatus type drift | #29 | `WordStatus` type includes `'retired'` matching DB CHECK constraint |
 | Bundle size / code splitting | #33 | Route-level React.lazy splitting. Initial chunk 609 kB → 239 kB (-61%) |
+| Exercise resume feedback duplication | #36 | Phase persisted in exercise progress; reload during feedback resumes correctly |
+| Passage source language filtering | #37 | Added `language` column to `saved_passages`; filters use target language |
 
 ### Deferred Items (Not Fixing)
 
