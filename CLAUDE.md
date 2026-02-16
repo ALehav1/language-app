@@ -164,6 +164,7 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - **Word save language scoping** — `useSavedWords` duplicate checks and lookups must include `.eq('language', ...)`. Cross-language collision was a real bug (PR #26).
 - **WordStatus type completeness** — `WordStatus` must include `'retired'` to match the DB CHECK constraint. Any `Record<WordStatus, ...>` must handle all three values.
 - **Saved-word language scoping (all paths)** — All `useSavedWords()` callers must pass `language`. All `saveWord` callers must include `language` in the payload. All `isWordSaved`/`getSavedWord` callers must pass `language`. The hook's fallback to `'arabic'` exists for backward compatibility but produces wrong data for Spanish. PR #26 fixed write-path, PR #31 fixed read-path, PR #32 fixed SentenceDetailModal. No unscoped callers should remain.
+- **Exercise phase must be persisted in progress** — `saveProgress()` must include `phase`. Reload during feedback must resume in feedback, not prompting. Duplicate submit is blocked by the existing `phase !== 'prompting'` guard in `submitAnswer`. Old saved progress without `phase` defaults to `'prompting'` (backward compat).
 
 
 ## Stable Files

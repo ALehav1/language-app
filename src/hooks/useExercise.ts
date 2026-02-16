@@ -27,6 +27,7 @@ interface SavedProgressV2 {
     currentPos: number;        // cursor into queue (0-based)
     answers: AnswerResult[];   // completed answers
     savedAt: number;           // timestamp (ms since epoch)
+    phase?: ExercisePhase;     // current phase (optional for backward compat with pre-PR#36 saves)
 }
 
 type SavedProgress = SavedProgressV1 | SavedProgressV2;
@@ -139,7 +140,8 @@ function saveProgress(
     lessonId: string | undefined,
     queue: string[],
     currentPos: number,
-    answers: AnswerResult[]
+    answers: AnswerResult[],
+    phase: ExercisePhase
 ): void {
     if (!lessonId) return;
     const progress: SavedProgressV2 = {
@@ -148,6 +150,7 @@ function saveProgress(
         currentPos,
         answers,
         savedAt: Date.now(),
+        phase,
     };
     localStorage.setItem(getProgressKey(lessonId), JSON.stringify(progress));
 }
@@ -189,6 +192,7 @@ export function useExercise({ vocabItems, lessonId, onComplete }: UseExerciseOpt
             setQueue(hydratedProgress.queue);
             setCurrentPos(hydratedProgress.currentPos);
             setAnswers(hydratedProgress.answers);
+            setPhase(hydratedProgress.phase || 'prompting');
         } else {
             // Fresh start - initialize queue with all item IDs
             setQueue(vocabItems.map(item => item.id));
@@ -228,7 +232,7 @@ export function useExercise({ vocabItems, lessonId, onComplete }: UseExerciseOpt
         
         // Only persist if we have meaningful progress
         if (currentPos > 0 || answers.length > 0) {
-            saveProgress(lessonId, queue, currentPos, answers);
+            saveProgress(lessonId, queue, currentPos, answers, phase);
         }
     }, [lessonId, queue, currentPos, answers, phase, isHydrated]);
 
@@ -382,7 +386,7 @@ export function useExercise({ vocabItems, lessonId, onComplete }: UseExerciseOpt
         setCurrentPos(nextPos);
         
         // Save progress after skipping
-        saveProgress(lessonId, newQueue, nextPos, answers);
+        saveProgress(lessonId, newQueue, nextPos, answers, 'prompting');
     }, [phase, currentItem, queue, currentPos, answers, lessonId]);
 
     // Navigate to a specific item (only allowed during prompting phase)
