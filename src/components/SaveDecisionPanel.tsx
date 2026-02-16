@@ -24,7 +24,7 @@ interface SaveDecisionPanelProps {
     alreadySaved?: boolean;
     
     // Optional: current status of saved word (for already-saved items)
-    currentStatus?: 'active' | 'learned';
+    currentStatus?: 'active' | 'learned' | 'retired';
     
     // Optional: existing memory aid data (for already-saved items)
     existingMemoryAid?: { note?: string; imageUrl?: string };

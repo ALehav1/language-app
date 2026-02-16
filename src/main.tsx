@@ -6,6 +6,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LanguageBadge } from './components/LanguageBadge';
 import { RouteGuard } from './components/RouteGuard';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { MainMenu } from './features/home/MainMenu';
 import { LessonLibrary } from './features/lessons/LessonLibrary';
 import { ExerciseView } from './features/exercises/ExerciseView';
@@ -38,6 +39,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <LanguageProvider>
       <ToastProvider>
         <BrowserRouter>
+          <ErrorBoundary>
           <RouteGuard>
             <div className="min-h-screen bg-surface-300">
               <LanguageBadge />
@@ -59,6 +61,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               </Routes>
             </div>
           </RouteGuard>
+          </ErrorBoundary>
         </BrowserRouter>
       </ToastProvider>
     </LanguageProvider>

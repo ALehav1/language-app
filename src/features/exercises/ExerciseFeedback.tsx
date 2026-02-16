@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { AnswerResult, VocabularyItem } from '../../types';
+import type { AnswerResult, VocabularyItem, WordStatus } from '../../types';
 import { lookupWord, type LookupWordResult, isArabicLookupResult, isSpanishLookupResult } from '../../lib/openai';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { SaveDecisionPanel, type SaveDecision } from '../../components/SaveDecisionPanel';
@@ -32,7 +32,7 @@ interface ExerciseFeedbackProps {
         };
     }) => void;
     isWordAlreadySaved?: boolean; // Check if word is already in saved_words
-    savedWordStatus?: 'active' | 'learned'; // Current status if already saved
+    savedWordStatus?: WordStatus; // Current status if already saved
     savedWordMemoryAid?: { note?: string; imageUrl?: string }; // Existing memory aid if saved
 }
 
