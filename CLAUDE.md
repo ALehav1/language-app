@@ -35,7 +35,7 @@ Higher-priority documents override lower ones. If you encounter a conflict, foll
 
 5. **LanguageContext is the single source of truth** (`src/contexts/LanguageContext.tsx`) for language and dialect preferences.
 
-6. **Spanish and Arabic SHOULD NOT share field names** — this is the target architecture. Currently violated in `openai.ts` (LookupResult interface) and `api/analyze-passage.ts` (Spanish results stored in Arabic-typed fields). LookupView.tsx was fixed in PR #19. Do not add NEW shared field usage.
+6. **Spanish and Arabic SHOULD NOT share field names** — enforced across all paths. Word lookup (PR #19), passage pipeline (PR #27), and sentence save hook (PR #28) all use language-neutral or properly-mapped fields. `openai.ts` LookupResult interface still uses Arabic field names internally but consumers access via typed union (`LookupWordResult`). Do not add new shared field usage.
 
 7. **All API calls go through serverless functions in `api/`** — Never expose API keys client-side.
 
@@ -119,17 +119,20 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - **Toast system** (`src/contexts/ToastContext.tsx`): App-wide toast notifications via `useToast()` hook. Usage: `showToast({ type: 'success' | 'error' | 'info', message: '...' })`. ToastProvider wraps the app in main.tsx.
 - Native `alert()` and `confirm()` are banned. All 6 original calls have been replaced. Any new user feedback should use these components.
 
+### DB Column Mapping Layer (PR #28)
+- When DB columns have legacy names (e.g., `arabic_text` storing Spanish data), use a mapping layer in the hook rather than renaming the DB column.
+- Hook exports a clean interface (`SentenceData`, `SaveSentenceInput`) with neutral field names (`primary_text`, `alt_text`).
+- Internal `DbSentenceRow` type (not exported) represents raw DB shape. `fromDbRow()` maps DB → clean type on reads. Write path maps clean → DB column names.
+- Consumers never see DB column names. This avoids schema migration while giving callers a clean API.
+
 ### Union Type Narrowing (PR #19, #20)
 - **Narrow-once pattern**: Derive `const spanish = result && isSpanish(result) ? result : null` at top of component, use throughout. Avoids scattered type guards.
 - **Prefer optional chaining with fallbacks** (`arabic?.field ?? ''`) over non-null assertions (`arabic!.field`). Non-null assertions crash if the value is unexpectedly null; optional chaining degrades gracefully.
 
-### Comprehensive Audit Findings (PR #14 audit, updated post-PR #24)
+### Comprehensive Audit Findings (PR #14 audit, all resolved as of PR #29)
 - 2 P0, 16 P1, 18 P2 issues identified. Full report in `docs/CODEBASE_AUDIT_2026-02-13.md`.
-- 11 of 12 original findings resolved. Remaining open issues:
-  - Spanish/Arabic field overloading in passage pipeline (`api/analyze-passage.ts` lines 123, 131, 171)
-  - Cross-language DB collision (`saved_words` has `UNIQUE(word)` without language scope)
-  - No app-level error boundary
-  - Schema/type status drift (`retired` in DB, not in TypeScript `WordStatus`)
+- All 12 original findings fully resolved. Sentence save hook also fixed (PR #28).
+- Deferred items (not fixing): eager route imports / large bundle (~609 kB), serverless endpoints unauthenticated (single-user app).
 
 ### vi.mock and Type Guards (PR #22)
 - `vi.mock('../../lib/openai')` auto-mocks ALL exports, including type guard functions like `isArabicLookupResult`. Tests must provide explicit mock implementations that replicate the guard logic:
@@ -151,6 +154,9 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - **WordDetailModal type guards in tests** — `vi.mock` auto-mocks type guard functions. Tests must provide explicit mock implementations for `isArabicLookupResult` and `isSpanishLookupResult`.
 - **lookupWord return type** — `lookupWord` returns `LookupWordResult` (union), not `LookupResult`. All consumers must handle both Spanish and Arabic shapes via narrow-once pattern.
 - **Spanish exercise save** — ExerciseFeedback and ExerciseView must show save controls and handle save payloads for both Arabic and Spanish. Do not gate save functionality to a single language.
+- **Sentence save language parameter** — `useSavedSentences.saveSentence()` requires `language` in its input. The hook maps neutral field names (`primary_text`, `alt_text`) to DB columns (`arabic_text`, `arabic_egyptian`). Do not pass Arabic-named fields to the hook's public interface.
+- **Word save language scoping** — `useSavedWords` duplicate checks and lookups must include `.eq('language', ...)`. Cross-language collision was a real bug (PR #26).
+- **WordStatus type completeness** — `WordStatus` must include `'retired'` to match the DB CHECK constraint. Any `Record<WordStatus, ...>` must handle all three values.
 
 
 ## Stable Files
@@ -164,6 +170,10 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - `src/components/LanguageBadge.tsx` — verified (PR #21, route-aware hiding)
 - `src/features/exercises/ExerciseFeedback.tsx` — verified (PR #24, Spanish exercise save)
 - `src/features/exercises/ExerciseView.tsx` — verified (PR #24, language-branched save)
+- `src/components/ErrorBoundary.tsx` — verified (PR #29, app-level error boundary)
+- `src/hooks/useSavedSentences.ts` — verified (PR #28, mapping layer for language-neutral interface)
+- `src/hooks/useSavedWords.ts` — verified (PR #26, language-scoped lookups)
+- `src/components/WordBreakdownList.tsx` — verified (PR #27, extracted from passage pipeline)
 
 ## Running State
 `docs/WORKING.md` does not exist by default. Create it when starting multi-session work, and clean it up when done. When active, it should contain:

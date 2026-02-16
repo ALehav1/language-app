@@ -59,7 +59,7 @@ Dev server runs at http://localhost:5173
 3. **Sentence = one tile, words = chips** — single words are compact, never full-width
 4. **LanguageSwitcher controls language** — `LanguageBadge` is display-only
 5. **LanguageContext is the single source of truth** for language and dialect preferences
-6. **Spanish and Arabic SHOULD NOT share field names** — target architecture. Word lookup path is clean. `api/analyze-passage.ts` still overloads Arabic fields for Spanish (known issue).
+6. **Spanish and Arabic SHOULD NOT share field names** — enforced across all paths. Word lookup, passage pipeline, and sentence save all use language-neutral or properly-mapped fields.
 7. **All API calls go through serverless functions in `api/`** — never expose API keys client-side
 
 ### Project Structure
@@ -126,19 +126,23 @@ Current: 162/162 tests passing (11 test files)
 
 ### Known Limitations
 
-- **Cross-language DB collision** — `saved_words` has `UNIQUE(word)` without language scope. The same word saved in Arabic and Spanish can overwrite each other.
-- **Spanish passage field overloading** — `api/analyze-passage.ts` stores Spanish data in Arabic-named fields (`arabic_msa`, `arabic_egyptian`). Word lookup path is clean.
-- **No app-level error boundary** — runtime render exceptions can blank the entire UI
-- **Schema/type status drift** — DB allows `retired` word status, but TypeScript `WordStatus` only allows `active` | `learned`
 - **Single-user, no auth** — localStorage for preferences, no cross-device sync
 - **~15 `as any` casts remain** — mostly in Supabase column mapping (`useVocabulary.ts`) and `MyVocabularyView.tsx`. Not adding new ones.
 - **Exercise progress expires** — 24-hour limit on saved progress in localStorage
 - **Regenerate lesson** — button is disabled (coming soon). Previously deleted content without regenerating.
 
+## Recent Updates (February 2026)
+
+- **PR #26:** Fixed cross-language DB collision — `saved_words` UNIQUE constraint and hook lookups scoped by language
+- **PR #27:** Fixed passage pipeline field overloading — Spanish data stored in language-neutral fields
+- **PR #28:** Fixed sentence save hook — mapping layer for language-neutral interface to DB columns
+- **PR #29:** Added app-level error boundary + fixed `WordStatus` type to include `'retired'`
+- All original audit issues now resolved (see audit doc for full history)
+
 ## Documentation
 
 - `CLAUDE.md` — Agent context (primary reference for AI-assisted development)
-- `docs/CODEBASE_AUDIT_2026-02-13.md` — February 2026 comprehensive audit (38 issues, prioritized)
+- `docs/CODEBASE_AUDIT_2026-02-13.md` — February 2026 comprehensive audit (all issues resolved)
 - `docs/COMPREHENSIVE_ARCHITECTURE.md` — System architecture reference
 - `docs/DATA_ARCHITECTURE.md` — Database schema and state management
 - `docs/USER_FLOWS.md` — User journey maps
