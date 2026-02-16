@@ -38,7 +38,7 @@ Notable warnings observed:
 
 ## Resolution Status (Updated February 15, 2026, post-PR #24)
 
-All 12 original findings fully resolved. Sentence save hook also fixed (PR #28). See deferred items at bottom (bundle size, endpoint auth).
+All 12 original findings fully resolved. Sentence save hook also fixed (PR #28). Bundle size resolved by code splitting (PR #33). See deferred items at bottom (endpoint auth only).
 
 | # | Issue | Priority | Status |
 |---|-------|----------|--------|
