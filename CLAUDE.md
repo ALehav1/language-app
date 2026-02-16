@@ -146,7 +146,8 @@ Dead code lives in `src/_archive/`. It is excluded from `tsconfig.json` compilat
 - **LanguageBadge route hiding** — LanguageBadge returns `null` on `/lookup`, `/lessons`, `/vocabulary` where LanguageSwitcher is present. If adding LanguageSwitcher to new routes, add the route to `ROUTES_WITH_SWITCHER` in `LanguageBadge.tsx`.
 - **Console.log cleanup** — No debug `console.log` in production `src/`. `console.warn` and `console.error` are fine. When removing `console.log` inside `useEffect`, check if the `useEffect` import becomes unused.
 - **WordDetailModal type guards in tests** — `vi.mock` auto-mocks type guard functions. Tests must provide explicit mock implementations for `isArabicLookupResult` and `isSpanishLookupResult`.
-- **lookupWord return type** — `lookupWord` returns `LookupWordResult` (union), not `LookupResult`. All consumers must handle both Spanish and Arabic shapes. `ExerciseFeedback` is an exception: it narrows to `ArabicLookupResult` because it explicitly skips Spanish.
+- **lookupWord return type** — `lookupWord` returns `LookupWordResult` (union), not `LookupResult`. All consumers must handle both Spanish and Arabic shapes via narrow-once pattern.
+- **Spanish exercise save** — ExerciseFeedback and ExerciseView must show save controls and handle save payloads for both Arabic and Spanish. Do not gate save functionality to a single language.
 
 
 ## Stable Files
